@@ -93,7 +93,7 @@ export default function LoginPage() {
             </div>
             <div>
               <div className="text-[15px] font-bold text-white" style={{ letterSpacing: "-0.02em" }}>
-                TAO Navigator
+                Tyvera
               </div>
               <div className="text-[9.5px] text-slate-600 font-medium uppercase tracking-[0.08em]">
                 Bittensor Intelligence
@@ -164,7 +164,7 @@ export default function LoginPage() {
             >
               <Zap className="w-3.5 h-3.5 text-black" strokeWidth={2.5} />
             </div>
-            <span className="text-[13px] font-bold text-white">TAO Navigator</span>
+            <span className="text-[13px] font-bold text-white">Tyvera</span>
           </Link>
         </div>
 

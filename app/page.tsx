@@ -93,7 +93,7 @@ export default function HomePage() {
               <Zap className="w-4 h-4 text-black" strokeWidth={2.5} />
             </div>
             <span className="text-[14px] font-bold text-white" style={{ letterSpacing: "-0.02em" }}>
-              TAO Navigator
+              Tyvera
             </span>
           </Link>
 
@@ -509,7 +509,7 @@ export default function HomePage() {
                   Your keys. Your stake. Your control.
                 </h2>
                 <p className="text-[14px] text-slate-500 leading-relaxed max-w-lg mx-auto">
-                  TAO Navigator is a read-and-recommend platform. We analyze data and surface
+                  Tyvera is a read-and-recommend platform. We analyze data and surface
                   opportunities. Every move requires your explicit approval in your own wallet.
                 </p>
               </div>
@@ -630,7 +630,7 @@ export default function HomePage() {
             >
               <Zap className="w-3 h-3 text-black" />
             </div>
-            <span className="text-[13px] font-semibold text-slate-600">TAO Navigator</span>
+            <span className="text-[13px] font-semibold text-slate-600">Tyvera</span>
           </div>
           <p className="text-[11px] text-slate-700">Not financial advice. You approve every move.</p>
           <div className="flex gap-5">

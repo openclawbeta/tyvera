@@ -51,7 +51,7 @@ export function AppSidebar() {
           </div>
           <div className="leading-none">
             <div className="text-[13px] font-bold text-white tracking-[-0.02em]">
-              TAO Navigator
+              Tyvera
             </div>
             <div className="text-[9.5px] text-slate-600 mt-[2px] font-medium tracking-[0.08em] uppercase">
               Bittensor Intelligence

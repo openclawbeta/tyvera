@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TAO Navigator — Bittensor Subnet Intelligence",
+  title: "Tyvera — Bittensor Subnet Intelligence",
   description:
     "Live subnet analytics and user-approved staking reallocation for Bittensor. You approve every move.",
   keywords: ["Bittensor", "TAO", "staking", "subnet analytics", "crypto"],

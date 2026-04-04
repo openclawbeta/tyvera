@@ -116,7 +116,7 @@ export default function SignupPage() {
               <Zap className="w-[18px] h-[18px] text-black" strokeWidth={2.5} />
             </div>
             <div>
-              <div className="text-[15px] font-bold text-white" style={{ letterSpacing: "-0.02em" }}>TAO Navigator</div>
+              <div className="text-[15px] font-bold text-white" style={{ letterSpacing: "-0.02em" }}>Tyvera</div>
               <div className="text-[9.5px] text-slate-600 font-medium uppercase tracking-[0.08em]">Bittensor Intelligence</div>
             </div>
           </Link>
@@ -185,7 +185,7 @@ export default function SignupPage() {
             <div className="w-7 h-7 rounded-[9px] flex items-center justify-center" style={{ background: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)" }}>
               <Zap className="w-3.5 h-3.5 text-black" strokeWidth={2.5} />
             </div>
-            <span className="text-[13px] font-bold text-white">TAO Navigator</span>
+            <span className="text-[13px] font-bold text-white">Tyvera</span>
           </Link>
         </div>
 

@@ -309,7 +309,7 @@ function WalletSection() {
           >
             {[
               { icon: Shield,      text: "Your wallet and keys never leave your device." },
-              { icon: Lock,        text: "TAO Navigator stores no private keys and no seed phrases." },
+              { icon: Lock,        text: "Tyvera stores no private keys and no seed phrases." },
               { icon: Eye,         text: "Every on-chain action requires your explicit approval." },
               { icon: CheckCircle, text: "You can disconnect at any time without consequence." },
             ].map(({ icon: Icon, text }) => (
