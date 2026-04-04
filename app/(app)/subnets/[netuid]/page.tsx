@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useMemo, useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -23,15 +23,14 @@ import {
   Layers,
 } from "lucide-react";
 import Link from "next/link";
-import { getSubnetByNetuid } from "@/lib/api/subnets";
+import { getSubnetByNetuid, fetchSubnetByNetuid } from "@/lib/api/subnets";
 import { getRecommendations } from "@/lib/api/recommendations";
+import type { SubnetDetailModel } from "@/lib/types/subnets";
 import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui-custom/fade-in";
 import { MetricPill } from "@/components/ui-custom/metric-pill";
 import { SectionTitle } from "@/components/ui-custom/section-title";
 import { SimpleLineChart } from "@/components/charts/simple-line-chart";
-import { cn, subnetGradient, scoreBg, riskBg } from "@/lib/utils";
-
-type MetricAccent = "cyan" | "violet" | "emerald" | "amber" | "rose" | "slate";
+import { cn, subnetGradient, scoreColor, scoreBg, riskBg } from "@/lib/utils";
 
 // ── Per-subnet extended mock data ──────────────────────────────────────────
 
@@ -192,33 +191,43 @@ function ChartPanel({
 // ── Page ────────────────────────────────────────────────────────────────────
 
 export default function SubnetDetailPage() {
-  const params  = useParams();
-  const router  = useRouter();
-  const netuid  = Number(params.netuid);
+  const params = useParams();
+  const netuid = Number(params.netuid);
 
-  const subnet = useMemo(() => {
-    try {
-      return getSubnetByNetuid(netuid);
-    } catch {
-      return null;
+  // Seed from the static snapshot immediately so the page renders without a
+  // loading flash for the 12 curated subnets. For subnets outside the snapshot
+  // (netuids not in subnets-real.ts) the useEffect below fetches from
+  // /api/subnets?netuid=N and fills in the live data.
+  const [subnet, setSubnet] = useState<SubnetDetailModel | null>(
+    () => getSubnetByNetuid(netuid) ?? null,
+  );
+
+  useEffect(() => {
+    // Re-run whenever netuid changes (user navigates directly between detail pages)
+    const syncFromSnapshot = getSubnetByNetuid(netuid) ?? null;
+    if (syncFromSnapshot) {
+      setSubnet(syncFromSnapshot);
+    } else {
+      // Subnet not in static snapshot — fetch from the live route handler
+      fetchSubnetByNetuid(netuid)
+        .then((data) => setSubnet(data ?? null))
+        .catch(() => {});
     }
   }, [netuid]);
-
-  const recommendations = useMemo(() => getRecommendations(), []);
 
   // Find any recommendation involving this subnet
   const relatedRec = useMemo(
     () =>
-      recommendations.find(
+      getRecommendations().find(
         (r) => r.fromSubnet.netuid === netuid || r.toSubnet.netuid === netuid,
       ) ?? null,
-    [netuid, recommendations],
+    [netuid],
   );
 
   if (!subnet) {
     return (
       <div className="max-w-[1100px] mx-auto flex flex-col items-center justify-center h-64 gap-4">
-        <p className="text-slate-400 text-sm">Subnet SN{netuid} not found in dataset.</p>
+        <p className="text-slate-400 text-sm">Loading SN{netuid}…</p>
         <Link href="/subnets">
           <button className="btn-secondary text-xs gap-2">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Subnets
@@ -239,30 +248,6 @@ export default function SubnetDetailPage() {
 
   const yieldTrend  = yieldData[yieldData.length - 1].value - yieldData[0].value;
   const inflowTrend = inflowData[inflowData.length - 1].value;
-
-  const metricRowsOne: Array<{ label: string; value: string; sub?: string; accent?: MetricAccent }> = [
-    { label: "Liquidity", value: `${subnet.liquidity.toLocaleString()} τ`, sub: "total staked", accent: "cyan" },
-    { label: "Daily Emissions", value: `${subnet.emissions} τ`, sub: "per day avg", accent: "violet" },
-    { label: "Active Stakers", value: subnet.stakers.toLocaleString(), sub: "unique addresses", accent: "emerald" },
-    { label: "Validator Take", value: `${subnet.validatorTake}%`, sub: "commission rate", accent: "amber" },
-  ];
-
-  const metricRowsTwo: Array<{ label: string; value: string; sub?: string; accent?: MetricAccent }> = [
-    {
-      label: "7d Net Inflow",
-      value: `${subnet.inflow >= 0 ? "+" : ""}${subnet.inflow.toLocaleString()} τ`,
-      sub: `${subnet.inflowPct >= 0 ? "+" : ""}${subnet.inflowPct}% of stake`,
-      accent: subnet.inflow >= 0 ? "emerald" : "rose",
-    },
-    { label: "Breakeven", value: `${subnet.breakeven}d`, sub: "to recover move fee", accent: "slate" },
-    { label: "Subnet Age", value: `${subnet.age}d`, sub: "days since launch", accent: "slate" },
-    {
-      label: "Inflow %",
-      value: `${Math.abs(subnet.inflowPct)}%`,
-      sub: subnet.inflow >= 0 ? "net positive" : "net negative",
-      accent: subnet.inflow >= 0 ? "cyan" : "rose",
-    },
-  ];
 
   return (
     <div className="max-w-[1100px] mx-auto space-y-6">
@@ -422,7 +407,12 @@ export default function SubnetDetailPage() {
       {/* ── Key metrics grid ── */}
       <StaggerContainer>
         <div className="grid grid-cols-4 gap-4">
-          {metricRowsOne.map((m) => (
+          {[
+            { label: "Liquidity",      value: `${subnet.liquidity.toLocaleString()} τ`, sub: "total staked",        accent: "cyan"    as const },
+            { label: "Daily Emissions", value: `${subnet.emissions} τ`,                  sub: "per day avg",        accent: "violet"  as const },
+            { label: "Active Stakers", value: subnet.stakers.toLocaleString(),           sub: "unique addresses",   accent: "emerald" as const },
+            { label: "Validator Take", value: `${subnet.validatorTake}%`,                sub: "commission rate",    accent: "amber"   as const },
+          ].map((m, i) => (
             <StaggerItem key={m.label}>
               <MetricCard {...m} />
             </StaggerItem>
@@ -430,7 +420,17 @@ export default function SubnetDetailPage() {
         </div>
 
         <div className="grid grid-cols-4 gap-4">
-          {metricRowsTwo.map((m) => (
+          {([
+            {
+              label: "7d Net Inflow",
+              value: `${subnet.inflow >= 0 ? "+" : ""}${subnet.inflow.toLocaleString()} τ`,
+              sub: `${subnet.inflowPct >= 0 ? "+" : ""}${subnet.inflowPct}% of stake`,
+              accent: subnet.inflow >= 0 ? "emerald" : "rose",
+            },
+            { label: "Breakeven",  value: `${subnet.breakeven}d`,     sub: "to recover move fee",   accent: "slate" },
+            { label: "Subnet Age", value: `${subnet.age}d`,            sub: "days since launch",     accent: "slate" },
+            { label: "Inflow %",   value: `${Math.abs(subnet.inflowPct)}%`, sub: subnet.inflow >= 0 ? "net positive" : "net negative", accent: subnet.inflow >= 0 ? "cyan" : "rose" },
+          ] satisfies Array<{ label: string; value: string; sub?: string; accent?: "cyan" | "violet" | "emerald" | "amber" | "rose" | "slate" }>).map((m) => (
             <StaggerItem key={m.label}>
               <MetricCard {...m} />
             </StaggerItem>

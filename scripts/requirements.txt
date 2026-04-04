@@ -1,0 +1,19 @@
+# Tao Navigator — Phase 3 Python dependencies
+#
+# Install with:
+#   pip install -r scripts/requirements.txt
+#
+# Python ≥ 3.10 recommended. If you're on an M-series Mac or Linux without
+# pre-built wheels, add --no-binary bittensor to force source build, or use
+# a conda environment.
+
+# ── Core ──────────────────────────────────────────────────────────────────────
+
+# Bittensor SDK — provides Subtensor RPC client.
+# 9.x adds dTAO DynamicInfo with tao_in/alpha_in pool fields.
+# 8.x still works; tao_in will fall back to estimation.
+bittensor>=8.5.0
+
+# ── Runtime ───────────────────────────────────────────────────────────────────
+# bittensor pulls in substrate-interface, websockets, and cryptography.
+# No additional dependencies needed for the fetch script itself.
