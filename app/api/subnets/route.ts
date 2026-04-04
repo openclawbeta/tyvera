@@ -72,17 +72,19 @@ interface SubtensorPayload {
 function readSubtensorSnapshot(netuidFilter?: number): {
   subnets: SubnetDetailModel[];
   ageSeconds: number;
+  isStale: boolean;
 } | null {
   try {
     const stat = statSync(SUBTENSOR_SNAPSHOT_PATH);
     const ageMs = Date.now() - stat.mtimeMs;
     const ageSeconds = Math.round(ageMs / 1000);
 
-    if (ageMs > SNAPSHOT_MAX_AGE_HOURS * 60 * 60 * 1000) {
+    const isStale = ageMs > SNAPSHOT_MAX_AGE_HOURS * 60 * 60 * 1000;
+
+    if (isStale) {
       console.log(
-        `[/api/subnets] Subtensor snapshot is ${Math.round(ageMs / 3600000)}h old — skipping`
+        `[/api/subnets] Subtensor snapshot is ${Math.round(ageMs / 3600000)}h old — serving stale snapshot`
       );
-      return null;
     }
 
     const raw = readFileSync(SUBTENSOR_SNAPSHOT_PATH, "utf-8");
@@ -96,7 +98,7 @@ function readSubtensorSnapshot(netuidFilter?: number): {
       ? payload.subnets.filter((s) => s.netuid === netuidFilter)
       : payload.subnets;
 
-    return { subnets, ageSeconds };
+    return { subnets, ageSeconds, isStale };
   } catch {
     // File doesn't exist or is malformed — fall through to next source
     return null;
@@ -177,9 +179,10 @@ export async function GET(request: NextRequest) {
   if (snapshot) {
     return NextResponse.json(snapshot.subnets, {
       headers: {
-        "X-Data-Source":   "subtensor-snapshot",
+        "X-Data-Source":   snapshot.isStale ? "subtensor-snapshot-stale" : "subtensor-snapshot",
         "X-Subnet-Count":  String(snapshot.subnets.length),
         "X-Snapshot-Age":  String(snapshot.ageSeconds),
+        "X-Snapshot-Stale": String(snapshot.isStale),
         "Cache-Control":   "public, s-maxage=300",
       },
     });
