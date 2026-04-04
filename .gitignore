@@ -11,8 +11,8 @@ node_modules/
 .env.production
 
 # Generated subnet snapshot (regenerate with: python scripts/fetch_subnets_subtensor.py)
-# Commit only if you want a pinned fallback in the repo; otherwise keep it gitignored.
-public/data/subnets.json
+# Production note: this file should be committed for Vercel deploys unless a separate
+# build/deploy step regenerates it before upload.
 
 # Python
 __pycache__/
