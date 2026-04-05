@@ -12,16 +12,29 @@ export default function SubnetsPage() {
   // Initialise immediately from the static snapshot so the page renders
   // without a loading state. The useEffect below upgrades to live data
   // (full ~128-subnet list) from /api/subnets once the component mounts.
-  const [subnets, setSubnets] = useState<SubnetDetailModel[]>(() => getSubnets());
-  const [totalSubnets, setTotalSubnets] = useState<number>(() => getSubnets().length);
+  const seedSubnets = getSubnets();
+  const [subnets, setSubnets] = useState<SubnetDetailModel[]>(() => seedSubnets);
+  const [totalSubnets, setTotalSubnets] = useState<number>(seedSubnets.length);
+  const [liveLoaded, setLiveLoaded] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     fetchSubnetsFromApi()
       .then((data) => {
+        if (cancelled) return;
         setSubnets(data);
         setTotalSubnets(data.length);
+        setLiveLoaded(true);
       })
-      .catch(() => {}); // silent: static snapshot is already displayed
+      .catch(() => {
+        if (cancelled) return;
+        setLiveLoaded(true);
+      }); // silent: static snapshot is already displayed
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const [search, setSearch]     = useState("");
@@ -63,10 +76,10 @@ export default function SubnetsPage() {
     <div className="max-w-[1400px] mx-auto">
       <PageHeader
         title="Subnet Explorer"
-        subtitle={`${totalSubnets} subnets · scored, ranked, and filtered`}
+        subtitle={`${liveLoaded ? totalSubnets : seedSubnets.length} subnets · scored, ranked, and filtered`}
       >
         <div className="text-xs text-slate-500">
-          Showing <span className="text-white font-semibold">{filtered.length}</span> of {totalSubnets}
+          Showing <span className="text-white font-semibold">{filtered.length}</span> of {liveLoaded ? totalSubnets : seedSubnets.length}
         </div>
       </PageHeader>
 
