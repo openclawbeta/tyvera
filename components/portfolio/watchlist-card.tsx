@@ -1,14 +1,15 @@
 "use client";
 
-import { AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
+import { AlertTriangle, GitCompare, TrendingUp, TrendingDown } from "lucide-react";
 import { cn, subnetGradient, scoreColor } from "@/lib/utils";
 import type { WatchlistItemModel as WatchlistItem } from "@/lib/types/portfolio";
 
 interface WatchlistCardProps {
   items: WatchlistItem[];
+  onCompareToggle?: (netuid: number) => void;
 }
 
-export function WatchlistCard({ items }: WatchlistCardProps) {
+export function WatchlistCard({ items, onCompareToggle }: WatchlistCardProps) {
   return (
     <div className="space-y-2">
       {items.map((item) => (
@@ -52,8 +53,21 @@ export function WatchlistCard({ items }: WatchlistCardProps) {
             </div>
           </div>
 
-          <div className={cn("text-xs font-bold w-6 text-right", scoreColor(item.score))}>
-            {item.score}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {onCompareToggle && (
+              <button
+                className="w-7 h-7 rounded-lg flex items-center justify-center border border-white/[0.07] bg-white/[0.03] text-slate-300 hover:text-cyan-300 hover:border-cyan-400/20"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCompareToggle(item.netuid);
+                }}
+              >
+                <GitCompare className="w-3.5 h-3.5" />
+              </button>
+            )}
+            <div className={cn("text-xs font-bold w-6 text-right", scoreColor(item.score))}>
+              {item.score}
+            </div>
           </div>
         </div>
       ))}

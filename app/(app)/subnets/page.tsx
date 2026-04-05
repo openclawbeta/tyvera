@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { GitCompare, X } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { SubnetFilterPanel } from "@/components/subnets/subnet-filter-panel";
 import { SubnetCard } from "@/components/subnets/subnet-card";
 import { SubnetDetailPreview } from "@/components/subnets/subnet-detail-preview";
+import { SubnetComparePanel } from "@/components/subnets/subnet-compare-panel";
 import { getSubnets, fetchSubnetsFromApi } from "@/lib/api/subnets";
 import type { SubnetDetailModel, RiskLevel } from "@/lib/types/subnets";
 
@@ -42,6 +44,22 @@ export default function SubnetsPage() {
   const [risk, setRisk]         = useState<RiskLevel | "ALL">("ALL");
   const [sortBy, setSortBy]     = useState("score");
   const [selected, setSelected] = useState<SubnetDetailModel | null>(null);
+  const [compareNetuids, setCompareNetuids] = useState<number[]>([]);
+
+  function toggleCompare(subnet: SubnetDetailModel) {
+    setCompareNetuids((prev) => {
+      if (prev.includes(subnet.netuid)) return prev.filter((id) => id !== subnet.netuid);
+      if (prev.length >= 2) return [prev[1], subnet.netuid];
+      return [...prev, subnet.netuid];
+    });
+  }
+
+  const compareSubnets = useMemo(
+    () => compareNetuids
+      .map((netuid) => subnets.find((subnet) => subnet.netuid === netuid))
+      .filter(Boolean) as SubnetDetailModel[],
+    [compareNetuids, subnets],
+  );
 
   const filtered = useMemo(() => {
     let list = [...subnets];
@@ -91,6 +109,35 @@ export default function SubnetsPage() {
         </div>
       </PageHeader>
 
+      {compareSubnets.length > 0 && (
+        <div className="mb-5 rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.03] p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 text-sm text-slate-300">
+              <GitCompare className="w-4 h-4 text-cyan-300" />
+              {compareSubnets.length === 1
+                ? `1 subnet selected — choose one more to compare`
+                : `${compareSubnets[0].name} vs ${compareSubnets[1].name}`}
+            </div>
+            <button
+              className="btn-ghost text-xs gap-1.5"
+              onClick={() => setCompareNetuids([])}
+            >
+              <X className="w-3.5 h-3.5" />
+              Clear compare
+            </button>
+          </div>
+        </div>
+      )}
+
+      {compareSubnets.length === 2 && (
+        <div className="mb-5">
+          <SubnetComparePanel
+            subnets={[compareSubnets[0], compareSubnets[1]]}
+            onClear={() => setCompareNetuids([])}
+          />
+        </div>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-5">
         {/* Left filter rail */}
         <SubnetFilterPanel
@@ -114,6 +161,8 @@ export default function SubnetsPage() {
                   subnet={subnet}
                   selected={selected?.id === subnet.id}
                   onSelect={() => setSelected(subnet)}
+                  onCompareToggle={toggleCompare}
+                  compareActive={compareNetuids.includes(subnet.netuid)}
                   index={i}
                 />
               ))}

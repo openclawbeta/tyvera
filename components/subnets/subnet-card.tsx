@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Bookmark, BookmarkCheck } from "lucide-react";
+import { Bookmark, BookmarkCheck, GitCompare } from "lucide-react";
 import { cn, subnetGradient, scoreBg, riskBg } from "@/lib/utils";
 import { MetricPill } from "@/components/ui-custom/metric-pill";
 import type { SubnetCardModel as Subnet } from "@/lib/types/subnets";
@@ -11,6 +11,8 @@ interface SubnetCardProps {
   subnet: Subnet;
   selected?: boolean;
   onSelect?: () => void;    // kept for optional side-panel use
+  onCompareToggle?: (subnet: Subnet) => void;
+  compareActive?: boolean;
   index?: number;
   linkOnClick?: boolean;    // default true — navigate to detail page on click
 }
@@ -74,6 +76,8 @@ export function SubnetCard({
   subnet,
   selected,
   onSelect,
+  onCompareToggle,
+  compareActive,
   index = 0,
   linkOnClick = true,
 }: SubnetCardProps) {
@@ -177,6 +181,24 @@ export function SubnetCard({
           <span className="text-[9px] text-slate-700 uppercase tracking-wider">14d</span>
         </div>
       </div>
+
+      {onCompareToggle && (
+        <button
+          className="w-full flex items-center justify-center gap-2 rounded-xl py-2 text-[11px] font-semibold transition-all duration-150"
+          style={{
+            background: compareActive ? "rgba(34,211,238,0.08)" : "rgba(255,255,255,0.035)",
+            border: compareActive ? "1px solid rgba(34,211,238,0.25)" : "1px solid rgba(255,255,255,0.08)",
+            color: compareActive ? "#67e8f9" : "#cbd5e1",
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onCompareToggle(subnet);
+          }}
+        >
+          <GitCompare className="w-3.5 h-3.5" />
+          {compareActive ? "Selected for compare" : "Add to compare"}
+        </button>
+      )}
 
       {/* Footer stats */}
       <div
