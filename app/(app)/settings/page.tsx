@@ -12,9 +12,9 @@ import { useWallet } from "@/lib/wallet-context";
 import { truncateAddress } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 /* Primitives                                                           */
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function Panel({ children }: { children: React.ReactNode }) {
   return (
@@ -99,9 +99,9 @@ function SystemEnforced() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 /* Section nav                                                          */
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 const SECTIONS = [
   { id: "account",         label: "Account",          icon: User },
@@ -111,9 +111,9 @@ const SECTIONS = [
   { id: "security",        label: "Security",         icon: Shield },
 ];
 
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 /* Wallet section (full)                                               */
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function WalletSection() {
   const { walletState, address, openModal, disconnect, verify } = useWallet();
@@ -133,7 +133,7 @@ function WalletSection() {
     <Panel>
       <PanelHeader title="Wallet" subtitle="Connect and manage your Polkadot-compatible wallet." />
 
-      {/* ── Disconnected ── */}
+      {/* ââ Disconnected ââ */}
       {walletState === "disconnected" && (
         <>
           <div
@@ -161,10 +161,10 @@ function WalletSection() {
           </div>
 
           {/* Trust grid */}
-          <div className="grid grid-cols-3 gap-3 mb-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
             {[
               { icon: Shield,      text: "Wallet stays fully in your control" },
-              { icon: Lock,        text: "No seed phrase stored — ever" },
+              { icon: Lock,        text: "No seed phrase stored â ever" },
               { icon: CheckCircle, text: "You approve every on-chain action" },
             ].map(({ icon: Icon, text }) => (
               <div
@@ -196,15 +196,15 @@ function WalletSection() {
         </>
       )}
 
-      {/* ── Connecting ── */}
+      {/* ââ Connecting ââ */}
       {walletState === "connecting" && (
         <div className="flex items-center gap-3 py-6">
           <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#22d3ee" }} />
-          <p className="text-[13px] text-slate-400">Connecting to wallet extension…</p>
+          <p className="text-[13px] text-slate-400">Connecting to wallet extensionâ¦</p>
         </div>
       )}
 
-      {/* ── Connected or Verified ── */}
+      {/* ââ Connected or Verified ââ */}
       {isConnected && address && (
         <>
           {/* Status hero */}
@@ -232,7 +232,7 @@ function WalletSection() {
                   className="text-[12px] font-bold"
                   style={{ color: isVerified ? "#22d3ee" : "#fbbf24", letterSpacing: "-0.01em" }}
                 >
-                  {isVerified ? "Verified" : "Unverified"} · Polkadot.js
+                  {isVerified ? "Verified" : "Unverified"} Â· Polkadot.js
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -262,7 +262,7 @@ function WalletSection() {
               <div className="flex-1">
                 <p className="text-[12px] font-semibold text-amber-200 mb-0.5">Verification required to execute moves</p>
                 <p className="text-[11px] text-slate-500 leading-relaxed">
-                  Sign a one-time verification message to confirm wallet ownership. Gasless — no TAO is spent.
+                  Sign a one-time verification message to confirm wallet ownership. Gasless â no TAO is spent.
                 </p>
               </div>
               <button
@@ -345,9 +345,9 @@ function WalletSection() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 /* Account section                                                      */
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function AccountSection() {
   return (
@@ -383,7 +383,7 @@ function AccountSection() {
                 color: "#fbbf24",
               }}
             >
-              ⚡ PREMIUM
+              â¡ PREMIUM
             </span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-700" />
           </div>
@@ -393,9 +393,9 @@ function AccountSection() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 /* Notifications section                                               */
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function NotificationsSection() {
   const [prefs, setPrefs] = useState({
@@ -430,9 +430,9 @@ function NotificationsSection() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 /* Guardrails section                                                   */
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function GuardrailsSection() {
   const [blockSpeculative, setBlockSpeculative] = useState(false);
@@ -495,9 +495,9 @@ function GuardrailsSection() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 /* Security section                                                     */
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function SecuritySection() {
   const [showAddress, setShowAddress] = useState(true);
@@ -544,7 +544,7 @@ function SecuritySection() {
               className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
               style={{ background: "rgba(244,63,94,0.1)", border: "1px solid rgba(244,63,94,0.18)" }}
             >
-              <span style={{ color: "#f43f5e", fontSize: "8px", fontWeight: 800 }}>✕</span>
+              <span style={{ color: "#f43f5e", fontSize: "8px", fontWeight: 800 }}>â</span>
             </div>
             <span className="text-[11px] text-slate-500">{item}</span>
           </div>
@@ -554,9 +554,9 @@ function SecuritySection() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 /* Page                                                                 */
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState("account");
@@ -570,10 +570,10 @@ export default function SettingsPage() {
         />
       </FadeIn>
 
-      <div className="flex gap-6 mt-2">
-        {/* ── Section nav ── */}
-        <div className="w-44 flex-shrink-0 pt-1">
-          <nav className="space-y-0.5 sticky top-20">
+      <div className="flex flex-col lg:flex-row gap-6 mt-2">
+        {/* ââ Section nav ââ */}
+        <div className="w-full lg:w-44 flex-shrink-0 pt-0 lg:pt-1">
+          <nav className="flex gap-1 overflow-x-auto pb-2 lg:pb-0 lg:flex-col lg:space-y-0.5 lg:sticky lg:top-20">
             {SECTIONS.map((s) => {
               const Icon = s.icon;
               const isActive = activeSection === s.id;
@@ -581,7 +581,7 @@ export default function SettingsPage() {
                 <button
                   key={s.id}
                   onClick={() => setActiveSection(s.id)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150"
+                  className="flex-shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150"
                   style={{
                     fontSize: "12px",
                     fontWeight: isActive ? 600 : 500,
@@ -615,7 +615,7 @@ export default function SettingsPage() {
           </nav>
         </div>
 
-        {/* ── Content ── */}
+        {/* ââ Content ââ */}
         <div className="flex-1 min-w-0">
           <FadeIn key={activeSection}>
             {activeSection === "account"       && <AccountSection />}
