@@ -28,7 +28,7 @@ export default function DashboardPage() {
   return (
     <div className="max-w-[1400px] mx-auto space-y-7">
 
-      {/* ── Header ── */}
+      {/* ââ Header ââ */}
       <div className="flex items-center justify-between">
         <PageHeader
           title="Dashboard"
@@ -49,11 +49,11 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-4 gap-4">
+      {/* ââ Stat Cards ââ */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard
           label="Total Staked"
-          value={`${portfolioStats.totalStakedTao.toFixed(2)} τ`}
+          value={`${portfolioStats.totalStakedTao.toFixed(2)} Ï`}
           change={2.4}
           changeLabel="vs last week"
           icon={<Wallet className="w-4 h-4" />}
@@ -80,7 +80,7 @@ export default function DashboardPage() {
         />
         <StatCard
           label="7-Day Earnings"
-          value={`${portfolioStats.earnings7d.toFixed(4)} τ`}
+          value={`${portfolioStats.earnings7d.toFixed(4)} Ï`}
           change={4.2}
           changeLabel="vs prior week"
           icon={<Zap className="w-4 h-4" />}
@@ -89,11 +89,11 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* ── Main Grid ── */}
+      {/* ââ Main Grid ââ */}
       <div className="grid grid-cols-12 gap-5">
 
-        {/* Left — Charts (8 cols) */}
-        <div className="col-span-8 space-y-5">
+        {/* Left â Charts (8 cols) */}
+        <div className="col-span-12 lg:col-span-8 space-y-5">
 
           {/* Portfolio value */}
           <FadeIn delay={0.1}>
@@ -171,8 +171,8 @@ export default function DashboardPage() {
           </FadeIn>
         </div>
 
-        {/* Right — Side panels (4 cols) */}
-        <div className="col-span-4 space-y-5">
+        {/* Right â Side panels (4 cols) */}
+        <div className="col-span-12 lg:col-span-4 space-y-5">
 
           {/* Allocation */}
           <FadeIn delay={0.12}>
@@ -289,11 +289,11 @@ export default function DashboardPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-[12px] font-medium text-white truncate" style={{ letterSpacing: "-0.01em" }}>
                         {change.type === "MOVE"
-                          ? `${change.fromSubnet} → ${change.toSubnet}`
+                          ? `${change.fromSubnet} â ${change.toSubnet}`
                           : `Added to ${change.subnet}`}
                       </p>
                       <p className="text-[10px] text-slate-600 mt-0.5 tabular-nums">
-                        {change.amount.toFixed(2)} τ · {formatDate(change.timestamp)}
+                        {change.amount.toFixed(2)} Ï Â· {formatDate(change.timestamp)}
                       </p>
                     </div>
                     <span className="text-[10px] text-emerald-400 font-semibold flex-shrink-0 mt-0.5">
