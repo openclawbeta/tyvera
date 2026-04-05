@@ -10,9 +10,11 @@ node_modules/
 .env.local
 .env.production
 
-# Generated subnet snapshot (regenerate with: python scripts/fetch_subnets_subtensor.py)
-# Production note: this file should be committed for Vercel deploys unless a separate
-# build/deploy step regenerates it before upload.
+# public/data/subnets.json is intentionally TRACKED (not ignored).
+# It is the canonical Phase 3/4 artifact committed by:
+#   - GitHub Actions (.github/workflows/refresh-subnets.yml) on every refresh cycle
+#   - Local: python scripts/fetch_subnets_subtensor.py  (then commit manually)
+# Do NOT add it back to .gitignore — Vercel reads it from the repo at build time.
 
 # Python
 __pycache__/
@@ -24,4 +26,3 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
-.vercel

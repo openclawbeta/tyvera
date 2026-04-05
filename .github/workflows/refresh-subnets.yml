@@ -1,0 +1,149 @@
+# .github/workflows/refresh-subnets.yml
+#
+# Tyvera — Phase 4: Automated Subtensor subnet snapshot refresh
+#
+# What this does
+# ──────────────
+# 1. Connects to the Bittensor mainnet (finney) via Subtensor
+# 2. Fetches all live subnet data
+# 3. Writes normalized JSON to public/data/subnets.json
+# 4. Commits and pushes to main only if the data changed
+# 5. Vercel detects the push and redeploys automatically
+#
+# End-to-end data flow
+# ────────────────────
+#   Subtensor (chain)
+#     → scripts/fetch_subnets_subtensor.py
+#     → public/data/subnets.json  (committed to repo)
+#     → Vercel redeploy triggered by push
+#     → app/api/subnets/route.ts  (serves file as top-priority source)
+#     → subnets/page.tsx          (useEffect upgrades from static snapshot)
+#
+# No additional secrets required beyond the default GITHUB_TOKEN.
+# VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID are NOT used here —
+# Vercel's Git integration handles deployment automatically on push.
+#
+# Manual trigger
+# ──────────────
+#   GitHub → Actions → Refresh Subnet Snapshot → Run workflow
+#   Optionally specify a custom Subtensor endpoint (ws:// URL or network name).
+#
+# To test locally
+# ───────────────
+#   pip install -r scripts/requirements.txt
+#   python scripts/fetch_subnets_subtensor.py
+#   git add public/data/subnets.json && git commit -m "chore(data): manual refresh"
+#   git push
+
+name: Refresh Subnet Snapshot
+
+on:
+  # Automatic: every 20 minutes around the clock
+  schedule:
+    - cron: '*/20 * * * *'
+
+  # Manual: trigger from GitHub Actions UI with optional network override
+  workflow_dispatch:
+    inputs:
+      network:
+        description: 'Subtensor network or ws:// endpoint (default: finney)'
+        required: false
+        default: 'finney'
+        type: string
+
+# Allow the workflow to push commits back to the repo
+permissions:
+  contents: write
+
+# Only one refresh can run at a time. If a new scheduled run fires while
+# the previous one is still running, the new run queues and waits.
+# (cancel-in-progress: false prevents partial JSON writes from being committed.)
+concurrency:
+  group: refresh-subnets
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Fetch & commit subnet snapshot
+    runs-on: ubuntu-latest
+    timeout-minutes: 15   # hard kill if something hangs (bittensor install + fetch)
+
+    steps:
+      # ── 1. Checkout ───────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Use the default GITHUB_TOKEN. With permissions.contents: write above,
+          # this token can push commits back to the repo.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── 2. Python environment ─────────────────────────────────────────────
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          # Cache pip downloads keyed to requirements.txt hash.
+          # After the first run, bittensor installs in ~60s instead of ~5min.
+          cache: 'pip'
+          cache-dependency-path: scripts/requirements.txt
+
+      # ── 3. Install dependencies ───────────────────────────────────────────
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r scripts/requirements.txt
+        # bittensor>=8.5 has pre-built manylinux wheels for ubuntu-latest,
+        # so no Rust compilation is needed.
+
+      # ── 4. Fetch live subnet data from Subtensor ──────────────────────────
+      - name: Fetch subnet snapshot from Subtensor
+        id: fetch
+        timeout-minutes: 5
+        env:
+          # workflow_dispatch input takes priority; scheduled runs use 'finney'
+          BITTENSOR_NETWORK: ${{ inputs.network || 'finney' }}
+        run: |
+          python scripts/fetch_subnets_subtensor.py
+          echo "Fetch complete. Contents of public/data/subnets.json:"
+          python -c "
+          import json, sys
+          try:
+              d = json.load(open('public/data/subnets.json'))
+              meta = d.get('_meta', {})
+              count = len(d.get('subnets', []))
+              print(f'  subnets: {count}')
+              print(f'  fetched_at: {meta.get(\"fetched_at\", \"unknown\")}')
+              print(f'  network: {meta.get(\"network\", \"unknown\")}')
+          except Exception as e:
+              print(f'  WARNING: could not parse output: {e}', file=sys.stderr)
+          "
+
+      # ── 5. Commit and push only if snapshot changed ───────────────────────
+      - name: Commit and push if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Stage the snapshot (works whether file is new or modified)
+          git add public/data/subnets.json
+
+          # Check if staging produced any diff vs HEAD
+          if git diff --cached --quiet; then
+            echo "Subnet snapshot is unchanged — skipping commit."
+            echo "This is normal if chain state has not meaningfully changed."
+          else
+            # Extract subnet count for a descriptive commit message
+            SUBNET_COUNT=$(python -c \
+              "import json; print(len(json.load(open('public/data/subnets.json'))['subnets']))" \
+              2>/dev/null || echo "?")
+
+            FETCHED_AT=$(python -c \
+              "import json; print(json.load(open('public/data/subnets.json'))['_meta']['fetched_at'][:19])" \
+              2>/dev/null || echo "unknown")
+
+            git commit -m "chore(data): refresh subnet snapshot — ${SUBNET_COUNT} subnets @ ${FETCHED_AT}Z"
+            git push
+
+            echo "✓ Committed and pushed snapshot with ${SUBNET_COUNT} subnets."
+            echo "  Vercel will redeploy automatically from this push."
+          fi

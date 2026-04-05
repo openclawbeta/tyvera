@@ -1,0 +1,3 @@
+# This file keeps the public/data/ directory tracked by git.
+# public/data/subnets.json is committed here by GitHub Actions (refresh-subnets.yml).
+# Do not delete this file unless subnets.json already exists in the directory.
