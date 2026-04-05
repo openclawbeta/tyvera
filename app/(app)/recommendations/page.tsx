@@ -11,19 +11,19 @@ import { useWallet } from "@/lib/wallet-context";
 import type { RecommendationUiModel as Recommendation } from "@/lib/types/recommendations";
 
 const BANDS = [
-  { dot: "#22d3ee",  dotGlow: "rgba(34,211,238,0.6)",  label: "Strong",   range: "score ≥ 0.35" },
-  { dot: "#fbbf24",  dotGlow: "rgba(251,191,36,0.5)",   label: "Moderate", range: "score ≥ 0.22" },
-  { dot: "#64748b",  dotGlow: "",                        label: "Mild",     range: "score ≥ 0.15" },
+  { dot: "#22d3ee",  dotGlow: "rgba(34,211,238,0.6)",  label: "Strong",   range: "score â¥ 0.35" },
+  { dot: "#fbbf24",  dotGlow: "rgba(251,191,36,0.5)",   label: "Moderate", range: "score â¥ 0.22" },
+  { dot: "#64748b",  dotGlow: "",                        label: "Mild",     range: "score â¥ 0.15" },
 ];
 
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 /* Wallet banners                                                       */
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function WalletBanner() {
   const { walletState, openModal, verify } = useWallet();
 
-  /* Verified — show standard trust copy */
+  /* Verified â show standard trust copy */
   if (walletState === "verified" || walletState === "pending_approval") {
     return (
       <FadeIn>
@@ -111,7 +111,7 @@ function WalletBanner() {
             Connect your wallet to execute recommendations
           </p>
           <p className="text-[11px] text-slate-500 leading-relaxed">
-            Browse freely — wallet connection is only needed when you want to approve a move.
+            Browse freely â wallet connection is only needed when you want to approve a move.
             Your seed phrase is never stored. You approve every transaction individually.
           </p>
         </div>
@@ -142,9 +142,9 @@ function WalletBanner() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 /* Page                                                                 */
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 export default function RecommendationsPage() {
   const recommendations = getRecommendations();
@@ -153,11 +153,11 @@ export default function RecommendationsPage() {
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">
 
-      {/* ── Header ── */}
-      <div className="flex items-start justify-between">
+      {/* ââ Header ââ */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <PageHeader
           title="Recommendations"
-          subtitle="Risk-adjusted reallocation opportunities — you approve every move"
+          subtitle="Risk-adjusted reallocation opportunities â you approve every move"
         />
         <div className="flex items-center gap-2 mt-0.5">
           <div
@@ -182,10 +182,10 @@ export default function RecommendationsPage() {
         </div>
       </div>
 
-      {/* ── Wallet-aware trust banner ── */}
+      {/* ââ Wallet-aware trust banner ââ */}
       <WalletBanner />
 
-      <div className="flex gap-5">
+      <div className="flex flex-col lg:flex-row gap-5">
         {/* Left: list */}
         <div className="flex-1 min-w-0 space-y-4">
 
@@ -237,7 +237,7 @@ export default function RecommendationsPage() {
         </div>
 
         {/* Right: review panel */}
-        <div className="w-[320px] flex-shrink-0 sticky top-20 h-[calc(100vh-7rem)]">
+        <div className="w-full lg:w-[320px] flex-shrink-0 lg:sticky lg:top-20 lg:h-[calc(100vh-7rem)]">
           <ReviewPanel rec={selected} />
         </div>
       </div>
