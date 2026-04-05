@@ -13,9 +13,9 @@ import { getBillingHistory, getBillingStatus, createPaymentRequest } from "@/lib
 import type { BillingPlanModel, BillingHistoryItem } from "@/lib/types/billing";
 import { cn, formatDate, truncateAddress } from "@/lib/utils";
 
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 /* Helpers                                                              */
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function StatusDot({ status }: { status: "CONFIRMED" | "PENDING" | "FAILED" }) {
   const map = {
@@ -50,9 +50,9 @@ function EntitlementTag({ type }: { type: "ACTIVATED" | "EXTENDED" | "REACTIVATE
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 /* Page                                                                 */
-/* ─────────────────────────────────────────────────────────────────── */
+/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 export default function BillingPage() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -75,10 +75,10 @@ export default function BillingPage() {
 
       <PageHeader
         title="Billing"
-        subtitle="Manage your premium subscription — paid in TAO, activated on-chain"
+        subtitle="Manage your premium subscription â paid in TAO, activated on-chain"
       />
 
-      {/* ── Current Plan Hero ── */}
+      {/* ââ Current Plan Hero ââ */}
       <FadeIn>
         <div
           className="rounded-2xl relative overflow-hidden"
@@ -97,7 +97,7 @@ export default function BillingPage() {
             }}
           />
 
-          <div className="flex items-start justify-between relative">
+          <div className="flex flex-wrap items-start justify-between gap-4 relative">
             {/* Left: icon + plan info */}
             <div className="flex items-center gap-5">
               <div
@@ -137,10 +137,10 @@ export default function BillingPage() {
                     <Clock className="w-3 h-3 text-slate-600" />
                     Expires{" "}
                     <span className="text-white font-semibold ml-0.5">
-                      {state.premiumExpiresAt ? formatDate(state.premiumExpiresAt) : "—"}
+                      {state.premiumExpiresAt ? formatDate(state.premiumExpiresAt) : "â"}
                     </span>
                   </span>
-                  <span className="text-slate-700">·</span>
+                  <span className="text-slate-700">Â·</span>
                   <span className="flex items-center gap-1.5">
                     <Wallet className="w-3 h-3 text-slate-600" />
                     <code className="text-slate-400 font-mono">{truncateAddress(state.walletAddress)}</code>
@@ -185,7 +185,7 @@ export default function BillingPage() {
         </div>
       </FadeIn>
 
-      {/* ── Plan Selection ── */}
+      {/* ââ Plan Selection ââ */}
       <FadeIn delay={0.07}>
         <div
           className="rounded-2xl"
@@ -201,7 +201,7 @@ export default function BillingPage() {
             subtitle="Pay in TAO. No auto-renewal. New days stack on top of any remaining time."
           />
 
-          <div className="grid grid-cols-3 gap-4 mt-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
             {plans.filter((p: BillingPlanModel) => p.id !== "FREE").map((plan: BillingPlanModel) => {
               const isSelected = selectedPlan === plan.id;
               const isBestValue = plan.badge === "Best Value";
@@ -278,11 +278,11 @@ export default function BillingPage() {
                         className="font-bold"
                         style={{ fontSize: "15px", color: isSelected ? "#22d3ee" : "#67e8f9" }}
                       >
-                        τ
+                        Ï
                       </span>
                     </div>
                     <div className="text-[10px] text-slate-600 mt-0.5">
-                      ≈ ${plan.priceUsd.toLocaleString()} USD
+                      â ${plan.priceUsd.toLocaleString()} USD
                     </div>
                   </div>
 
@@ -303,7 +303,7 @@ export default function BillingPage() {
             })}
           </div>
 
-          {/* ── Payment Instructions (revealed on select) ── */}
+          {/* ââ Payment Instructions (revealed on select) ââ */}
           {selectedPlanData && (
             <div
               className="mt-6 rounded-xl overflow-hidden"
@@ -320,14 +320,14 @@ export default function BillingPage() {
                 <div className="flex items-center gap-2">
                   <Zap className="w-3.5 h-3.5 text-cyan-400" />
                   <span className="text-xs font-semibold text-white">
-                    Payment Instructions — {selectedPlanData.displayName}
+                    Payment Instructions â {selectedPlanData.displayName}
                   </span>
                 </div>
                 <span
                   className="text-[11px] font-mono font-bold"
                   style={{ color: "#22d3ee" }}
                 >
-                  {selectedPlanData.priceTao} τ
+                  {selectedPlanData.priceTao} Ï
                 </span>
               </div>
 
@@ -341,13 +341,13 @@ export default function BillingPage() {
                   },
                   {
                     n: 2,
-                    title: `Send exactly ${selectedPlanData.priceTao} τ`,
+                    title: `Send exactly ${selectedPlanData.priceTao} Ï`,
                     body: "Send the exact amount to the address shown. Partial or over-payments require manual review.",
                   },
                   {
                     n: 3,
                     title: "Automatic on-chain activation",
-                    body: "Our chain watcher confirms the transaction (typically 3–6 blocks). Premium activates automatically — no action needed on your part.",
+                    body: "Our chain watcher confirms the transaction (typically 3â6 blocks). Premium activates automatically â no action needed on your part.",
                   },
                   {
                     n: 4,
@@ -405,7 +405,7 @@ export default function BillingPage() {
                   }}
                 >
                   <Zap className="w-4 h-4" />
-                  Generate Payment Address for {selectedPlanData.priceTao} τ
+                  Generate Payment Address for {selectedPlanData.priceTao} Ï
                   <ArrowRight className="w-3.5 h-3.5 opacity-70" />
                 </button>
               </div>
@@ -414,9 +414,9 @@ export default function BillingPage() {
         </div>
       </FadeIn>
 
-      {/* ── Trust Pillars ── */}
+      {/* ââ Trust Pillars ââ */}
       <FadeIn delay={0.12}>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             {
               icon: Shield,
@@ -471,7 +471,7 @@ export default function BillingPage() {
         </div>
       </FadeIn>
 
-      {/* ── Payment History ── */}
+      {/* ââ Payment History ââ */}
       <FadeIn delay={0.16}>
         <div
           className="rounded-2xl"
@@ -485,7 +485,7 @@ export default function BillingPage() {
           <SectionTitle title="Payment History" subtitle="All on-chain payments for this account" />
 
           <div
-            className="rounded-xl overflow-hidden mt-5"
+            className="rounded-xl overflow-x-auto mt-5"
             style={{ border: "1px solid rgba(255,255,255,0.055)" }}
           >
             {/* Table header */}
@@ -493,11 +493,12 @@ export default function BillingPage() {
               className="grid items-center px-4 py-2.5"
               style={{
                 gridTemplateColumns: "140px 1fr 80px 70px 100px 1fr 90px",
+                minWidth: "700px",
                 background: "rgba(255,255,255,0.025)",
                 borderBottom: "1px solid rgba(255,255,255,0.055)",
               }}
             >
-              {["Date", "Plan", "τ Amount", "USD", "Type", "Tx Hash", "Status"].map((h) => (
+              {["Date", "Plan", "Ï Amount", "USD", "Type", "Tx Hash", "Status"].map((h) => (
                 <span key={h} className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">
                   {h}
                 </span>
@@ -511,6 +512,7 @@ export default function BillingPage() {
                 className="grid items-center px-4 py-3.5 transition-colors duration-150"
                 style={{
                   gridTemplateColumns: "140px 1fr 80px 70px 100px 1fr 90px",
+                minWidth: "700px",
                   borderBottom: i < paymentHistory.length - 1
                     ? "1px solid rgba(255,255,255,0.04)"
                     : "none",
@@ -528,7 +530,7 @@ export default function BillingPage() {
 
                 {/* TAO */}
                 <span className="text-xs font-mono font-bold" style={{ color: "#22d3ee", fontVariantNumeric: "tabular-nums" }}>
-                  {p.amountTao} τ
+                  {p.amountTao} Ï
                 </span>
 
                 {/* USD */}
@@ -540,7 +542,7 @@ export default function BillingPage() {
                 {/* Tx Hash */}
                 <div className="flex items-center gap-1.5">
                   <code className="text-[10px] font-mono text-slate-600">
-                    {p.txHash.slice(0, 14)}…
+                    {p.txHash.slice(0, 14)}â¦
                   </code>
                   <button
                     className="transition-colors duration-150"
@@ -561,7 +563,7 @@ export default function BillingPage() {
           {/* Footer */}
           <div className="flex items-center justify-between mt-4">
             <p className="text-[11px] text-slate-600">
-              {paymentHistory.length} transactions · all confirmed on-chain
+              {paymentHistory.length} transactions Â· all confirmed on-chain
             </p>
             <button
               className="flex items-center gap-1.5 text-[11px] font-semibold transition-colors duration-150"
