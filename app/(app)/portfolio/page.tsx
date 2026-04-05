@@ -152,7 +152,10 @@ export default function PortfolioPage() {
           <FadeIn delay={0.16}>
             <GlassCard>
               <SectionTitle title="Watchlist" subtitle="Subnets you're tracking">
-                <button className="btn-ghost text-xs">Edit</button>
+                <div className="flex items-center gap-2">
+                  <button className="btn-ghost text-xs">Compare</button>
+                  <button className="btn-ghost text-xs">Edit</button>
+                </div>
               </SectionTitle>
               <WatchlistCard items={watchlist} />
             </GlassCard>

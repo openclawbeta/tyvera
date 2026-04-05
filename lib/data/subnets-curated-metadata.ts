@@ -18,7 +18,7 @@
  *   Use buildFallbackMeta(netuid, sourceName?, sourceSymbol?) to generate
  *   a safe placeholder that keeps the UI functional.
  *
- * Last reviewed: 2026-04-04
+ * Last reviewed: 2026-04-05
  */
 
 export interface SubnetMeta {
@@ -38,6 +38,38 @@ export interface SubnetMeta {
   };
   /** Must be one of the values in SUBNET_CATEGORIES (lib/constants/subnets.ts) */
   category:    string;
+}
+
+function createSubnetMeta(
+  netuid: number,
+  name: string,
+  symbol: string,
+  category: string,
+  description: string,
+  links?: SubnetMeta["links"],
+  thesis?: string[],
+  useCases?: string[],
+): SubnetMeta {
+  const summary = `${name} is a ${category.toLowerCase()} subnet in Bittensor. Tyvera frames it through live emissions, liquidity, age, and operator narrative so allocators can quickly decide whether it deserves deeper research.`;
+
+  return {
+    name,
+    symbol,
+    category,
+    description,
+    summary,
+    thesis: thesis ?? [
+      `${name} should be compared against other ${category.toLowerCase()} subnets on liquidity depth, emissions efficiency, and maturity rather than judged on yield alone.`,
+      `If stake is flowing into ${name}, the key question is whether the product story and on-chain metrics still line up.`,
+      `Use ${name} inside a portfolio context: risk, concentration, and category exposure matter as much as raw APR.`,
+    ],
+    useCases: useCases ?? [
+      `${category} subnet research`,
+      "Allocator watchlist triage",
+      "Subnet-to-subnet comparison",
+    ],
+    links,
+  };
 }
 
 /**
@@ -72,555 +104,127 @@ export function buildFallbackMeta(
     links: {
       explorer: `https://taostats.io/subnets/${netuid}`,
     },
-    category: "Infrastructure", // safe default; matches existing UI filter set
+    category: "Infrastructure",
   };
 }
 
 /**
  * Curated metadata map: netuid → SubnetMeta.
  *
- * Sources per entry are noted inline. Add new entries here as more subnets
- * are researched; the route handler and snapshot will pick them up automatically.
+ * For now this aims for high coverage with practical investor-facing guidance.
+ * Known/important subnets get stronger links and more specific framing; the rest
+ * still receive enough structure to make the detail page useful.
  */
 export const CURATED_METADATA: Record<number, SubnetMeta> = {
-  // ── Tier 1: well-documented, high-confidence ───────────────────────────
-
-  1: {
-    // Source: original Bittensor subnet; apex.opentensor.ai
-    name:        "Apex",
-    symbol:      "APEX",
-    description:
-      "The original Bittensor text-inference subnet. Miners compete to produce " +
-      "best responses to LLM queries using state-of-the-art open-source models. " +
-      "Established, high-liquidity, and a benchmark for subnet performance across the network.",
-    summary:
-      "Apex is the oldest flagship Bittensor subnet and the easiest baseline for comparing newer subnet quality, emissions, and capital efficiency.",
-    thesis: [
-      "Acts as a benchmark subnet for the wider Bittensor economy.",
-      "High awareness and maturity make it a reference point for allocator trust.",
-      "Useful when comparing newer, higher-volatility subnets against a more established peer.",
-    ],
-    useCases: [
-      "LLM text inference",
-      "Benchmarking subnet maturity",
-      "Comparing allocator preference shifts across the network",
-    ],
-    links: {
+  1: createSubnetMeta(
+    1,
+    "Apex",
+    "APEX",
+    "Language",
+    "The original Bittensor text-inference subnet. Miners compete to produce best responses to LLM queries using state-of-the-art open-source models. Established, high-liquidity, and a benchmark for subnet performance across the network.",
+    {
       website: "https://apex.opentensor.ai",
       docs: "https://docs.bittensor.com",
       explorer: "https://taostats.io/subnets/1",
     },
-    category: "Language",
-  },
-  3: {
-    // Source: taostats.io; Bittensor Guru S2E10 interview with Templar team
-    name:        "Templar",
-    symbol:      "TMPL",
-    description:
-      "Decentralized distributed training for large language models. Miners " +
-      "contribute GPU compute and compete to produce useful training gradients, " +
-      "while validators score update quality. One of Bittensor's most active " +
-      "on-chain LLM training subnets.",
-    category: "Language",
-  },
-  4: {
-    // Source: Manifold Labs; targon.com; CoinGecko TARG listing
-    name:        "Targon",
-    symbol:      "TARG",
-    description:
-      "Deterministic verification framework for OpenAI-compatible AI inference, " +
-      "developed by Manifold Labs. Miners operate high-performance GPU endpoints " +
-      "serving both synthetic and organic AI queries. Known as Bittensor's " +
-      "'industrial hub' for enterprise-grade verifiable compute.",
-    category: "Multi-Modal",
-  },
-  8: {
-    // Source: taoshi.io; github.com/taoshidev/time-series-prediction-subnet
-    name:        "Taoshi",
-    symbol:      "PTN",
-    description:
-      "Proprietary Trading Network (PTN) by Taoshi. Decentralized AI/ML models " +
-      "analyze data across multiple asset classes to deliver sophisticated " +
-      "trading signals and predictions. Democratizes access to institutional-grade " +
-      "algorithmic trading intelligence via Bittensor incentives.",
-    summary:
-      "Taoshi is one of the clearest finance-native Bittensor subnets, aimed at market prediction and signal generation rather than generic AI workloads.",
-    thesis: [
-      "Finance positioning makes it easy for allocators to understand the value proposition.",
-      "Useful as a sector-specific subnet rather than a general infrastructure bet.",
-      "Should be evaluated on both emissions quality and whether the operator narrative continues to attract stake.",
+    [
+      "Apex is a benchmark subnet for judging the maturity of the wider network.",
+      "It is more useful as a reference point than as a hype-driven narrative play.",
+      "Allocator trust here often comes from longevity and baseline relevance.",
     ],
-    useCases: [
-      "Market prediction models",
-      "Signal generation",
-      "Finance-focused subnet allocation research",
-    ],
-    links: {
+    ["Text inference", "Benchmarking subnet maturity", "Allocator baseline comparison"],
+  ),
+  3: createSubnetMeta(
+    3,
+    "Templar",
+    "TMPL",
+    "Language",
+    "Decentralized distributed training for large language models. Miners contribute GPU compute and compete to produce useful training gradients, while validators score update quality. One of Bittensor's most active on-chain LLM training subnets.",
+    { explorer: "https://taostats.io/subnets/3" },
+  ),
+  4: createSubnetMeta(
+    4,
+    "Targon",
+    "TARG",
+    "Multi-Modal",
+    "Deterministic verification framework for OpenAI-compatible AI inference, developed by Manifold Labs. Miners operate high-performance GPU endpoints serving both synthetic and organic AI queries. Known as Bittensor's industrial hub for enterprise-grade verifiable compute.",
+    { explorer: "https://taostats.io/subnets/4" },
+  ),
+  8: createSubnetMeta(
+    8,
+    "Taoshi",
+    "PTN",
+    "Finance",
+    "Proprietary Trading Network (PTN) by Taoshi. Decentralized AI/ML models analyze data across multiple asset classes to deliver sophisticated trading signals and predictions. Democratizes access to institutional-grade algorithmic trading intelligence via Bittensor incentives.",
+    {
       website: "https://taoshi.io",
       github: "https://github.com/taoshidev/time-series-prediction-subnet",
       explorer: "https://taostats.io/subnets/8",
     },
-    category: "Finance",
-  },
-  9: {
-    // Source: taostats.io SN9; pretrain subnet
-    name:        "Pretrain",
-    symbol:      "PT",
-    description:
-      "Pretraining subnet incentivizing miners to train foundation-model weights " +
-      "from scratch. Validators evaluate model quality via standardised benchmarks. " +
-      "A core research subnet for open-source foundation model development.",
-    category: "Language",
-  },
-  11: {
-    // Source: awesome-bittensor GitHub list; taostats.io SN11
-    name:        "Transcription",
-    symbol:      "STAO",
-    description:
-      "Decentralized audio-to-text transcription using state-of-the-art speech " +
-      "recognition models. Miners compete to provide accurate, low-latency " +
-      "transcription across diverse languages, accents, and audio quality levels.",
-    category: "Language",
-  },
-  13: {
-    // Source: github.com/macrocosm-os/data-universe; Macrocosmos official docs
-    name:        "Data Universe",
-    symbol:      "DATA",
-    description:
-      "Bittensor's decentralized data layer by Macrocosmos. Miners collect and " +
-      "store fresh, high-value data from across the web for use by other subnets. " +
-      "Built with a focus on decentralization, scalability, and data freshness.",
-    summary:
-      "Data Universe is a core data-supply subnet: if Bittensor needs fresh data pipelines, this is one of the clearest infrastructure stories to watch.",
-    thesis: [
-      "Data collection is foundational for many higher-level AI subnets.",
-      "Operator quality matters because freshness and reliability are the product.",
-      "Useful to compare against other data and retrieval-oriented subnets for long-term stickiness.",
+    [
+      "Taoshi is one of the clearest finance-native subnet stories in Bittensor.",
+      "It should be judged as a sector bet, not just as a generic yield source.",
+      "Narrative durability matters here because allocators need to believe the product category is sticky.",
     ],
-    useCases: [
-      "Web-scale data collection",
-      "Dataset freshness pipelines",
-      "Infrastructure research inside the Bittensor stack",
-    ],
-    links: {
+    ["Trading signals", "Market prediction", "Finance subnet comparison"],
+  ),
+  9: createSubnetMeta(9, "Pretrain", "PT", "Language", "Pretraining subnet incentivizing miners to train foundation-model weights from scratch. Validators evaluate model quality via standardised benchmarks. A core research subnet for open-source foundation model development.", { explorer: "https://taostats.io/subnets/9" }),
+  11: createSubnetMeta(11, "Transcription", "STAO", "Language", "Decentralized audio-to-text transcription using state-of-the-art speech recognition models. Miners compete to provide accurate, low-latency transcription across diverse languages, accents, and audio quality levels.", { explorer: "https://taostats.io/subnets/11" }),
+  13: createSubnetMeta(
+    13,
+    "Data Universe",
+    "DATA",
+    "Data",
+    "Bittensor's decentralized data layer by Macrocosmos. Miners collect and store fresh, high-value data from across the web for use by other subnets. Built with a focus on decentralization, scalability, and data freshness.",
+    {
       github: "https://github.com/macrocosm-os/data-universe",
       explorer: "https://taostats.io/subnets/13",
     },
-    category: "Data",
-  },
-  14: {
-    // Source: taostats.io SN14; llm-defender subnet
-    name:        "LLM Defender",
-    symbol:      "LLMD",
-    description:
-      "Security-focused subnet for detecting prompt injection attacks and " +
-      "adversarial inputs targeting large language models. Miners build and " +
-      "serve specialized defense models evaluated on adversarial benchmarks.",
-    category: "Developer Tools",
-  },
-  15: {
-    // Source: taostats.io SN15; blockchain insights
-    name:        "Blockchain Insights",
-    symbol:      "BITS",
-    description:
-      "On-chain analytics and blockchain data intelligence subnet. Miners " +
-      "process and serve structured blockchain data, enabling downstream AI " +
-      "applications to query verified on-chain information.",
-    category: "Data",
-  },
-  16: {
-    // Source: taostats.io SN16; audio subnet
-    name:        "Audio Transcription",
-    symbol:      "AUD",
-    description:
-      "Specialised audio processing and transcription subnet. Miners run " +
-      "high-accuracy speech recognition across multiple languages and domains, " +
-      "competing on accuracy, latency, and vocabulary coverage.",
-    category: "Language",
-  },
-  17: {
-    // Source: taostats.io SN17; 3D modeling
-    name:        "3D Generation",
-    symbol:      "3DG",
-    description:
-      "Decentralized 3D asset generation and model synthesis. Miners produce " +
-      "high-quality 3D meshes and textures from text or image prompts, scored " +
-      "by validators on geometric fidelity and prompt adherence.",
-    category: "Creative",
-  },
-  18: {
-    // Source: Opentensor official docs; cortex.t.opentensor.ai
-    name:        "Cortex.t",
-    symbol:      "CORT",
-    description:
-      "High-performance multi-modal inference subnet built by the Opentensor " +
-      "Foundation. Provides access to advanced open-source models for text, " +
-      "image, and structured-data workloads with deep validator participation.",
-    category: "Multi-Modal",
-  },
-  19: {
-    // Source: nineteen.ai official; CoinGecko NIN
-    name:        "Nineteen",
-    symbol:      "NIN",
-    description:
-      "Leading decentralized AI inference API subnet by Nineteen.ai. Provides " +
-      "scalable access to frontier open-source models including LLaMA 3, Stable " +
-      "Diffusion derivatives, and others. API-ready for enterprise integration.",
-    summary:
-      "Nineteen is one of the clearest API-product subnets in Bittensor, making it easier to evaluate as a real usage story rather than a vague research narrative.",
-    thesis: [
-      "Strong product framing helps convert subnet metrics into a business story.",
-      "API accessibility can make allocator conviction easier than with abstract infrastructure plays.",
-      "Worth monitoring for sustained emissions efficiency and continued relevance in inference demand.",
+    [
+      "Fresh data infrastructure can be more durable than trend-driven AI narratives.",
+      "This subnet matters because many downstream models depend on data quality and recency.",
+      "If the operator story weakens, the data metrics should show it before the narrative does.",
     ],
-    useCases: [
-      "AI inference APIs",
-      "Enterprise model access",
-      "Open-source model serving",
-    ],
-    links: {
-      website: "https://nineteen.ai",
-      explorer: "https://taostats.io/subnets/19",
-    },
-    category: "Language",
-  },
-  20: {
-    // Source: taostats.io SN20; BitAgent
-    name:        "BitAgent",
-    symbol:      "AGENT",
-    description:
-      "Autonomous AI agent subnet. Miners build and serve goal-directed agents " +
-      "capable of tool use, web browsing, and multi-step task completion. " +
-      "Evaluated on real-world task benchmarks.",
-    category: "Developer Tools",
-  },
-  21: {
-    // Source: github.com/omegalabsinc/omegalabs-bittensor-subnet
-    name:        "OMEGA",
-    symbol:      "OMEGA",
-    description:
-      "World's largest decentralized multimodal dataset network by OMEGA Labs. " +
-      "Miners curate diverse video, audio, and text data — over 1M hours of " +
-      "footage — to power any-to-any AGI model training.",
-    category: "Multi-Modal",
-  },
-  22: {
-    // Source: taostats.io SN22; meta-search
-    name:        "Meta-Search",
-    symbol:      "META",
-    description:
-      "Decentralized AI-powered search and information retrieval. Miners index " +
-      "and serve web content through AI ranking models, competing on relevance " +
-      "and freshness of results.",
-    category: "Data",
-  },
-  23: {
-    // Source: taostats.io SN23; NicheImage
-    name:        "NicheImage",
-    symbol:      "NIMG",
-    description:
-      "High-quality image generation subnet with fine-grained quality scoring. " +
-      "Miners generate images from detailed prompts, evaluated by validators " +
-      "using state-of-the-art image quality metrics and prompt adherence models.",
-    category: "Creative",
-  },
-  24: {
-    // Source: taostats.io SN24; TaoVault / storage
-    name:        "Omega",
-    symbol:      "OMG",
-    description:
-      "Decentralized video understanding and multimodal AI subnet. Miners " +
-      "process video streams for content understanding, summarization, and " +
-      "semantic search applications.",
-    category: "Multi-Modal",
-  },
-  25: {
-    // Source: subnetalpha.ai/subnet/mainframe; publicly described as scientific compute
-    name:        "Mainframe",
-    symbol:      "MF",
-    description:
-      "Decentralized scientific compute subnet. Mainframe uses Bittensor " +
-      "incentives to distribute high-complexity protein folding and molecular " +
-      "simulation workloads across a global network of compute providers.",
-    category: "Science",
-  },
-  26: {
-    // Source: taostats.io SN26; image alchemy
-    name:        "Image Alchemy",
-    symbol:      "ALCH",
-    description:
-      "Advanced image manipulation and transformation subnet. Miners apply " +
-      "specialised AI models for inpainting, outpainting, style transfer, and " +
-      "super-resolution, evaluated on perceptual quality benchmarks.",
-    category: "Creative",
-  },
-  27: {
-    // Source: github.com/neuralinternet/compute-subnet — "Verifiable distributed supercomputing"
-    name:        "Compute",
-    symbol:      "COMP",
-    description:
-      "Verifiable distributed supercomputing by NeuralInternet. Miners provide " +
-      "GPU and CPU compute resources with cryptographic verification of task " +
-      "execution. A general-purpose decentralized compute layer for Bittensor.",
-    summary:
-      "Compute is a pure infrastructure subnet bet: broad addressable utility, but it needs durable operator execution and sustained demand to justify allocator attention.",
-    thesis: [
-      "General-purpose compute is strategically important across the Bittensor ecosystem.",
-      "Competition is intense because multiple subnets can make a compute-like pitch.",
-      "Best evaluated through emissions efficiency, liquidity depth, and ability to stay relevant versus newer compute entrants.",
-    ],
-    useCases: [
-      "Distributed compute",
-      "Verified task execution",
-      "Infrastructure comparison against other compute-heavy subnets",
-    ],
-    links: {
-      github: "https://github.com/neuralinternet/compute-subnet",
-      explorer: "https://taostats.io/subnets/27",
-    },
-    category: "Infrastructure",
-  },
-  28: {
-    // Source: taostats.io SN28; foundational voices / TTS
-    name:        "Foundational Voices",
-    symbol:      "VOICE",
-    description:
-      "Text-to-speech and voice synthesis subnet. Miners produce natural, " +
-      "expressive speech across languages and speaking styles, evaluated on " +
-      "intelligibility, naturalness, and speaker diversity.",
-    category: "Creative",
-  },
-  29: {
-    // Source: taostats.io SN29; Fractal Net / IT
-    name:        "Fractal",
-    symbol:      "FRAC",
-    description:
-      "Decentralized IT infrastructure management and anomaly detection. Miners " +
-      "monitor and analyze system metrics to surface optimization opportunities " +
-      "and security anomalies across distributed infrastructure.",
-    category: "Infrastructure",
-  },
-  30: {
-    // Source: taostats.io SN30; TemporalFlow
-    name:        "TemporalFlow",
-    symbol:      "TFLOW",
-    description:
-      "Time series forecasting and temporal reasoning subnet. Miners develop " +
-      "models for multi-horizon prediction across financial, scientific, and " +
-      "operational domains, evaluated on held-out forecasting benchmarks.",
-    category: "Finance",
-  },
-  32: {
-    // Source: subnetalpha.ai; taostats.io SN32 — AI text detection
-    name:        "ItsAI",
-    symbol:      "ITSAI",
-    description:
-      "AI-generated content detection and verification subnet. Miners train " +
-      "and serve models that classify text as human-written or AI-generated, " +
-      "enabling authenticity tools for platforms, publishers, and enterprises.",
-    category: "Developer Tools",
-  },
-  33: {
-    // Source: taostats.io SN33; ReadyPlayerMine / gaming
-    name:        "ReadyPlayerMine",
-    symbol:      "RPM",
-    description:
-      "Gaming AI and character intelligence subnet. Miners develop and serve " +
-      "AI models for non-player characters, procedural game content generation, " +
-      "and game state analysis.",
-    category: "Creative",
-  },
-  34: {
-    // Source: bitmind.ai; CoinGecko; Bankless article
-    name:        "BitMind",
-    symbol:      "BMIND",
-    description:
-      "AI-generated content detection at scale by BitMind. Miners run " +
-      "multimodal deepfake and synthetic media detection models, providing " +
-      "authenticity verification for images, video, and audio content.",
-    category: "Developer Tools",
-  },
-  35: {
-    // Source: taostats.io SN35; LogicNet
-    name:        "LogicNet",
-    symbol:      "LOGIC",
-    description:
-      "Mathematical reasoning and formal logic subnet. Miners produce verified " +
-      "solutions to mathematical problems, theorem proving tasks, and structured " +
-      "reasoning benchmarks using specialised LLM fine-tunes.",
-    category: "Science",
-  },
-  36: {
-    // Source: taostats.io SN36; Automata
-    name:        "Automata",
-    symbol:      "AUTO",
-    description:
-      "Workflow automation and code generation subnet. Miners build AI agents " +
-      "that generate, execute, and verify automation scripts and software, " +
-      "evaluated on real-world task completion benchmarks.",
-    category: "Developer Tools",
-  },
-  37: {
-    // Source: taostats.io SN37; FinAgent
-    name:        "FinAgent",
-    symbol:      "FIN",
-    description:
-      "Financial analysis and reporting AI subnet. Miners produce structured " +
-      "financial summaries, earnings analyses, and investment research from " +
-      "unstructured financial text and data streams.",
-    category: "Finance",
-  },
-  38: {
-    // Source: taostats.io SN38; Distributed Training
-    name:        "Distributed Training",
-    symbol:      "DTRAIN",
-    description:
-      "Decentralized neural network training using federated learning techniques. " +
-      "Miners contribute gradient updates across shared model architectures, " +
-      "enabling large-scale collaborative model training without centralisation.",
-    category: "Language",
-  },
-  39: {
-    // Source: Bittensor Guru S2E10 — Basilica interview
-    name:        "Basilica",
-    symbol:      "BSLC",
-    description:
-      "Multi-modal content moderation and safety subnet by Basilica. Miners " +
-      "run classification models for harmful content detection across text, " +
-      "image, and video, supporting platform trust and safety applications.",
-    category: "Developer Tools",
-  },
-  40: {
-    // Source: taostats.io SN40; Chunking GitHub repo
-    name:        "Chunking",
-    symbol:      "CHUNK",
-    description:
-      "Token-optimization and text-chunking subnet for Retrieval-Augmented " +
-      "Generation (RAG) pipelines. Miners produce optimal chunk boundaries " +
-      "and embedding strategies that maximize retrieval accuracy.",
-    category: "Developer Tools",
-  },
-  41: {
-    // Source: Sportstensor official; CoinGecko listing
-    name:        "Sportstensor",
-    symbol:      "SPORT",
-    description:
-      "Sports prediction and analytics subnet by Sportstensor. Miners develop " +
-      "AI models for match outcome prediction across major sports leagues, " +
-      "evaluated on calibrated probabilistic accuracy.",
-    category: "Finance",
-  },
-  42: {
-    // Source: taostats.io SN42; Gen42 / productivity
-    name:        "Gen42",
-    symbol:      "GEN42",
-    description:
-      "Productivity AI and knowledge management subnet. Miners build assistants " +
-      "for document summarization, meeting intelligence, and enterprise knowledge " +
-      "extraction, evaluated on real-world productivity benchmarks.",
-    category: "Language",
-  },
-  43: {
-    // Source: taostats.io SN43; Text-to-Video
-    name:        "Graphite",
-    symbol:      "GRPH",
-    description:
-      "Text-to-video generation subnet. Miners produce short video clips from " +
-      "text prompts using diffusion-based models, evaluated on temporal " +
-      "consistency, visual quality, and prompt faithfulness.",
-    category: "Creative",
-  },
-  44: {
-    // Source: taostats.io SN44; pippa / social AI
-    name:        "Pippa",
-    symbol:      "PIPPA",
-    description:
-      "Social AI and conversational intelligence subnet. Miners serve " +
-      "personality-consistent AI companions and conversation agents, evaluated " +
-      "on engagement, coherence, and safety benchmarks.",
-    category: "Language",
-  },
-  45: {
-    // Source: taostats.io SN45; Gen AI image
-    name:        "Wildcards",
-    symbol:      "WILD",
-    description:
-      "Creative image generation with fine-grained style control. Miners " +
-      "specialize in artistic and illustrative image synthesis, evaluated on " +
-      "aesthetic quality and stylistic diversity metrics.",
-    category: "Creative",
-  },
-  47: {
-    // Source: taostats.io SN47; Condense-AI
-    name:        "Condense-AI",
-    symbol:      "COND",
-    description:
-      "Long-document summarization and compression subnet. Miners produce " +
-      "high-fidelity summaries of long-form content including research papers, " +
-      "legal documents, and technical reports.",
-    category: "Language",
-  },
-  49: {
-    // Source: taostat/subnets-infos JSON; SN49 "Hivetrain AutoML"
-    name:        "Hivetrain",
-    symbol:      "HIVE",
-    description:
-      "Automated Machine Learning (AutoML) subnet by Hivetrain. Miners run " +
-      "distributed hyperparameter optimization and neural architecture search, " +
-      "providing a decentralized platform for ML engineering automation.",
-    category: "Science",
-  },
-  50: {
-    // Source: taostats.io SN50
-    name:        "Celium",
-    symbol:      "CEL",
-    description:
-      "Decentralized compute marketplace subnet. Miners provide GPU resources " +
-      "for AI workloads with verifiable execution guarantees, targeting " +
-      "latency-sensitive inference and fine-tuning jobs.",
-    category: "Infrastructure",
-  },
-  52: {
-    // Source: taostats.io SN52; DatAgent
-    name:        "DatAgent",
-    symbol:      "DAGT",
-    description:
-      "Data-driven AI agent subnet for structured data interaction. Miners " +
-      "build agents capable of querying databases, APIs, and data streams to " +
-      "answer natural language questions with verifiable accuracy.",
-    category: "Data",
-  },
-  56: {
-    // Source: taostats.io SN56; Gradients
-    name:        "Gradients",
-    symbol:      "GRAD",
-    description:
-      "Gradient-based model optimization and fine-tuning subnet. Miners " +
-      "specialize in efficient parameter-efficient fine-tuning (PEFT) methods, " +
-      "enabling task-specific model adaptation at scale.",
-    category: "Language",
-  },
-  57: {
-    // Source: taostats.io SN57
-    name:        "Gaia",
-    symbol:      "GAIA",
-    description:
-      "Environmental and climate data AI subnet. Miners process geospatial and " +
-      "environmental datasets to power prediction models for weather, climate, " +
-      "and ecological monitoring applications.",
-    category: "Science",
-  },
-  64: {
-    // Source: subnetalpha.ai/subnet/chutes; CoinGecko; Bankless article
-    // "handles over 100 billion tokens daily — about one-third of Google's AI load"
-    name:        "Chutes",
-    symbol:      "CHUTES",
-    description:
-      "Decentralized AI compute platform by Chutes. Runs over 100 billion " +
-      "tokens per day across a distributed GPU network. Provides scalable, " +
-      "low-cost inference and fine-tuning for open-source AI models.",
-    category: "Infrastructure",
-  },
+    ["Web-scale data collection", "Dataset freshness pipelines", "Data subnet benchmarking"],
+  ),
+  14: createSubnetMeta(14, "LLM Defender", "LLMD", "Developer Tools", "Security-focused subnet for detecting prompt injection attacks and adversarial inputs targeting large language models. Miners build and serve specialized defense models evaluated on adversarial benchmarks.", { explorer: "https://taostats.io/subnets/14" }),
+  15: createSubnetMeta(15, "Blockchain Insights", "BITS", "Data", "On-chain analytics and blockchain data intelligence subnet. Miners process and serve structured blockchain data, enabling downstream AI applications to query verified on-chain information.", { explorer: "https://taostats.io/subnets/15" }),
+  16: createSubnetMeta(16, "Audio Transcription", "AUD", "Language", "Specialised audio processing and transcription subnet. Miners run high-accuracy speech recognition across multiple languages and domains, competing on accuracy, latency, and vocabulary coverage.", { explorer: "https://taostats.io/subnets/16" }),
+  17: createSubnetMeta(17, "3D Generation", "3DG", "Creative", "Decentralized 3D asset generation and model synthesis. Miners produce high-quality 3D meshes and textures from text or image prompts, scored by validators on geometric fidelity and prompt adherence.", { explorer: "https://taostats.io/subnets/17" }),
+  18: createSubnetMeta(18, "Cortex.t", "CORT", "Multi-Modal", "High-performance multi-modal inference subnet built by the Opentensor Foundation. Provides access to advanced open-source models for text, image, and structured-data workloads with deep validator participation.", { website: "https://cortex.t.opentensor.ai", docs: "https://docs.bittensor.com", explorer: "https://taostats.io/subnets/18" }),
+  19: createSubnetMeta(19, "Nineteen", "NIN", "Language", "Leading decentralized AI inference API subnet by Nineteen.ai. Provides scalable access to frontier open-source models including LLaMA 3, Stable Diffusion derivatives, and others. API-ready for enterprise integration.", { website: "https://nineteen.ai", explorer: "https://taostats.io/subnets/19" }),
+  20: createSubnetMeta(20, "BitAgent", "AGENT", "Developer Tools", "Autonomous AI agent subnet. Miners build and serve goal-directed agents capable of tool use, web browsing, and multi-step task completion. Evaluated on real-world task benchmarks.", { explorer: "https://taostats.io/subnets/20" }),
+  21: createSubnetMeta(21, "OMEGA", "OMEGA", "Multi-Modal", "World's largest decentralized multimodal dataset network by OMEGA Labs. Miners curate diverse video, audio, and text data — over 1M hours of footage — to power any-to-any AGI model training.", { github: "https://github.com/omegalabsinc/omegalabs-bittensor-subnet", explorer: "https://taostats.io/subnets/21" }),
+  22: createSubnetMeta(22, "Meta-Search", "META", "Data", "Decentralized AI-powered search and information retrieval. Miners index and serve web content through AI ranking models, competing on relevance and freshness of results.", { explorer: "https://taostats.io/subnets/22" }),
+  23: createSubnetMeta(23, "NicheImage", "NIMG", "Creative", "High-quality image generation subnet with fine-grained quality scoring. Miners generate images from detailed prompts, evaluated by validators using state-of-the-art image quality metrics and prompt adherence models.", { explorer: "https://taostats.io/subnets/23" }),
+  24: createSubnetMeta(24, "Omega", "OMG", "Multi-Modal", "Decentralized video understanding and multimodal AI subnet. Miners process video streams for content understanding, summarization, and semantic search applications.", { explorer: "https://taostats.io/subnets/24" }),
+  25: createSubnetMeta(25, "Mainframe", "MF", "Science", "Decentralized scientific compute subnet. Mainframe uses Bittensor incentives to distribute high-complexity protein folding and molecular simulation workloads across a global network of compute providers.", { explorer: "https://taostats.io/subnets/25" }),
+  26: createSubnetMeta(26, "Image Alchemy", "ALCH", "Creative", "Advanced image manipulation and transformation subnet. Miners apply specialised AI models for inpainting, outpainting, style transfer, and super-resolution, evaluated on perceptual quality benchmarks.", { explorer: "https://taostats.io/subnets/26" }),
+  27: createSubnetMeta(27, "Compute", "COMP", "Infrastructure", "Verifiable distributed supercomputing by NeuralInternet. Miners provide GPU and CPU compute resources with cryptographic verification of task execution. A general-purpose decentralized compute layer for Bittensor.", { github: "https://github.com/neuralinternet/compute-subnet", explorer: "https://taostats.io/subnets/27" }),
+  28: createSubnetMeta(28, "Foundational Voices", "VOICE", "Creative", "Text-to-speech and voice synthesis subnet. Miners produce natural, expressive speech across languages and speaking styles, evaluated on intelligibility, naturalness, and speaker diversity.", { explorer: "https://taostats.io/subnets/28" }),
+  29: createSubnetMeta(29, "Fractal", "FRAC", "Infrastructure", "Decentralized IT infrastructure management and anomaly detection. Miners monitor and analyze system metrics to surface optimization opportunities and security anomalies across distributed infrastructure.", { explorer: "https://taostats.io/subnets/29" }),
+  30: createSubnetMeta(30, "TemporalFlow", "TFLOW", "Finance", "Time series forecasting and temporal reasoning subnet. Miners develop models for multi-horizon prediction across financial, scientific, and operational domains, evaluated on held-out forecasting benchmarks.", { explorer: "https://taostats.io/subnets/30" }),
+  32: createSubnetMeta(32, "ItsAI", "ITSAI", "Developer Tools", "AI-generated content detection and verification subnet. Miners train and serve models that classify text as human-written or AI-generated, enabling authenticity tools for platforms, publishers, and enterprises.", { explorer: "https://taostats.io/subnets/32" }),
+  33: createSubnetMeta(33, "ReadyPlayerMine", "RPM", "Creative", "Gaming AI and character intelligence subnet. Miners develop and serve AI models for non-player characters, procedural game content generation, and game state analysis.", { explorer: "https://taostats.io/subnets/33" }),
+  34: createSubnetMeta(34, "BitMind", "BMIND", "Developer Tools", "AI-generated content detection at scale by BitMind. Miners run multimodal deepfake and synthetic media detection models, providing authenticity verification for images, video, and audio content.", { explorer: "https://taostats.io/subnets/34" }),
+  35: createSubnetMeta(35, "LogicNet", "LOGIC", "Science", "Mathematical reasoning and formal logic subnet. Miners produce verified solutions to mathematical problems, theorem proving tasks, and structured reasoning benchmarks using specialised LLM fine-tunes.", { explorer: "https://taostats.io/subnets/35" }),
+  36: createSubnetMeta(36, "Automata", "AUTO", "Developer Tools", "Workflow automation and code generation subnet. Miners build AI agents that generate, execute, and verify automation scripts and software, evaluated on real-world task completion benchmarks.", { explorer: "https://taostats.io/subnets/36" }),
+  37: createSubnetMeta(37, "FinAgent", "FIN", "Finance", "Financial analysis and reporting AI subnet. Miners produce structured financial summaries, earnings analyses, and investment research from unstructured financial text and data streams.", { explorer: "https://taostats.io/subnets/37" }),
+  38: createSubnetMeta(38, "Distributed Training", "DTRAIN", "Language", "Decentralized neural network training using federated learning techniques. Miners contribute gradient updates across shared model architectures, enabling large-scale collaborative model training without centralisation.", { explorer: "https://taostats.io/subnets/38" }),
+  39: createSubnetMeta(39, "Basilica", "BSLC", "Developer Tools", "Multi-modal content moderation and safety subnet by Basilica. Miners run classification models for harmful content detection across text, image, and video, supporting platform trust and safety applications.", { explorer: "https://taostats.io/subnets/39" }),
+  40: createSubnetMeta(40, "Chunking", "CHUNK", "Developer Tools", "Token-optimization and text-chunking subnet for Retrieval-Augmented Generation (RAG) pipelines. Miners produce optimal chunk boundaries and embedding strategies that maximize retrieval accuracy.", { explorer: "https://taostats.io/subnets/40" }),
+  41: createSubnetMeta(41, "Sportstensor", "SPORT", "Finance", "Sports prediction and analytics subnet by Sportstensor. Miners develop AI models for match outcome prediction across major sports leagues, evaluated on calibrated probabilistic accuracy.", { explorer: "https://taostats.io/subnets/41" }),
+  42: createSubnetMeta(42, "Gen42", "GEN42", "Language", "Productivity AI and knowledge management subnet. Miners build assistants for document summarization, meeting intelligence, and enterprise knowledge extraction, evaluated on real-world productivity benchmarks.", { explorer: "https://taostats.io/subnets/42" }),
+  43: createSubnetMeta(43, "Graphite", "GRPH", "Creative", "Text-to-video generation subnet. Miners produce short video clips from text prompts using diffusion-based models, evaluated on temporal consistency, visual quality, and prompt faithfulness.", { explorer: "https://taostats.io/subnets/43" }),
+  44: createSubnetMeta(44, "Pippa", "PIPPA", "Language", "Social AI and conversational intelligence subnet. Miners serve personality-consistent AI companions and conversation agents, evaluated on engagement, coherence, and safety benchmarks.", { explorer: "https://taostats.io/subnets/44" }),
+  45: createSubnetMeta(45, "Wildcards", "WILD", "Creative", "Creative image generation with fine-grained style control. Miners specialize in artistic and illustrative image synthesis, evaluated on aesthetic quality and stylistic diversity metrics.", { explorer: "https://taostats.io/subnets/45" }),
+  47: createSubnetMeta(47, "Condense-AI", "COND", "Language", "Long-document summarization and compression subnet. Miners produce high-fidelity summaries of long-form content including research papers, legal documents, and technical reports.", { explorer: "https://taostats.io/subnets/47" }),
+  49: createSubnetMeta(49, "Hivetrain", "HIVE", "Science", "Automated Machine Learning (AutoML) subnet by Hivetrain. Miners run distributed hyperparameter optimization and neural architecture search, providing a decentralized platform for ML engineering automation.", { explorer: "https://taostats.io/subnets/49" }),
+  50: createSubnetMeta(50, "Celium", "CEL", "Infrastructure", "Decentralized compute marketplace subnet. Miners provide GPU resources for AI workloads with verifiable execution guarantees, targeting latency-sensitive inference and fine-tuning jobs.", { explorer: "https://taostats.io/subnets/50" }),
+  52: createSubnetMeta(52, "DatAgent", "DAGT", "Data", "Data-driven AI agent subnet for structured data interaction. Miners build agents capable of querying databases, APIs, and data streams to answer natural language questions with verifiable accuracy.", { explorer: "https://taostats.io/subnets/52" }),
+  56: createSubnetMeta(56, "Gradients", "GRAD", "Language", "Gradient-based model optimization and fine-tuning subnet. Miners specialize in efficient parameter-efficient fine-tuning (PEFT) methods, enabling task-specific model adaptation at scale.", { explorer: "https://taostats.io/subnets/56" }),
+  57: createSubnetMeta(57, "Gaia", "GAIA", "Science", "Environmental and climate data AI subnet. Miners process geospatial and environmental datasets to power prediction models for weather, climate, and ecological monitoring applications.", { explorer: "https://taostats.io/subnets/57" }),
+  64: createSubnetMeta(64, "Chutes", "CHUTES", "Infrastructure", "Decentralized AI compute platform by Chutes. Runs over 100 billion tokens per day across a distributed GPU network. Provides scalable, low-cost inference and fine-tuning for open-source AI models.", { website: "https://chutes.ai", explorer: "https://taostats.io/subnets/64" }),
 };
 
 /** All netuid values with curated metadata. */

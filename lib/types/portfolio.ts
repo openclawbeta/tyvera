@@ -51,4 +51,7 @@ export interface WatchlistItemModel {
   risk?: RiskLevel;
   momentum?: MomentumDirection;
   alert?: string;
+  reason?: string;
+  compareTargetNetuid?: number;
+  compareTargetName?: string;
 }

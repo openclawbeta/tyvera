@@ -31,7 +31,13 @@ export function WatchlistCard({ items }: WatchlistCardProps) {
               )}
             </div>
             {item.alert && (
-              <span className="text-[10px] text-amber-400/70">{item.alert}</span>
+              <span className="text-[10px] text-amber-400/70 block">{item.alert}</span>
+            )}
+            {item.reason && (
+              <span className="text-[10px] text-slate-500 line-clamp-2 block mt-0.5">{item.reason}</span>
+            )}
+            {item.compareTargetName && (
+              <span className="text-[10px] text-cyan-300/70 block mt-1">Compare vs {item.compareTargetName}</span>
             )}
           </div>
 

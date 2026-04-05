@@ -42,6 +42,7 @@ import {
   buildMomentum,
   deriveBreakeven,
   deriveYield,
+  deriveConfidence,
 } from "@/lib/data/subnets-real-helpers";
 import {
   CURATED_METADATA,
@@ -160,7 +161,8 @@ function mapTaoStatsRow(s: Record<string, unknown>): SubnetDetailModel {
   const yieldPct = deriveYield(emissionsPerDay, taoIn);
   const momentum = buildMomentum(yieldPct, 0);
   const risk     = deriveRisk(taoIn, stakers, 0);
-  const score    = deriveScore(taoIn, yieldPct, stakers, 0);
+  const score    = deriveScore(taoIn, yieldPct, stakers, 0, age);
+  const confidence = deriveConfidence(taoIn, stakers, 0, age);
 
   return {
     id:            `sn${netuid}`,
@@ -183,6 +185,7 @@ function mapTaoStatsRow(s: Record<string, unknown>): SubnetDetailModel {
     useCases:      meta.useCases,
     links:         meta.links,
     category:      meta.category,
+    confidence,
     momentum,
     isWatched:     false,
     breakeven:     deriveBreakeven(yieldPct),

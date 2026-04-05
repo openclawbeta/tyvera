@@ -11,6 +11,15 @@
 
 import type { RiskLevel } from "@/lib/types/subnets";
 
+export interface ScoreBreakdown {
+  liquidity: number;
+  yield: number;
+  participation: number;
+  stability: number;
+  maturity: number;
+  total: number;
+}
+
 /**
  * Derive risk level from subnet characteristics.
  *
@@ -34,9 +43,9 @@ export function deriveRisk(
 ): RiskLevel {
   const absΔ = Math.abs(yieldDelta7d);
 
-  if (liquidity >= 20000 && stakers >= 64 && absΔ < 6) return "LOW";
-  if (liquidity >= 5000 && stakers >= 24 && absΔ < 8) return "MODERATE";
-  if (liquidity >= 1000 && stakers >= 8 && absΔ < 12) return "HIGH";
+  if (liquidity >= 1_500_000 && stakers >= 180 && absΔ < 4) return "LOW";
+  if (liquidity >= 400_000 && stakers >= 96 && absΔ < 7) return "MODERATE";
+  if (liquidity >= 25_000 && stakers >= 24 && absΔ < 10) return "HIGH";
   return "SPECULATIVE";
 }
 
@@ -51,17 +60,51 @@ export function deriveRisk(
  *
  * ESTIMATED — replace with real scoring model in Phase 2.
  */
+export function deriveScoreBreakdown(
+  liquidity: number,
+  yieldPct: number,
+  stakers: number,
+  yieldDelta7d: number,
+  age = 180,
+): ScoreBreakdown {
+  const liquidityScore = Math.min(100, (liquidity / 2_500_000) * 100) * 0.34;
+  const yieldScore = Math.min(100, (yieldPct / 3.2) * 100) * 0.22;
+  const participationScore = Math.min(100, (stakers / 256) * 100) * 0.20;
+  const stabilityScore = Math.max(0, 100 - Math.abs(yieldDelta7d) * 7) * 0.14;
+  const maturityScore = Math.min(100, (age / 365) * 100) * 0.10;
+  const total = Math.round(liquidityScore + yieldScore + participationScore + stabilityScore + maturityScore);
+
+  return {
+    liquidity: Math.round(liquidityScore),
+    yield: Math.round(yieldScore),
+    participation: Math.round(participationScore),
+    stability: Math.round(stabilityScore),
+    maturity: Math.round(maturityScore),
+    total,
+  };
+}
+
 export function deriveScore(
   liquidity:    number,
   yieldPct:     number,
   stakers:      number,
   yieldDelta7d: number,
+  age = 180,
 ): number {
-  const liqScore   = Math.min(100, (liquidity / 15000) * 100) * 0.40;
-  const yieldScore = Math.min(100, (yieldPct  /    35) * 100) * 0.30;
-  const stakeScore = Math.min(100, (stakers   /  2000) * 100) * 0.20;
-  const stability  = Math.max(0,   100 - Math.abs(yieldDelta7d) * 5) * 0.10;
-  return Math.round(liqScore + yieldScore + stakeScore + stability);
+  return deriveScoreBreakdown(liquidity, yieldPct, stakers, yieldDelta7d, age).total;
+}
+
+export function deriveConfidence(
+  liquidity: number,
+  stakers: number,
+  yieldDelta7d: number,
+  age = 180,
+): number {
+  const liquidityConfidence = Math.min(100, (liquidity / 2_000_000) * 100) * 0.4;
+  const participationConfidence = Math.min(100, (stakers / 256) * 100) * 0.25;
+  const stabilityConfidence = Math.max(0, 100 - Math.abs(yieldDelta7d) * 6) * 0.2;
+  const maturityConfidence = Math.min(100, (age / 365) * 100) * 0.15;
+  return Math.round(liquidityConfidence + participationConfidence + stabilityConfidence + maturityConfidence);
 }
 
 /**
