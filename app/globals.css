@@ -48,11 +48,14 @@
     font-feature-settings: "cv11", "ss01", "ss03";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Prevent horizontal overflow on all screen sizes */
+    overflow-x: hidden;
   }
 
   html {
     color-scheme: dark;
     scroll-behavior: smooth;
+    overflow-x: hidden;
   }
 
   /* Ultra-thin scrollbar */
@@ -87,7 +90,7 @@
 
 @layer components {
 
-  /* ─── GLASS SURFACES ─────────────────────────────────────────── */
+  /* GLASS SURFACES */
   .glass {
     @apply rounded-2xl;
     background: linear-gradient(
@@ -129,7 +132,7 @@
     backdrop-filter: blur(24px) saturate(1.5);
   }
 
-  /* Panel — slightly warmer surface */
+  /* Panel */
   .panel {
     @apply rounded-2xl;
     background: rgba(11, 15, 28, 0.9);
@@ -139,7 +142,7 @@
       0 4px 24px rgba(0, 0, 0, 0.3);
   }
 
-  /* Elevated card — for callouts */
+  /* Elevated card */
   .card-elevated {
     @apply rounded-2xl;
     background: linear-gradient(
@@ -154,7 +157,7 @@
       0 8px 32px rgba(0, 0, 0, 0.4);
   }
 
-  /* ─── GRADIENT TEXT ──────────────────────────────────────────── */
+  /* GRADIENT TEXT */
   .text-gradient-cyan {
     @apply bg-clip-text text-transparent;
     background-image: linear-gradient(135deg, #67e8f9 0%, #22d3ee 45%, #38bdf8 100%);
@@ -175,7 +178,7 @@
     background-image: linear-gradient(135deg, #fde68a 0%, #f59e0b 50%, #fbbf24 100%);
   }
 
-  /* ─── SKELETON ───────────────────────────────────────────────── */
+  /* SKELETON */
   .skeleton {
     background: linear-gradient(
       90deg,
@@ -187,7 +190,7 @@
     @apply animate-shimmer rounded-lg;
   }
 
-  /* ─── NAVIGATION ─────────────────────────────────────────────── */
+  /* NAVIGATION */
   .nav-item {
     @apply flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium text-slate-500
     transition-all duration-200 cursor-pointer select-none relative;
@@ -214,11 +217,11 @@
     color: #22d3ee;
   }
 
-  /* ─── METRICS ────────────────────────────────────────────────── */
+  /* METRICS */
   .metric-up { @apply text-emerald-400; }
   .metric-down { @apply text-rose-400; }
 
-  /* ─── DATA TABLE ROWS ────────────────────────────────────────── */
+  /* DATA TABLE ROWS */
   .data-row {
     @apply border-b border-white/[0.035] transition-colors duration-150;
   }
@@ -241,7 +244,7 @@
     @apply text-xs text-slate-300 py-3 px-4;
   }
 
-  /* ─── BUTTONS ────────────────────────────────────────────────── */
+  /* BUTTONS */
   .btn-primary {
     @apply inline-flex items-center gap-2 rounded-xl font-semibold text-sm
     transition-all duration-200 cursor-pointer select-none;
@@ -309,7 +312,7 @@
     border-color: rgba(244, 63, 94, 0.3);
   }
 
-  /* ─── CYAN GLOW BORDER ───────────────────────────────────────── */
+  /* CYAN GLOW BORDER */
   .cyan-glow-border {
     box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.28), 0 0 24px rgba(34, 211, 238, 0.1);
   }
@@ -323,7 +326,7 @@
     background: rgba(34, 211, 238, 0.04) !important;
   }
 
-  /* ─── TAGS / BADGES ──────────────────────────────────────────── */
+  /* TAGS / BADGES */
   .tag {
     @apply inline-flex items-center gap-1.5 rounded-lg text-[10px] font-semibold;
     padding: 3px 8px;
@@ -337,13 +340,13 @@
   .tag-rose    { @apply tag bg-rose-400/[0.1] text-rose-300 border border-rose-400/[0.22]; }
   .tag-slate   { @apply tag bg-white/[0.05] text-slate-400 border border-white/[0.09]; }
 
-  /* ─── DIVIDER ────────────────────────────────────────────────── */
+  /* DIVIDER */
   .divider {
     @apply h-px w-full;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0.06) 70%, transparent);
   }
 
-  /* ─── GLOW ORBS ─────────────────────────────────────────────── */
+  /* GLOW ORBS */
   .glow-orb-cyan {
     background: radial-gradient(ellipse, rgba(34, 211, 238, 0.12) 0%, transparent 70%);
   }
@@ -353,7 +356,7 @@
   }
 }
 
-/* ─── PAGE TRANSITION ────────────────────────────────────────── */
+/* PAGE TRANSITION */
 .page-enter {
   animation: fadeInUp 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
@@ -363,7 +366,7 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ─── CHART OVERRIDES ────────────────────────────────────────── */
+/* CHART OVERRIDES */
 .recharts-tooltip-wrapper { outline: none !important; }
 .recharts-tooltip-cursor  { fill: rgba(255,255,255,0.03) !important; }
 .recharts-cartesian-grid-horizontal line,
@@ -371,7 +374,7 @@
   stroke: rgba(255,255,255,0.035) !important;
 }
 
-/* ─── NOISE TEXTURE OVERLAY ──────────────────────────────────── */
+/* NOISE TEXTURE OVERLAY */
 .noise::after {
   content: "";
   position: absolute;
@@ -381,4 +384,4 @@
   pointer-events: none;
   border-radius: inherit;
   opacity: 0.5;
-}
+  }
