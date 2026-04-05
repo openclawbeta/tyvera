@@ -69,6 +69,24 @@ interface SubtensorPayload {
   subnets: SubnetDetailModel[];
 }
 
+function hydrateSubnetMetadata(subnet: SubnetDetailModel): SubnetDetailModel {
+  const sourceName = subnet.name?.startsWith("SN{") ? undefined : subnet.name;
+  const sourceSymbol = subnet.symbol?.startsWith("SN{") ? undefined : subnet.symbol;
+  const meta = CURATED_METADATA[subnet.netuid] ?? buildFallbackMeta(subnet.netuid, sourceName, sourceSymbol);
+
+  return {
+    ...subnet,
+    name: subnet.name && !subnet.name.includes("{") ? subnet.name : meta.name,
+    symbol: subnet.symbol && !subnet.symbol.includes("{") ? subnet.symbol : meta.symbol,
+    description: subnet.description || meta.description,
+    summary: subnet.summary ?? meta.summary,
+    thesis: subnet.thesis ?? meta.thesis,
+    useCases: subnet.useCases ?? meta.useCases,
+    links: subnet.links ?? meta.links,
+    category: subnet.category || meta.category,
+  };
+}
+
 function readSubtensorSnapshot(netuidFilter?: number): {
   subnets: SubnetDetailModel[];
   ageSeconds: number;
@@ -94,9 +112,9 @@ function readSubtensorSnapshot(netuidFilter?: number): {
       return null;
     }
 
-    const subnets = netuidFilter != null
+    const subnets = (netuidFilter != null
       ? payload.subnets.filter((s) => s.netuid === netuidFilter)
-      : payload.subnets;
+      : payload.subnets).map(hydrateSubnetMetadata);
 
     return { subnets, ageSeconds, isStale };
   } catch {
@@ -160,6 +178,10 @@ function mapTaoStatsRow(s: Record<string, unknown>): SubnetDetailModel {
     emissions:     +emissionsPerDay.toFixed(3),
     validatorTake,
     description:   meta.description,
+    summary:       meta.summary,
+    thesis:        meta.thesis,
+    useCases:      meta.useCases,
+    links:         meta.links,
     category:      meta.category,
     momentum,
     isWatched:     false,

@@ -25,10 +25,23 @@ export interface SubnetCardModel {
   age: number;
 }
 
+export interface SubnetLinkSet {
+  website?: string;
+  docs?: string;
+  github?: string;
+  x?: string;
+  discord?: string;
+  explorer?: string;
+}
+
 export interface SubnetDetailModel extends SubnetCardModel {
   validatorConcentration?: number;
   volatility?: number;
   confidence?: number;
+  summary?: string;
+  thesis?: string[];
+  useCases?: string[];
+  links?: SubnetLinkSet;
 }
 
 export interface TimeSeriesPoint {

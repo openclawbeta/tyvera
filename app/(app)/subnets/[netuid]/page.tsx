@@ -21,6 +21,12 @@ import {
   Clock,
   Activity,
   Layers,
+  Globe,
+  BookOpen,
+  Github,
+  MessageSquare,
+  ExternalLink,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { getSubnetByNetuid, fetchSubnetByNetuid } from "@/lib/api/subnets";
@@ -248,6 +254,14 @@ export default function SubnetDetailPage() {
 
   const yieldTrend  = yieldData[yieldData.length - 1].value - yieldData[0].value;
   const inflowTrend = inflowData[inflowData.length - 1].value;
+  const subnetLinks = [
+    subnet.links?.website ? { label: "Website", href: subnet.links.website, icon: Globe } : null,
+    subnet.links?.docs ? { label: "Docs", href: subnet.links.docs, icon: BookOpen } : null,
+    subnet.links?.github ? { label: "GitHub", href: subnet.links.github, icon: Github } : null,
+    subnet.links?.x ? { label: "X", href: subnet.links.x, icon: MessageSquare } : null,
+    subnet.links?.discord ? { label: "Discord", href: subnet.links.discord, icon: MessageSquare } : null,
+    subnet.links?.explorer ? { label: "Explorer", href: subnet.links.explorer, icon: ExternalLink } : null,
+  ].filter(Boolean) as Array<{ label: string; href: string; icon: typeof Globe }>;
 
   return (
     <div className="max-w-[1100px] mx-auto space-y-6">
@@ -283,7 +297,7 @@ export default function SubnetDetailPage() {
           }}
         />
 
-        <div className="relative flex flex-wrap items-start justify-between gap-6">
+        <div className="relative flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
           {/* Left: identity */}
           <div className="flex items-start gap-5">
             {/* Logo */}
@@ -349,14 +363,36 @@ export default function SubnetDetailPage() {
               </div>
 
               {/* Description */}
-              <p className="text-[13px] text-slate-400 leading-relaxed max-w-xl">
-                {subnet.description}
+              <p className="text-[13px] text-slate-400 leading-relaxed max-w-2xl">
+                {subnet.summary ?? subnet.description}
               </p>
+
+              {subnetLinks.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4 max-w-2xl">
+                  {subnetLinks.map(({ label, href, icon: Icon }) => (
+                    <a
+                      key={`${label}-${href}`}
+                      href={href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-colors duration-150"
+                      style={{
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        color: "#cbd5e1",
+                      }}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {label}
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Right: headline metric + actions */}
-          <div className="flex flex-col items-end gap-4 flex-shrink-0">
+          <div className="flex w-full flex-col gap-4 xl:w-auto xl:items-end xl:text-right">
             <div className="text-right">
               <div
                 className="font-black text-white tabular-nums leading-none"
@@ -374,7 +410,7 @@ export default function SubnetDetailPage() {
             </div>
 
             {/* Action buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 xl:justify-end">
               <button
                 className="flex items-center gap-2 rounded-xl text-[12px] font-medium px-4 py-2 transition-all duration-200"
                 style={{
@@ -474,6 +510,105 @@ export default function SubnetDetailPage() {
               suffix=" τ"
               height={72}
             />
+          </div>
+        </div>
+      </FadeIn>
+
+      {/* ── Intelligence row: thesis + use cases ── */}
+      <FadeIn delay={0.18}>
+        <div className="grid grid-cols-12 gap-5">
+          <div className="col-span-12 lg:col-span-7">
+            <div
+              className="rounded-2xl p-6 h-full"
+              style={{
+                background: "rgba(255,255,255,0.018)",
+                border: "1px solid rgba(255,255,255,0.065)",
+                boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 20px rgba(0,0,0,0.24)",
+              }}
+            >
+              <div className="flex items-center gap-2 mb-5">
+                <div
+                  className="w-7 h-7 rounded-xl flex items-center justify-center"
+                  style={{
+                    background: "rgba(34,211,238,0.1)",
+                    border: "1px solid rgba(34,211,238,0.2)",
+                  }}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-300" />
+                </div>
+                <span className="font-bold text-slate-300 uppercase" style={{ fontSize: "10px", letterSpacing: "0.1em" }}>
+                  Tyvera Readout
+                </span>
+              </div>
+
+              <p className="text-[13px] text-slate-400 leading-relaxed mb-5">
+                {subnet.description}
+              </p>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 mb-2">Why this subnet matters</div>
+                  <div className="space-y-2.5">
+                    {(subnet.thesis ?? [
+                      "Check emissions efficiency, liquidity depth, and subnet age before treating the yield at face value.",
+                      "Look for consistency between the operator story and the live on-chain metrics.",
+                      "Use this subnet as part of a category comparison rather than in isolation.",
+                    ]).map((point) => (
+                      <div key={point} className="flex items-start gap-2.5">
+                        <div className="w-1.5 h-1.5 rounded-full mt-1.5 bg-cyan-400 flex-shrink-0" />
+                        <p className="text-[12px] text-slate-400 leading-relaxed">{point}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 mb-2">What it can be used for</div>
+                  <div className="flex flex-wrap gap-2">
+                    {(subnet.useCases ?? ["Subnet research", "Allocator watchlist", "Category benchmarking"]).map((item) => (
+                      <span
+                        key={item}
+                        className="rounded-lg px-2.5 py-1.5 text-[11px] font-medium"
+                        style={{
+                          background: "rgba(255,255,255,0.04)",
+                          border: "1px solid rgba(255,255,255,0.07)",
+                          color: "#cbd5e1",
+                        }}
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-span-12 lg:col-span-5">
+            <div
+              className="rounded-2xl p-6 h-full"
+              style={{
+                background: "rgba(255,255,255,0.018)",
+                border: "1px solid rgba(255,255,255,0.065)",
+                boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 20px rgba(0,0,0,0.24)",
+              }}
+            >
+              <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500 mb-4">Research checklist</div>
+              <div className="space-y-3">
+                {[
+                  `Liquidity depth: ${subnet.liquidity.toLocaleString()} τ`,
+                  `Emissions: ${subnet.emissions} τ/day`,
+                  `Age: ${subnet.age} days live`,
+                  `Risk band: ${subnet.risk}`,
+                  subnet.links?.explorer ? "Open TaoStats explorer for operator-level follow-up" : "Use Tyvera metrics and external explorers for operator validation",
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-2.5">
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-[12px] text-slate-400 leading-relaxed">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </FadeIn>

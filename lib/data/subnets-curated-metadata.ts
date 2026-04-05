@@ -25,6 +25,17 @@ export interface SubnetMeta {
   name:        string;
   symbol:      string;
   description: string;
+  summary?:    string;
+  thesis?:     string[];
+  useCases?:   string[];
+  links?: {
+    website?: string;
+    docs?: string;
+    github?: string;
+    x?: string;
+    discord?: string;
+    explorer?: string;
+  };
   /** Must be one of the values in SUBNET_CATEGORIES (lib/constants/subnets.ts) */
   category:    string;
 }
@@ -47,6 +58,20 @@ export function buildFallbackMeta(
       `Bittensor subnet SN${netuid} (${name}). Metrics are sourced live from ` +
       `the TaoStats API. No curated description is available yet — ` +
       `visit taostats.io/subnets/${netuid} for details.`,
+    summary: `SN${netuid} is currently an uncurated subnet in Tyvera's dataset. Use TaoStats and on-chain metrics to validate operator quality, liquidity, and emissions before allocating.`,
+    thesis: [
+      "Treat this subnet as research-first until official docs and operator links are verified.",
+      "Use live liquidity, emissions, age, and staker concentration as your first trust signals.",
+      "Compare the subnet against neighbors in the same category before allocating TAO.",
+    ],
+    useCases: [
+      "Track emissions and liquidity changes over time.",
+      "Benchmark newer subnet launches against established peers.",
+      "Use as a discovery surface before deeper operator research.",
+    ],
+    links: {
+      explorer: `https://taostats.io/subnets/${netuid}`,
+    },
     category: "Infrastructure", // safe default; matches existing UI filter set
   };
 }
@@ -68,6 +93,23 @@ export const CURATED_METADATA: Record<number, SubnetMeta> = {
       "The original Bittensor text-inference subnet. Miners compete to produce " +
       "best responses to LLM queries using state-of-the-art open-source models. " +
       "Established, high-liquidity, and a benchmark for subnet performance across the network.",
+    summary:
+      "Apex is the oldest flagship Bittensor subnet and the easiest baseline for comparing newer subnet quality, emissions, and capital efficiency.",
+    thesis: [
+      "Acts as a benchmark subnet for the wider Bittensor economy.",
+      "High awareness and maturity make it a reference point for allocator trust.",
+      "Useful when comparing newer, higher-volatility subnets against a more established peer.",
+    ],
+    useCases: [
+      "LLM text inference",
+      "Benchmarking subnet maturity",
+      "Comparing allocator preference shifts across the network",
+    ],
+    links: {
+      website: "https://apex.opentensor.ai",
+      docs: "https://docs.bittensor.com",
+      explorer: "https://taostats.io/subnets/1",
+    },
     category: "Language",
   },
   3: {
@@ -101,6 +143,23 @@ export const CURATED_METADATA: Record<number, SubnetMeta> = {
       "analyze data across multiple asset classes to deliver sophisticated " +
       "trading signals and predictions. Democratizes access to institutional-grade " +
       "algorithmic trading intelligence via Bittensor incentives.",
+    summary:
+      "Taoshi is one of the clearest finance-native Bittensor subnets, aimed at market prediction and signal generation rather than generic AI workloads.",
+    thesis: [
+      "Finance positioning makes it easy for allocators to understand the value proposition.",
+      "Useful as a sector-specific subnet rather than a general infrastructure bet.",
+      "Should be evaluated on both emissions quality and whether the operator narrative continues to attract stake.",
+    ],
+    useCases: [
+      "Market prediction models",
+      "Signal generation",
+      "Finance-focused subnet allocation research",
+    ],
+    links: {
+      website: "https://taoshi.io",
+      github: "https://github.com/taoshidev/time-series-prediction-subnet",
+      explorer: "https://taostats.io/subnets/8",
+    },
     category: "Finance",
   },
   9: {
@@ -131,6 +190,22 @@ export const CURATED_METADATA: Record<number, SubnetMeta> = {
       "Bittensor's decentralized data layer by Macrocosmos. Miners collect and " +
       "store fresh, high-value data from across the web for use by other subnets. " +
       "Built with a focus on decentralization, scalability, and data freshness.",
+    summary:
+      "Data Universe is a core data-supply subnet: if Bittensor needs fresh data pipelines, this is one of the clearest infrastructure stories to watch.",
+    thesis: [
+      "Data collection is foundational for many higher-level AI subnets.",
+      "Operator quality matters because freshness and reliability are the product.",
+      "Useful to compare against other data and retrieval-oriented subnets for long-term stickiness.",
+    ],
+    useCases: [
+      "Web-scale data collection",
+      "Dataset freshness pipelines",
+      "Infrastructure research inside the Bittensor stack",
+    ],
+    links: {
+      github: "https://github.com/macrocosm-os/data-universe",
+      explorer: "https://taostats.io/subnets/13",
+    },
     category: "Data",
   },
   14: {
@@ -191,6 +266,22 @@ export const CURATED_METADATA: Record<number, SubnetMeta> = {
       "Leading decentralized AI inference API subnet by Nineteen.ai. Provides " +
       "scalable access to frontier open-source models including LLaMA 3, Stable " +
       "Diffusion derivatives, and others. API-ready for enterprise integration.",
+    summary:
+      "Nineteen is one of the clearest API-product subnets in Bittensor, making it easier to evaluate as a real usage story rather than a vague research narrative.",
+    thesis: [
+      "Strong product framing helps convert subnet metrics into a business story.",
+      "API accessibility can make allocator conviction easier than with abstract infrastructure plays.",
+      "Worth monitoring for sustained emissions efficiency and continued relevance in inference demand.",
+    ],
+    useCases: [
+      "AI inference APIs",
+      "Enterprise model access",
+      "Open-source model serving",
+    ],
+    links: {
+      website: "https://nineteen.ai",
+      explorer: "https://taostats.io/subnets/19",
+    },
     category: "Language",
   },
   20: {
@@ -271,6 +362,22 @@ export const CURATED_METADATA: Record<number, SubnetMeta> = {
       "Verifiable distributed supercomputing by NeuralInternet. Miners provide " +
       "GPU and CPU compute resources with cryptographic verification of task " +
       "execution. A general-purpose decentralized compute layer for Bittensor.",
+    summary:
+      "Compute is a pure infrastructure subnet bet: broad addressable utility, but it needs durable operator execution and sustained demand to justify allocator attention.",
+    thesis: [
+      "General-purpose compute is strategically important across the Bittensor ecosystem.",
+      "Competition is intense because multiple subnets can make a compute-like pitch.",
+      "Best evaluated through emissions efficiency, liquidity depth, and ability to stay relevant versus newer compute entrants.",
+    ],
+    useCases: [
+      "Distributed compute",
+      "Verified task execution",
+      "Infrastructure comparison against other compute-heavy subnets",
+    ],
+    links: {
+      github: "https://github.com/neuralinternet/compute-subnet",
+      explorer: "https://taostats.io/subnets/27",
+    },
     category: "Infrastructure",
   },
   28: {

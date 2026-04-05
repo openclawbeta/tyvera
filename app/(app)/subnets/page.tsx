@@ -107,7 +107,7 @@ export default function SubnetsPage() {
               No subnets match your filters.
             </div>
           ) : (
-            <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               {filtered.map((subnet, i) => (
                 <SubnetCard
                   key={subnet.id}

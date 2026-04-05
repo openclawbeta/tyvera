@@ -29,12 +29,12 @@ export default function DashboardPage() {
     <div className="max-w-[1400px] mx-auto space-y-7">
 
       {/* ââ Header ââ */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader
           title="Dashboard"
           subtitle="Your Bittensor portfolio at a glance"
         />
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button className="btn-ghost gap-1.5">
             <RefreshCw className="w-3.5 h-3.5" />
             Refresh
@@ -50,7 +50,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ââ Stat Cards ââ */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard
           label="Total Staked"
           value={`${portfolioStats.totalStakedTao.toFixed(2)} Ï`}

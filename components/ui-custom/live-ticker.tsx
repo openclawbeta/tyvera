@@ -43,7 +43,7 @@ export function LiveTicker() {
   const items = [...TICKER_ITEMS, ...TICKER_ITEMS];
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 min-w-0 w-full">
       {/* Live indicator */}
       <div className="flex items-center gap-1.5 flex-shrink-0 pr-3" style={{ borderRight: "1px solid rgba(255,255,255,0.07)" }}>
         <span
@@ -59,8 +59,8 @@ export function LiveTicker() {
       </div>
 
       {/* Scrolling strip */}
-      <div className="flex-1 overflow-hidden">
-        <div className="flex animate-ticker-move whitespace-nowrap">
+      <div className="flex-1 overflow-hidden min-w-0">
+        <div className="ticker-track inline-flex min-w-max whitespace-nowrap will-change-transform">
           {items.map((item, i) => (
             <TickerItem
               key={i}
