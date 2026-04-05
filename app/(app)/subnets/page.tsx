@@ -13,10 +13,14 @@ export default function SubnetsPage() {
   // without a loading state. The useEffect below upgrades to live data
   // (full ~128-subnet list) from /api/subnets once the component mounts.
   const [subnets, setSubnets] = useState<SubnetDetailModel[]>(() => getSubnets());
+  const [totalSubnets, setTotalSubnets] = useState<number>(() => getSubnets().length);
 
   useEffect(() => {
     fetchSubnetsFromApi()
-      .then((data) => setSubnets(data))
+      .then((data) => {
+        setSubnets(data);
+        setTotalSubnets(data.length);
+      })
       .catch(() => {}); // silent: static snapshot is already displayed
   }, []);
 
@@ -59,10 +63,10 @@ export default function SubnetsPage() {
     <div className="max-w-[1400px] mx-auto">
       <PageHeader
         title="Subnet Explorer"
-        subtitle={`${subnets.length} subnets · scored, ranked, and filtered`}
+        subtitle={`${totalSubnets} subnets · scored, ranked, and filtered`}
       >
         <div className="text-xs text-slate-500">
-          Showing <span className="text-white font-semibold">{filtered.length}</span> of {subnets.length}
+          Showing <span className="text-white font-semibold">{filtered.length}</span> of {totalSubnets}
         </div>
       </PageHeader>
 
