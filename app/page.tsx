@@ -97,7 +97,7 @@ export default function HomePage() {
             </span>
           </Link>
 
-          <div className="flex items-center gap-1">
+          <div className="hidden lg:flex items-center gap-1">
             {["Dashboard", "Subnets", "Pricing"].map((label, i) => {
               const hrefs = ["/dashboard", "/subnets", "/billing"];
               return (
@@ -225,7 +225,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="flex items-center gap-3 justify-center mb-10"
+            className="flex flex-wrap items-center gap-3 justify-center mb-10"
           >
             <Link href="/dashboard">
               <button
@@ -308,7 +308,7 @@ export default function HomePage() {
             </div>
           </FadeIn>
 
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
               { netuid: 49, name: "Protein Folding", yield: "26.7%", score: 88, risk: "LOW",  delta: "+0.4%", liquidity: "13,800 τ", grad: "from-cyan-500 to-blue-600",    accent: "#22d3ee" },
               { netuid: 1,  name: "Text Prompting",  yield: "24.3%", score: 84, risk: "LOW",  delta: "+1.2%", liquidity: "12,400 τ", grad: "from-violet-500 to-purple-700", accent: "#8b5cf6" },
@@ -390,7 +390,7 @@ export default function HomePage() {
             </div>
           </FadeIn>
 
-          <div className="grid grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {STEPS.map((step, i) => (
               <FadeIn key={step.n} delay={i * 0.1}>
                 <div className="relative">
@@ -439,7 +439,7 @@ export default function HomePage() {
             </div>
           </FadeIn>
 
-          <div className="grid grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {FEATURES.map((f, i) => {
               const Icon = f.icon;
               return (
@@ -514,7 +514,7 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 relative">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative">
                 {TRUST.map(({ icon: Icon, text, sub }) => (
                   <div
                     key={text}
@@ -586,7 +586,7 @@ export default function HomePage() {
               Unlock full subnet analytics, the recommendation engine, and assisted reallocation.
               <br />Pay in TAO. Extend anytime. No auto-renewal.
             </p>
-            <div className="flex gap-4 justify-center">
+            <div className="flex flex-wrap gap-4 justify-center">
               <Link href="/billing">
                 <button
                   className="flex items-center gap-2 rounded-xl font-semibold px-8 py-3.5 text-[14px] transition-all duration-200"
@@ -622,7 +622,7 @@ export default function HomePage() {
 
       {/* ── FOOTER ──────────────────────────────────────────────────── */}
       <footer style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: "40px 32px" }}>
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+        <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <div
               className="w-6 h-6 rounded-lg flex items-center justify-center"
@@ -633,7 +633,7 @@ export default function HomePage() {
             <span className="text-[13px] font-semibold text-slate-600">Tyvera</span>
           </div>
           <p className="text-[11px] text-slate-700">Not financial advice. You approve every move.</p>
-          <div className="flex gap-5">
+          <div className="flex flex-wrap gap-5">
             {["Docs", "Privacy", "Terms"].map((l) => (
               <a
                 key={l}
