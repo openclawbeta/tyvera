@@ -77,7 +77,7 @@ export default function SubnetsPage() {
       <PageHeader
         title="Subnet Explorer"
         subtitle={liveLoaded
-          ? `${totalSubnets} subnets · scored, ranked, and filtered`
+          ? `${totalSubnets} subnets Â· scored, ranked, and filtered`
           : "Scored, ranked, and filtered across the subnet universe"}
       >
         <div className="text-xs text-slate-500">
@@ -86,12 +86,12 @@ export default function SubnetsPage() {
               Showing <span className="text-white font-semibold">{filtered.length}</span> of {totalSubnets}
             </>
           ) : (
-            <>Loading live subnet totals…</>
+            <>Loading live subnet totalsâ¦</>
           )}
         </div>
       </PageHeader>
 
-      <div className="flex gap-5">
+      <div className="flex flex-col lg:flex-row gap-5">
         {/* Left filter rail */}
         <SubnetFilterPanel
           search={search}     onSearch={setSearch}
@@ -122,7 +122,7 @@ export default function SubnetsPage() {
         </div>
 
         {/* Right detail preview */}
-        <div className="w-72 flex-shrink-0 sticky top-20 h-[calc(100vh-7rem)]">
+        <div className="w-full lg:w-72 flex-shrink-0 lg:sticky lg:top-20 lg:h-[calc(100vh-7rem)]">
           <SubnetDetailPreview subnet={selected} />
         </div>
       </div>
