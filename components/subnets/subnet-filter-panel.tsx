@@ -38,7 +38,7 @@ export function SubnetFilterPanel({
   sortBy, onSort,
 }: SubnetFilterPanelProps) {
   return (
-    <div className="w-52 flex-shrink-0 space-y-5">
+    <div className="w-full lg:w-52 flex-shrink-0 space-y-5">
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
@@ -46,7 +46,7 @@ export function SubnetFilterPanel({
           type="text"
           value={search}
           onChange={(e) => onSearch(e.target.value)}
-          placeholder="Search subnets…"
+          placeholder="Search subnetsâ¦"
           className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-white/[0.07] bg-white/[0.03] text-sm text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-cyan-400/40 transition-colors"
         />
       </div>
