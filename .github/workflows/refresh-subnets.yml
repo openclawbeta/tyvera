@@ -38,9 +38,9 @@
 name: Refresh Subnet Snapshot
 
 on:
-  # Automatic: every 20 minutes around the clock
-  schedule:
-    - cron: '*/20 * * * *'
+  # DISABLED — schedule paused while tao_in extraction fix is validated
+  # schedule:
+  #   - cron: '*/20 * * * *'
 
   # Manual: trigger from GitHub Actions UI with optional network override
   workflow_dispatch:
