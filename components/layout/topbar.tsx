@@ -1,17 +1,20 @@
 "use client";
 
-import { Search, Bell, Settings } from "lucide-react";
+import { Search, Bell, Settings, Menu } from "lucide-react";
 import { LiveTicker } from "@/components/ui-custom/live-ticker";
 import { WalletStatusChip } from "@/components/wallet/wallet-status-chip";
 import { WalletConnectModal } from "@/components/wallet/wallet-connect-modal";
 import { WalletApprovalDialog } from "@/components/wallet/wallet-approval-dialog";
+import { useSidebar } from "@/lib/sidebar-context";
 import Link from "next/link";
 
 export function Topbar() {
+  const { toggle } = useSidebar();
+
   return (
     <>
       <header
-        className="fixed top-0 right-0 left-60 h-[52px] z-30 flex items-center px-5 gap-4"
+        className="fixed top-0 right-0 left-0 lg:left-60 h-[52px] z-30 flex items-center px-4 gap-3"
         style={{
           background: "rgba(7,10,18,0.88)",
           borderBottom: "1px solid rgba(255,255,255,0.048)",
@@ -19,6 +22,24 @@ export function Topbar() {
           WebkitBackdropFilter: "blur(20px) saturate(1.6)",
         }}
       >
+        {/* Hamburger — mobile only */}
+        <button
+          onClick={toggle}
+          className="lg:hidden w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200"
+          style={{ color: "#64748b" }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)";
+            (e.currentTarget as HTMLElement).style.color = "#94a3b8";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.background = "transparent";
+            (e.currentTarget as HTMLElement).style.color = "#64748b";
+          }}
+          aria-label="Toggle menu"
+        >
+          <Menu className="w-4 h-4" />
+        </button>
+
         {/* Live ticker */}
         <div className="flex-1 overflow-hidden min-w-0">
           <LiveTicker />
@@ -27,9 +48,9 @@ export function Topbar() {
         {/* Right controls */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
 
-          {/* Search */}
+          {/* Search — hidden on smallest screens */}
           <button
-            className="flex items-center gap-2 transition-all duration-200"
+            className="hidden sm:flex items-center gap-2 transition-all duration-200"
             style={{
               padding: "5px 12px",
               borderRadius: "10px",
@@ -88,8 +109,8 @@ export function Topbar() {
             />
           </button>
 
-          {/* Settings link */}
-          <Link href="/settings">
+          {/* Settings link — hidden on mobile (accessible via sidebar) */}
+          <Link href="/settings" className="hidden sm:block">
             <button
               className="relative w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200"
               style={{ color: "#64748b" }}
@@ -107,9 +128,9 @@ export function Topbar() {
           </Link>
 
           {/* Divider */}
-          <div className="w-px h-4 mx-0.5" style={{ background: "rgba(255,255,255,0.07)" }} />
+          <div className="w-px h-4 mx-0.5 hidden sm:block" style={{ background: "rgba(255,255,255,0.07)" }} />
 
-          {/* Wallet status chip — live state */}
+          {/* Wallet status chip */}
           <WalletStatusChip />
 
           {/* Divider */}
@@ -136,7 +157,7 @@ export function Topbar() {
         </div>
       </header>
 
-      {/* Wallet modals — rendered at topbar level so they portal above everything */}
+      {/* Wallet modals */}
       <WalletConnectModal />
       <WalletApprovalDialog />
     </>
