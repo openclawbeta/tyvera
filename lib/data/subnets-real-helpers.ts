@@ -14,11 +14,18 @@ import type { RiskLevel } from "@/lib/types/subnets";
 /**
  * Derive risk level from subnet characteristics.
  *
- * Thresholds (heuristic — adjust as the ecosystem matures):
- *   LOW         liquidity ≥ 8 000τ  AND stakers ≥ 500
- *   MODERATE    liquidity ≥ 3 000τ  AND stakers ≥ 150 AND |yieldDelta7d| < 5 %
- *   HIGH        liquidity < 3 000τ  OR  stakers < 150  OR  |yieldDelta7d| ≥ 5 %
- *   SPECULATIVE liquidity < 1 500τ  OR  stakers < 80   OR  |yieldDelta7d| ≥ 8 %
+ * Phase 3 recalibration for full-network Subtensor data:
+ * - The live chain dataset has many subnets with small validator/miner counts,
+ *   so the original curated-snapshot thresholds collapsed nearly everything
+ *   into SPECULATIVE.
+ * - These thresholds are intentionally broader so the full network distributes
+ *   across LOW / MODERATE / HIGH / SPECULATIVE in a way that is still legible.
+ *
+ * Heuristic bands:
+ *   LOW         liquidity ≥ 20 000τ AND stakers ≥ 64
+ *   MODERATE    liquidity ≥ 5 000τ  AND stakers ≥ 24 AND |yieldDelta7d| < 8 %
+ *   HIGH        liquidity ≥ 1 000τ  AND stakers ≥ 8
+ *   SPECULATIVE everything below the above thresholds or very high volatility
  */
 export function deriveRisk(
   liquidity:    number,
@@ -26,10 +33,11 @@ export function deriveRisk(
   yieldDelta7d: number,
 ): RiskLevel {
   const absΔ = Math.abs(yieldDelta7d);
-  if (liquidity >= 8000 && stakers >= 500)                          return "LOW";
-  if (liquidity >= 3000 && stakers >= 150 && absΔ < 5)             return "MODERATE";
-  if (liquidity < 1500  || stakers < 80   || absΔ >= 8)            return "SPECULATIVE";
-  return "HIGH";
+
+  if (liquidity >= 20000 && stakers >= 64 && absΔ < 6) return "LOW";
+  if (liquidity >= 5000 && stakers >= 24 && absΔ < 8) return "MODERATE";
+  if (liquidity >= 1000 && stakers >= 8 && absΔ < 12) return "HIGH";
+  return "SPECULATIVE";
 }
 
 /**
