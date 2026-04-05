@@ -283,7 +283,7 @@ export default function SubnetDetailPage() {
           }}
         />
 
-        <div className="relative flex items-start justify-between gap-6">
+        <div className="relative flex flex-wrap items-start justify-between gap-6">
           {/* Left: identity */}
           <div className="flex items-start gap-5">
             {/* Logo */}
@@ -406,7 +406,7 @@ export default function SubnetDetailPage() {
 
       {/* ── Key metrics grid ── */}
       <StaggerContainer>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
           {[
             { label: "Liquidity",      value: `${subnet.liquidity.toLocaleString()} τ`, sub: "total staked",        accent: "cyan"    as const },
             { label: "Daily Emissions", value: `${subnet.emissions} τ`,                  sub: "per day avg",        accent: "violet"  as const },
@@ -419,7 +419,7 @@ export default function SubnetDetailPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
           {([
             {
               label: "7d Net Inflow",
@@ -442,7 +442,7 @@ export default function SubnetDetailPage() {
       <FadeIn delay={0.15}>
         <div className="grid grid-cols-12 gap-5">
           {/* Yield history — wide */}
-          <div className="col-span-8">
+          <div className="col-span-12 lg:col-span-8">
             <ChartPanel
               title="Yield History"
               label="30-day trend"
@@ -455,7 +455,7 @@ export default function SubnetDetailPage() {
           </div>
 
           {/* Emissions — narrow */}
-          <div className="col-span-4 flex flex-col gap-5">
+          <div className="col-span-12 lg:col-span-4 flex flex-col gap-5">
             <ChartPanel
               title="Daily Emissions"
               label="30d avg"
@@ -483,7 +483,7 @@ export default function SubnetDetailPage() {
         <div className="grid grid-cols-12 gap-5">
 
           {/* Recommendation insight */}
-          <div className="col-span-7">
+          <div className="col-span-12 lg:col-span-7">
             {relatedRec ? (
               <div
                 className="rounded-2xl p-6 h-full"
@@ -626,7 +626,7 @@ export default function SubnetDetailPage() {
           </div>
 
           {/* Trust card */}
-          <div className="col-span-5">
+          <div className="col-span-12 lg:col-span-5">
             <div
               className="rounded-2xl p-6 h-full"
               style={{
