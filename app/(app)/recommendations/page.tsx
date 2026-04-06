@@ -25,7 +25,7 @@ const BAND_META = {
     border: "rgba(34,211,238,0.28)", bg: "rgba(34,211,238,0.04)",
     scoreClr: "#22d3ee",
     scoreBg: "rgba(34,211,238,0.1)", scoreBdr: "rgba(34,211,238,0.22)",
-    cardShadow: "0 0 0 1px rgba(34,211,238,0.1), 0 0 40px rgba(34,211,238,0.06), inset 0 1px 0 rgba(255,255,255,0.04)",
+    cardShadow: "0 0 22px rgba(34,211,238,0.05), inset 0 1px 0 rgba(255,255,255,0.04)",
   },
   MODERATE: {
     dot: "#fbbf24", dotGlow: "rgba(251,191,36,0.5)",
@@ -405,17 +405,9 @@ function PrimaryBlock({
             style={{
               background: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
               color: "#04060d",
-              boxShadow: "0 0 0 1px rgba(34,211,238,0.35), 0 4px 14px rgba(34,211,238,0.18), inset 0 1px 0 rgba(255,255,255,0.2)",
+              boxShadow: "0 2px 8px rgba(34,211,238,0.14), inset 0 1px 0 rgba(255,255,255,0.18)",
             }}
             onClick={onReview}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.boxShadow =
-                "0 0 0 1px rgba(34,211,238,0.5), 0 6px 18px rgba(34,211,238,0.25), inset 0 1px 0 rgba(255,255,255,0.25)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.boxShadow =
-                "0 0 0 1px rgba(34,211,238,0.35), 0 4px 14px rgba(34,211,238,0.18), inset 0 1px 0 rgba(255,255,255,0.2)";
-            }}
           >
             <Zap className="w-3.5 h-3.5" />
             Review & Submit

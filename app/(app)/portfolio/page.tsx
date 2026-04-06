@@ -28,7 +28,7 @@ export default function PortfolioPage() {
   const diversScore = portfolioStats.diversificationScore;
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-5">
+    <div className="max-w-[1400px] mx-auto space-y-6">
       <PageHeader
         title="Portfolio"
         subtitle="Your staked TAO positions and performance"
@@ -68,14 +68,10 @@ export default function PortfolioPage() {
                 value: `$${portfolioStats.totalValueUsd.toLocaleString()}`,
                 delta: null,
               },
-            ].map(({ label, value, delta }, i) => (
+            ].map(({ label, value, delta }) => (
               <div
                 key={label}
-                className="px-5 py-4"
-                style={{
-                  paddingLeft:  i === 0 ? 0     : undefined,
-                  paddingRight: i === 3 ? 0     : undefined,
-                }}
+                className="px-5 py-4 first:pl-0 last:pr-0"
               >
                 <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-[0.08em] mb-2">
                   {label}
@@ -103,6 +99,7 @@ export default function PortfolioPage() {
               <SectionTitle
                 title="Allocation"
                 subtitle={`${allocations.length} active positions`}
+                className="mb-4"
               />
               <AllocationChartCard allocations={allocations} />
             </GlassCard>
@@ -110,7 +107,7 @@ export default function PortfolioPage() {
 
           <FadeIn delay={0.1}>
             <GlassCard>
-              <SectionTitle title="Portfolio value" subtitle="30-day trend" />
+              <SectionTitle title="Portfolio value" subtitle="30-day trend" className="mb-4" />
               <SimpleLineChart
                 data={history.value}
                 color="#22d3ee"
@@ -129,7 +126,7 @@ export default function PortfolioPage() {
           {/* Summary + risk posture */}
           <FadeIn delay={0.08}>
             <GlassCard>
-              <SectionTitle title="Summary" />
+              <SectionTitle title="Summary" className="mb-4" />
               <div className="space-y-0">
                 {[
                   { label: "Positions",         value: `${allocations.length} subnets`                              },
@@ -238,7 +235,7 @@ export default function PortfolioPage() {
       {/* ── Holdings — full width ───────────────────────────────────── */}
       <FadeIn delay={0.12}>
         <GlassCard>
-          <SectionTitle title="Holdings" subtitle={`${allocations.length} positions`}>
+          <SectionTitle title="Holdings" subtitle={`${allocations.length} positions`} className="mb-4">
             <button className="btn-ghost text-xs">View all</button>
           </SectionTitle>
           <HoldingsList allocations={allocations} />
@@ -251,7 +248,7 @@ export default function PortfolioPage() {
         <div className="col-span-12 lg:col-span-7">
           <FadeIn delay={0.16}>
             <GlassCard>
-              <SectionTitle title="Watchlist" subtitle="Subnets you're tracking">
+              <SectionTitle title="Watchlist" subtitle="Subnets you're tracking" className="mb-4">
                 <div className="flex items-center gap-2">
                   <button className="btn-ghost text-xs">Compare</button>
                   <button className="btn-ghost text-xs">Edit</button>
@@ -265,7 +262,7 @@ export default function PortfolioPage() {
         <div className="col-span-12 lg:col-span-5">
           <FadeIn delay={0.18}>
             <GlassCard>
-              <SectionTitle title="Transaction history" subtitle="Stake moves and additions" />
+              <SectionTitle title="Transaction history" subtitle="Stake moves and additions" className="mb-4" />
               <div className="space-y-0">
                 {recentChanges.map((c) => (
                   <div

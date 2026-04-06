@@ -91,7 +91,7 @@ export default function SubnetsPage() {
   }, [subnets, search, category, risk, sortBy]);
 
   return (
-    <div className="max-w-[1400px] mx-auto">
+    <div className="max-w-[1400px] mx-auto space-y-6">
       <PageHeader
         title="Subnet Explorer"
         subtitle={liveLoaded

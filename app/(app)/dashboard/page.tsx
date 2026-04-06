@@ -25,7 +25,7 @@ export default function DashboardPage() {
   const topRecBand = topRec?.band ?? "STRONG";
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-7">
+    <div className="max-w-[1400px] mx-auto space-y-6">
 
       {/* ── Header ── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -204,8 +204,8 @@ export default function DashboardPage() {
               className="rounded-2xl p-5"
               style={{
                 background: "rgba(34,211,238,0.04)",
-                border: "1px solid rgba(34,211,238,0.28)",
-                boxShadow: "0 0 0 1px rgba(34,211,238,0.1), 0 0 32px rgba(34,211,238,0.06), inset 0 1px 0 rgba(255,255,255,0.04)",
+                border: "1px solid rgba(34,211,238,0.22)",
+                boxShadow: "0 0 18px rgba(34,211,238,0.05), inset 0 1px 0 rgba(255,255,255,0.04)",
               }}
             >
               <div className="flex items-center justify-between mb-4">
