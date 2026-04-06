@@ -38,9 +38,8 @@
 name: Refresh Subnet Snapshot
 
 on:
-  # DISABLED — schedule paused while tao_in extraction fix is validated
-  # schedule:
-  #   - cron: '*/20 * * * *'
+  schedule:
+    - cron: '*/20 * * * *'
 
   # Manual: trigger from GitHub Actions UI with optional network override
   workflow_dispatch:
