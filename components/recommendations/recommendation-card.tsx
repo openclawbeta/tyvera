@@ -243,17 +243,9 @@ export function RecommendationCard({ rec, selected, onSelect, index = 0 }: Recom
           style={{
             background: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
             color: "#04060d",
-            boxShadow: "0 0 0 1px rgba(34,211,238,0.35), 0 4px 14px rgba(34,211,238,0.18), inset 0 1px 0 rgba(255,255,255,0.2)",
+            boxShadow: "0 2px 8px rgba(34,211,238,0.12), inset 0 1px 0 rgba(255,255,255,0.18)",
           }}
           onClick={(e) => e.stopPropagation()}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.boxShadow =
-              "0 0 0 1px rgba(34,211,238,0.5), 0 6px 18px rgba(34,211,238,0.25), inset 0 1px 0 rgba(255,255,255,0.25)";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.boxShadow =
-              "0 0 0 1px rgba(34,211,238,0.35), 0 4px 14px rgba(34,211,238,0.18), inset 0 1px 0 rgba(255,255,255,0.2)";
-          }}
         >
           <Zap className="w-3.5 h-3.5" />
           Review & Submit

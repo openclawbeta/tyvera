@@ -47,16 +47,16 @@ export default function PortfolioPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard label="Total Staked"    value={`${portfolioStats.totalStakedTao.toFixed(2)} Ï`}   change={2.4}  accent="cyan"    icon={<Wallet className="w-4 h-4" />}    index={0} />
+        <StatCard label="Total Staked"    value={`${portfolioStats.totalStakedTao.toFixed(2)} τ`}   change={2.4}  accent="cyan"    icon={<Wallet className="w-4 h-4" />}    index={0} />
         <StatCard label="Weighted Yield"  value={`${portfolioStats.weightedYield.toFixed(1)}%`}      change={0.6}  accent="emerald" icon={<TrendingUp className="w-4 h-4" />} index={1} />
-        <StatCard label="30-Day Earnings" value={`${portfolioStats.earnings30d.toFixed(4)} Ï`}       change={8.2}  accent="violet"  icon={<Zap className="w-4 h-4" />}       index={2} />
+        <StatCard label="30-Day Earnings" value={`${portfolioStats.earnings30d.toFixed(4)} τ`}       change={8.2}  accent="violet"  icon={<Zap className="w-4 h-4" />}       index={2} />
         <StatCard label="Diversification" value={`${portfolioStats.diversificationScore}/100`}       change={0}    accent="amber"   icon={<BarChart2 className="w-4 h-4" />}  index={3} />
       </div>
 
       {/* Main grid */}
       <div className="grid grid-cols-12 gap-4">
 
-        {/* Left â allocation + holdings */}
+        {/* Left — allocation + holdings */}
         <div className="col-span-12 lg:col-span-8 space-y-4">
 
           {/* Allocation chart */}
@@ -80,12 +80,12 @@ export default function PortfolioPage() {
           {/* Daily earnings chart */}
           <FadeIn delay={0.2}>
             <GlassCard>
-              <SectionTitle title="Daily Earnings" subtitle="Ï earned per day (30d)" />
+              <SectionTitle title="Daily Earnings" subtitle="τ earned per day (30d)" />
               <SimpleLineChart
                 data={earningsData}
                 color="#10b981"
                 height={120}
-                suffix=" Ï"
+                suffix=" τ"
                 gradientId="earningsGrad"
               />
             </GlassCard>
@@ -102,16 +102,16 @@ export default function PortfolioPage() {
                       "w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white flex-shrink-0",
                       c.type === "MOVE" ? "bg-gradient-to-br from-cyan-500 to-sky-700" : "bg-gradient-to-br from-emerald-500 to-teal-700",
                     )}>
-                      {c.type === "MOVE" ? "â" : "+"}
+                      {c.type === "MOVE" ? "→" : "+"}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-white">
-                        {c.type === "MOVE" ? `${c.fromSubnet} â ${c.toSubnet}` : `Staked to ${c.subnet}`}
+                        {c.type === "MOVE" ? `${c.fromSubnet} → ${c.toSubnet}` : `Staked to ${c.subnet}`}
                       </p>
-                      <p className="text-xs text-slate-500 font-mono mt-0.5 truncate">tx: {c.txHash ? `${c.txHash.slice(0, 20)}â¦` : "â"}</p>
+                      <p className="text-xs text-slate-500 font-mono mt-0.5 truncate">tx: {c.txHash ? `${c.txHash.slice(0, 20)}…` : "—"}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-semibold text-white">{c.amount.toFixed(2)} Ï</p>
+                      <p className="text-sm font-semibold text-white">{c.amount.toFixed(2)} τ</p>
                       <p className="text-xs text-slate-500">{formatDate(c.timestamp)}</p>
                     </div>
                     <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-2 py-1 rounded-md flex-shrink-0">
@@ -135,7 +135,7 @@ export default function PortfolioPage() {
                 {[
                   { label: "Total positions",    value: `${allocations.length} subnets`                  },
                   { label: "Top position",        value: portfolioStats.topSubnet                        },
-                  { label: "Est. monthly yield",  value: `${portfolioStats.earnings30d.toFixed(4)} Ï`    },
+                  { label: "Est. monthly yield",  value: `${portfolioStats.earnings30d.toFixed(4)} τ`    },
                   { label: "Portfolio value",     value: `$${portfolioStats.totalValueUsd.toLocaleString()}` },
                   { label: "Avg validator take",  value: "15.5%"                                          },
                 ].map(({ label, value }) => (

@@ -278,7 +278,7 @@ export default function BillingPage() {
                         className="font-bold"
                         style={{ fontSize: "15px", color: isSelected ? "#22d3ee" : "#67e8f9" }}
                       >
-                        Ï
+                        τ
                       </span>
                     </div>
                     <div className="text-[10px] text-slate-600 mt-0.5">
@@ -327,7 +327,7 @@ export default function BillingPage() {
                   className="text-[11px] font-mono font-bold"
                   style={{ color: "#22d3ee" }}
                 >
-                  {selectedPlanData.priceTao} Ï
+                  {selectedPlanData.priceTao} τ
                 </span>
               </div>
 
@@ -341,7 +341,7 @@ export default function BillingPage() {
                   },
                   {
                     n: 2,
-                    title: `Send exactly ${selectedPlanData.priceTao} Ï`,
+                    title: `Send exactly ${selectedPlanData.priceTao} τ`,
                     body: "Send the exact amount to the address shown. Partial or over-payments require manual review.",
                   },
                   {
@@ -405,7 +405,7 @@ export default function BillingPage() {
                   }}
                 >
                   <Zap className="w-4 h-4" />
-                  Generate Payment Address for {selectedPlanData.priceTao} Ï
+                  Generate Payment Address for {selectedPlanData.priceTao} τ
                   <ArrowRight className="w-3.5 h-3.5 opacity-70" />
                 </button>
               </div>
@@ -498,7 +498,7 @@ export default function BillingPage() {
                 borderBottom: "1px solid rgba(255,255,255,0.055)",
               }}
             >
-              {["Date", "Plan", "Ï Amount", "USD", "Type", "Tx Hash", "Status"].map((h) => (
+              {["Date", "Plan", "τ Amount", "USD", "Type", "Tx Hash", "Status"].map((h) => (
                 <span key={h} className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">
                   {h}
                 </span>
@@ -530,7 +530,7 @@ export default function BillingPage() {
 
                 {/* TAO */}
                 <span className="text-xs font-mono font-bold" style={{ color: "#22d3ee", fontVariantNumeric: "tabular-nums" }}>
-                  {p.amountTao} Ï
+                  {p.amountTao} τ
                 </span>
 
                 {/* USD */}

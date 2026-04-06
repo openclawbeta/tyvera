@@ -104,7 +104,7 @@ export default function SubnetsPage() {
               Showing <span className="text-white font-semibold">{filtered.length}</span> of {totalSubnets}
             </>
           ) : (
-            <>Loading live subnet totalsâ¦</>
+            <>Loading live subnet totals…</>
           )}
         </div>
       </PageHeader>

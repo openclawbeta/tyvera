@@ -46,7 +46,7 @@ export function SubnetFilterPanel({
           type="text"
           value={search}
           onChange={(e) => onSearch(e.target.value)}
-          placeholder="Search subnetsâ¦"
+          placeholder="Search subnets…"
           className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-white/[0.07] bg-white/[0.03] text-sm text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-cyan-400/40 transition-colors"
         />
       </div>

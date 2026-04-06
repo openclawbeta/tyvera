@@ -1249,7 +1249,7 @@ def fetch_and_write(
             "subnet_count":   len(subnets),
             "skipped":        skipped,
             "schema_version": 5,
-            "phase":          "Phase 5.2 — emission Vec fix + SDK fallbacks",
+            "phase":          "Phase 5.3 — query-time fallback loop (StorageMap:SubnetTaoInEmission)",
             "resolved_keys":  resolved_keys,
         },
         "subnets": subnets,
@@ -1292,7 +1292,7 @@ def _print_distribution_summary(subnets: list[dict], resolved: dict | None = Non
         )
 
     print("\n" + "─" * 72)
-    print("  Distribution summary (Phase 5.2 verification)")
+    print("  Distribution summary (Phase 5.3 verification)")
     print("─" * 72)
     print(f"  Risk:       {dict(risks)}")
     print(f"  Liquidity:  {stats(liquidities)}")
@@ -1309,7 +1309,7 @@ def _print_distribution_summary(subnets: list[dict], resolved: dict | None = Non
 # ── Field provenance (--explain) ───────────────────────────────────────────────
 
 EXPLAIN = f"""
-Field provenance — Tyvera Phase 5.2 (emission Vec fix + SDK fallbacks)
+Field provenance — Tyvera Phase 5.3 (query-time fallback loop, StorageMap:SubnetTaoInEmission)
 =======================================================================
 
 EMISSION — three-layer fallback (in order):
