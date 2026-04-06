@@ -216,4 +216,15 @@ export default function PortfolioPage() {
                   </div>
                 </div>
                 <p className="text-[11px] text-slate-400 mb-3 line-clamp-2">{topRec.rationale}</p>
-                
+                <button className="w-full btn-primary justify-center text-xs py-2">
+                  <Zap className="w-3.5 h-3.5" />
+                  Review Move
+                </button>
+              </div>
+            </FadeIn>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
