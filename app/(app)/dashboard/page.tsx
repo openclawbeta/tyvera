@@ -1,8 +1,7 @@
 "use client";
 
-import { Wallet, TrendingUp, BarChart2, Zap, ArrowRight, Activity, RefreshCw } from "lucide-react";
+import { ArrowRight, RefreshCw } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
-import { StatCard } from "@/components/ui-custom/stat-card";
 import { GlassCard } from "@/components/ui-custom/glass-card";
 import { SectionTitle } from "@/components/ui-custom/section-title";
 import { FadeIn } from "@/components/ui-custom/fade-in";
@@ -28,7 +27,7 @@ export default function DashboardPage() {
   return (
     <div className="max-w-[1400px] mx-auto space-y-7">
 
-      {/* ââ Header ââ */}
+      {/* ── Header ── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader
           title="Dashboard"
@@ -49,60 +48,29 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ââ Stat Cards ââ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard
-          label="Total Staked"
-          value={`${portfolioStats.totalStakedTao.toFixed(2)} Ï`}
-          change={2.4}
-          changeLabel="vs last week"
-          icon={<Wallet className="w-4 h-4" />}
-          accent="cyan"
-          index={0}
-        />
-        <StatCard
-          label="Portfolio Value"
-          value={`$${portfolioStats.totalValueUsd.toLocaleString()}`}
-          change={1.8}
-          changeLabel="vs last week"
-          icon={<BarChart2 className="w-4 h-4" />}
-          accent="violet"
-          index={1}
-        />
-        <StatCard
-          label="Weighted Yield"
-          value={`${portfolioStats.weightedYield.toFixed(1)}%`}
-          change={0.6}
-          changeLabel="vs last month"
-          icon={<TrendingUp className="w-4 h-4" />}
-          accent="emerald"
-          index={2}
-        />
-        <StatCard
-          label="7-Day Earnings"
-          value={`${portfolioStats.earnings7d.toFixed(4)} Ï`}
-          change={4.2}
-          changeLabel="vs prior week"
-          icon={<Zap className="w-4 h-4" />}
-          accent="amber"
-          index={3}
-        />
-      </div>
+      {/* ── Primary metric zone ── */}
+      <FadeIn delay={0.05}>
+        <div className="grid grid-cols-12 gap-5">
 
-      {/* ââ Main Grid ââ */}
-      <div className="grid grid-cols-12 gap-5">
-
-        {/* Left â Charts (8 cols) */}
-        <div className="col-span-12 lg:col-span-8 space-y-5">
-
-          {/* Portfolio value */}
-          <FadeIn delay={0.1}>
+          {/* Portfolio Value + chart — dominant */}
+          <div className="col-span-12 lg:col-span-9">
             <GlassCard padding="lg">
-              <div className="flex items-center justify-between mb-5">
-                <SectionTitle
-                  label="14-day history"
-                  title="Portfolio Value"
-                />
+              <div className="flex items-start justify-between mb-5">
+                <div>
+                  <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">
+                    Portfolio Value
+                  </div>
+                  <div
+                    className="font-bold text-slate-100 tabular-nums leading-none mb-1.5"
+                    style={{ fontSize: "30px", letterSpacing: "-0.025em" }}
+                  >
+                    ${portfolioStats.totalValueUsd.toLocaleString()}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-medium text-emerald-400">+1.8%</span>
+                    <span className="text-[10px] text-slate-600">vs last week</span>
+                  </div>
+                </div>
                 <div className="flex items-center gap-0.5">
                   {["7d", "14d", "30d"].map((p) => (
                     <button
@@ -127,185 +95,218 @@ export default function DashboardPage() {
                 gradientId="portfolioGrad"
               />
             </GlassCard>
-          </FadeIn>
+          </div>
 
-          {/* Subnet momentum */}
-          <FadeIn delay={0.15}>
-            <GlassCard padding="lg">
-              <div className="mb-5">
-                <SectionTitle
-                  label="Yield comparison"
-                  title="Subnet Momentum"
-                  subtitle="Current yield vs 7-day trend"
+          {/* Secondary stats — quiet */}
+          <div className="col-span-12 lg:col-span-3 flex flex-col gap-3">
+            {[
+              {
+                label: "Total Staked",
+                value: `${portfolioStats.totalStakedTao.toFixed(2)} τ`,
+                change: "+2.4%",
+                note: "vs last week",
+              },
+              {
+                label: "Weighted Yield",
+                value: `${portfolioStats.weightedYield.toFixed(1)}%`,
+                change: "+0.6%",
+                note: "vs last month",
+              },
+              {
+                label: "7-Day Earnings",
+                value: `${portfolioStats.earnings7d.toFixed(4)} τ`,
+                change: "+4.2%",
+                note: "vs prior week",
+              },
+            ].map((stat) => (
+              <GlassCard key={stat.label} padding="md">
+                <div className="text-[9.5px] font-semibold text-slate-600 uppercase tracking-widest mb-2">
+                  {stat.label}
+                </div>
+                <div
+                  className="font-bold text-slate-200 tabular-nums leading-none mb-1.5"
+                  style={{ fontSize: "18px", letterSpacing: "-0.02em" }}
                 >
-                  <span
-                    className="rounded-lg px-2 py-1 text-[9.5px] font-medium text-slate-600 uppercase tracking-wider"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
-                  >
-                    Color = trend direction
-                  </span>
-                </SectionTitle>
-              </div>
-              <MomentumBarChart />
-            </GlassCard>
-          </FadeIn>
+                  {stat.value}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-medium text-emerald-400">{stat.change}</span>
+                  <span className="text-[9.5px] text-slate-600">{stat.note}</span>
+                </div>
+              </GlassCard>
+            ))}
+          </div>
 
-          {/* Weighted yield */}
-          <FadeIn delay={0.2}>
-            <GlassCard padding="lg">
-              <div className="mb-5">
-                <SectionTitle
-                  label="Portfolio APR"
-                  title="Weighted Yield"
-                  subtitle="14-day rolling average"
-                />
-              </div>
-              <SimpleLineChart
-                data={yieldChartData}
-                color="#8b5cf6"
-                height={110}
-                suffix="%"
-                gradientId="yieldGrad"
-              />
-            </GlassCard>
-          </FadeIn>
         </div>
+      </FadeIn>
 
-        {/* Right â Side panels (4 cols) */}
-        <div className="col-span-12 lg:col-span-4 space-y-5">
+      {/* ── Secondary charts ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-          {/* Allocation */}
-          <FadeIn delay={0.12}>
-            <GlassCard padding="lg">
-              <div className="mb-4">
-                <SectionTitle label="Current positions" title="Allocation" />
+        <FadeIn delay={0.1}>
+          <GlassCard padding="lg">
+            <div className="mb-5">
+              <SectionTitle
+                label="Yield comparison"
+                title="Subnet Momentum"
+                subtitle="Current yield vs 7-day trend"
+              >
+                <span
+                  className="rounded-lg px-2 py-1 text-[9.5px] font-medium text-slate-600 uppercase tracking-wider"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
+                >
+                  Color = trend direction
+                </span>
+              </SectionTitle>
+            </div>
+            <MomentumBarChart />
+          </GlassCard>
+        </FadeIn>
+
+        <FadeIn delay={0.12}>
+          <GlassCard padding="lg">
+            <div className="mb-5">
+              <SectionTitle
+                label="Portfolio APR"
+                title="Weighted Yield"
+                subtitle="14-day rolling average"
+              />
+            </div>
+            <SimpleLineChart
+              data={yieldChartData}
+              color="#8b5cf6"
+              height={110}
+              suffix="%"
+              gradientId="yieldGrad"
+            />
+          </GlassCard>
+        </FadeIn>
+
+      </div>
+
+      {/* ── Operational row ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        {/* Allocation */}
+        <FadeIn delay={0.15}>
+          <GlassCard padding="lg">
+            <div className="mb-4">
+              <SectionTitle label="Current positions" title="Allocation" />
+            </div>
+            <AllocationBarList allocations={allocations} />
+          </GlassCard>
+        </FadeIn>
+
+        {/* Top recommendation */}
+        {topRec && (
+          <FadeIn delay={0.18}>
+            <div
+              className="rounded-2xl p-5"
+              style={{
+                background: "rgba(34,211,238,0.04)",
+                border: "1px solid rgba(34,211,238,0.28)",
+                boxShadow: "0 0 0 1px rgba(34,211,238,0.1), 0 0 32px rgba(34,211,238,0.06), inset 0 1px 0 rgba(255,255,255,0.04)",
+              }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <span
+                  className="font-bold text-cyan-300 uppercase"
+                  style={{ fontSize: "9.5px", letterSpacing: "0.1em" }}
+                >
+                  Top Recommendation
+                </span>
+                <span className="tag-cyan">{topRecBand}</span>
               </div>
-              <AllocationBarList allocations={allocations} />
-            </GlassCard>
-          </FadeIn>
 
-          {/* Top recommendation */}
-          {topRec && (
-            <FadeIn delay={0.18}>
-              <div
-                className="rounded-2xl p-5"
+              <div className="flex items-center gap-2 mb-4">
+                <div
+                  className={cn(
+                    "w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white",
+                    `bg-gradient-to-br ${subnetGradient(topRec.fromSubnet.netuid)}`,
+                  )}
+                  style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}
+                >
+                  {topRec.fromSubnet.netuid}
+                </div>
+                <div className="flex-1 flex justify-center">
+                  <ArrowRight className="w-4 h-4 text-cyan-400" />
+                </div>
+                <div
+                  className={cn(
+                    "w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white",
+                    `bg-gradient-to-br ${subnetGradient(topRec.toSubnet.netuid)}`,
+                  )}
+                  style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}
+                >
+                  {topRec.toSubnet.netuid}
+                </div>
+                <div className="ml-auto text-right">
+                  <div
+                    className="font-bold text-emerald-400 tabular-nums"
+                    style={{ fontSize: "18px", letterSpacing: "-0.02em" }}
+                  >
+                    +{topRec.projectedEdge.toFixed(1)}%
+                  </div>
+                  <div className="text-[10px] text-slate-600">projected edge</div>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-500 leading-relaxed mb-4">
+                {topRec.rationale}
+              </p>
+
+              <button
+                className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-semibold text-cyan-400 transition-all duration-150"
                 style={{
-                  background: "rgba(34,211,238,0.04)",
-                  border: "1px solid rgba(34,211,238,0.28)",
-                  boxShadow: "0 0 0 1px rgba(34,211,238,0.1), 0 0 32px rgba(34,211,238,0.06), inset 0 1px 0 rgba(255,255,255,0.04)",
+                  background: "rgba(34,211,238,0.06)",
+                  border: "1px solid rgba(34,211,238,0.15)",
                 }}
               >
-                {/* Label */}
-                <div className="flex items-center justify-between mb-4">
-                  <span
-                    className="font-bold text-cyan-300 uppercase"
-                    style={{ fontSize: "9.5px", letterSpacing: "0.1em" }}
-                  >
-                    Top Recommendation
-                  </span>
-                  <span className="tag-cyan">{topRecBand}</span>
-                </div>
-
-                {/* Move arrow */}
-                <div className="flex items-center gap-2 mb-4">
-                  <div
-                    className={cn(
-                      "w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white",
-                      `bg-gradient-to-br ${subnetGradient(topRec.fromSubnet.netuid)}`,
-                    )}
-                    style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}
-                  >
-                    {topRec.fromSubnet.netuid}
-                  </div>
-                  <div className="flex-1 flex justify-center">
-                    <ArrowRight className="w-4 h-4 text-cyan-400" />
-                  </div>
-                  <div
-                    className={cn(
-                      "w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white",
-                      `bg-gradient-to-br ${subnetGradient(topRec.toSubnet.netuid)}`,
-                    )}
-                    style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}
-                  >
-                    {topRec.toSubnet.netuid}
-                  </div>
-                  <div className="ml-auto text-right">
-                    <div
-                      className="font-bold text-emerald-400 tabular-nums"
-                      style={{ fontSize: "18px", letterSpacing: "-0.02em" }}
-                    >
-                      +{topRec.projectedEdge.toFixed(1)}%
-                    </div>
-                    <div className="text-[10px] text-slate-600">projected edge</div>
-                  </div>
-                </div>
-
-                <p className="text-[11px] text-slate-500 leading-relaxed mb-4 line-clamp-2">
-                  {topRec.rationale}
-                </p>
-
-                <button
-                  className="w-full flex items-center justify-center gap-2 rounded-xl font-semibold text-xs py-2.5 transition-all duration-200"
-                  style={{
-                    background: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
-                    color: "#04060d",
-                    boxShadow: "0 0 0 1px rgba(34,211,238,0.35), 0 4px 14px rgba(34,211,238,0.18), inset 0 1px 0 rgba(255,255,255,0.2)",
-                  }}
-                >
-                  <Zap className="w-3.5 h-3.5" />
-                  Review in Wallet
-                </button>
-              </div>
-            </FadeIn>
-          )}
-
-          {/* Recent Activity */}
-          <FadeIn delay={0.22}>
-            <GlassCard padding="lg">
-              <div className="mb-4">
-                <SectionTitle label="Transaction log" title="Recent Activity" />
-              </div>
-              <div className="space-y-0.5">
-                {recentChanges.map((change) => (
-                  <div
-                    key={change.id}
-                    className="flex items-start gap-3 py-2.5"
-                    style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}
-                  >
-                    <div
-                      className={cn(
-                        "w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5",
-                      )}
-                      style={{
-                        background: change.type === "MOVE" ? "rgba(34,211,238,0.1)" : "rgba(52,211,153,0.1)",
-                        border: change.type === "MOVE" ? "1px solid rgba(34,211,238,0.18)" : "1px solid rgba(52,211,153,0.18)",
-                      }}
-                    >
-                      <Activity
-                        className="w-3.5 h-3.5"
-                        style={{ color: change.type === "MOVE" ? "#22d3ee" : "#34d399" }}
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-medium text-white truncate" style={{ letterSpacing: "-0.01em" }}>
-                        {change.type === "MOVE"
-                          ? `${change.fromSubnet} â ${change.toSubnet}`
-                          : `Added to ${change.subnet}`}
-                      </p>
-                      <p className="text-[10px] text-slate-600 mt-0.5 tabular-nums">
-                        {change.amount.toFixed(2)} Ï Â· {formatDate(change.timestamp)}
-                      </p>
-                    </div>
-                    <span className="text-[10px] text-emerald-400 font-semibold flex-shrink-0 mt-0.5">
-                      {change.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </GlassCard>
+                View Analysis <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
           </FadeIn>
-        </div>
+        )}
+
+        {/* Recent Activity */}
+        <FadeIn delay={0.2}>
+          <GlassCard padding="lg">
+            <div className="mb-4">
+              <SectionTitle label="Recent changes" title="Activity" />
+            </div>
+            <div className="space-y-2.5">
+              {recentChanges.map((change, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 py-2 border-b border-white/[0.04] last:border-0"
+                >
+                  <div
+                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    style={{
+                      background: change.status === "CONFIRMED" ? "#34d399" : "#475569",
+                    }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] text-slate-300 truncate">
+                      {change.type === "MOVE" && change.fromSubnet && change.toSubnet
+                        ? `${change.fromSubnet} → ${change.toSubnet}`
+                        : change.label ?? change.subnet ?? change.type}
+                    </div>
+                    <div className="text-[10px] text-slate-600">
+                      {formatDate(change.timestamp)}
+                    </div>
+                  </div>
+                  <div className="text-[11px] text-slate-400 tabular-nums flex-shrink-0">
+                    {change.amount.toFixed(2)}τ
+                  </div>
+                </div>
+              ))}
+            </div>
+          </GlassCard>
+        </FadeIn>
+
       </div>
+
     </div>
   );
 }
