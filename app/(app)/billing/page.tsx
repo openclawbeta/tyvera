@@ -3,13 +3,13 @@
 import { useState } from "react";
 import {
   Zap, Shield, CheckCircle, Clock, Copy, ExternalLink,
-  Lock, ChevronRight, Wallet, ArrowRight, Sparkles, Info,
+  Lock, ChevronRight, Wallet, Sparkles, Info,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { SectionTitle } from "@/components/ui-custom/section-title";
 import { FadeIn } from "@/components/ui-custom/fade-in";
 import { PremiumBadge } from "@/components/ui-custom/premium-badge";
-import { getBillingHistory, getBillingStatus, createPaymentRequest } from "@/lib/api/billing";
+import { getBillingHistory, getBillingStatus } from "@/lib/api/billing";
 import type { BillingPlanModel, BillingHistoryItem } from "@/lib/types/billing";
 import { useWallet } from "@/lib/wallet-context";
 import { cn, formatDate, truncateAddress } from "@/lib/utils";
@@ -461,30 +461,27 @@ export default function BillingPage() {
                   border: "1px solid rgba(34,211,238,0.12)",
                 }}
               >
-                <Info className="w-3.5 h-3.5 text-cyan-500 flex-shrink-0 mt-[1px]" />
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  Premium activates once your transaction is confirmed on the Bittensor network. This typically
-                  takes under 60 seconds. If it doesn&apos;t activate within 10 minutes, contact support with your tx hash.
+                <Info className="w-3.5 h-3.5 text-slate-600 flex-shrink-0 mt-[1px]" />
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  Payment activation is in development. The plan structure and pricing above reflect the intended model.
                 </p>
               </div>
 
-              {/* CTA */}
+              {/* CTA — not yet live */}
               <div className="px-5 pb-5">
-                <button
-                  onClick={() => selectedPlanData && createPaymentRequest(selectedPlanData.id)}
-                  className="w-full flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-200"
+                <div
+                  className="w-full flex items-center justify-center gap-2 font-semibold rounded-xl cursor-not-allowed select-none"
                   style={{
                     height: "44px",
                     fontSize: "13px",
-                    background: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
-                    color: "#fff",
-                    boxShadow: "0 0 0 1px rgba(34,211,238,0.4), 0 4px 16px rgba(34,211,238,0.22), inset 0 1px 0 rgba(255,255,255,0.2)",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    color: "#475569",
                   }}
                 >
-                  <Zap className="w-4 h-4" />
-                  Generate Payment Address for {selectedPlanData.priceTao} τ
-                  <ArrowRight className="w-3.5 h-3.5 opacity-70" />
-                </button>
+                  <Lock className="w-3.5 h-3.5" />
+                  Payment activation coming soon
+                </div>
               </div>
             </div>
           )}

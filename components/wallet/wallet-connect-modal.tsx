@@ -207,7 +207,7 @@ function ScreenConnecting({ extension }: { extension: WalletExtension }) {
         Connecting to {ext?.name}
       </p>
       <p className="text-[12px] text-slate-500 leading-relaxed">
-        Check your browser extension — accept the connection request when prompted.
+        Completing wallet connection.
       </p>
 
       <div
@@ -225,7 +225,7 @@ function ScreenConnecting({ extension }: { extension: WalletExtension }) {
             animation: "pulse-dot 1.4s ease-in-out infinite",
           }}
         />
-        <span className="text-[11px] text-cyan-400">Waiting for wallet…</span>
+        <span className="text-[11px] text-cyan-400">Connecting…</span>
       </div>
 
       <p className="text-[10px] text-slate-700 mt-4">
@@ -342,7 +342,7 @@ function ScreenVerifying() {
         Verifying ownership
       </p>
       <p className="text-[12px] text-slate-500 leading-relaxed">
-        Sign the message in your wallet extension. No TAO is spent.
+        Confirming wallet ownership.
       </p>
     </motion.div>
   );
