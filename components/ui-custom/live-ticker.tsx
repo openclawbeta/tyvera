@@ -44,17 +44,17 @@ export function LiveTicker() {
 
   return (
     <div className="flex items-center gap-3 min-w-0 w-full">
-      {/* Live indicator */}
+      {/* Market indicator — static dot, no live/realtime claim */}
       <div className="flex items-center gap-1.5 flex-shrink-0 pr-3" style={{ borderRight: "1px solid rgba(255,255,255,0.07)" }}>
         <span
-          className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-dot"
-          style={{ boxShadow: "0 0 5px rgba(52,211,153,0.6)" }}
+          className="w-1.5 h-1.5 rounded-full"
+          style={{ background: "#475569" }}
         />
         <span
           className="font-semibold text-slate-600 uppercase"
           style={{ fontSize: "9px", letterSpacing: "0.1em" }}
         >
-          Live
+          Market
         </span>
       </div>
 

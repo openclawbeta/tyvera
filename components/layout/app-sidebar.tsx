@@ -31,7 +31,9 @@ const NAV_ITEMS = [
 export function AppSidebar() {
   const pathname = usePathname();
   const { isOpen, close } = useSidebar();
-  const { address } = useWallet();
+  const { address, walletState } = useWallet();
+
+  const isConnected = walletState !== "disconnected";
 
   // Close sidebar whenever the route changes (mobile nav tap)
   useEffect(() => {
@@ -149,34 +151,36 @@ export function AppSidebar() {
           className="px-3 py-3 flex-shrink-0 space-y-2"
           style={{ borderTop: "1px solid rgba(255,255,255,0.045)" }}
         >
-          {/* Premium status */}
-          <div
-            className="px-3 py-3 rounded-xl space-y-2"
-            style={{
-              background: "rgba(255,255,255,0.025)",
-              border: "1px solid rgba(255,255,255,0.06)",
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-400" style={{ boxShadow: "0 0 4px rgba(251,191,36,0.6)" }} />
-                <span className="text-[10px] font-bold text-amber-300 tracking-[0.04em] uppercase">
-                  Premium
-                </span>
+          {/* Premium status — only shown when wallet is connected */}
+          {isConnected && (
+            <div
+              className="px-3 py-3 rounded-xl space-y-2"
+              style={{
+                background: "rgba(255,255,255,0.025)",
+                border: "1px solid rgba(255,255,255,0.06)",
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-400" style={{ boxShadow: "0 0 4px rgba(251,191,36,0.6)" }} />
+                  <span className="text-[10px] font-bold text-amber-300 tracking-[0.04em] uppercase">
+                    Premium
+                  </span>
+                </div>
+                <span className="text-[10px] text-slate-500 tabular-nums">30 days left</span>
               </div>
-              <span className="text-[10px] text-slate-500 tabular-nums">30 days left</span>
+              <div className="w-full h-[3px] rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: "33%",
+                    background: "linear-gradient(90deg, #f59e0b, #fbbf24)",
+                    boxShadow: "0 0 6px rgba(251,191,36,0.4)",
+                  }}
+                />
+              </div>
             </div>
-            <div className="w-full h-[3px] rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: "33%",
-                  background: "linear-gradient(90deg, #f59e0b, #fbbf24)",
-                  boxShadow: "0 0 6px rgba(251,191,36,0.4)",
-                }}
-              />
-            </div>
-          </div>
+          )}
 
           {/* Trust note */}
           <div className="flex items-center gap-2 px-1 py-0.5">

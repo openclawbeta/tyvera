@@ -350,15 +350,20 @@ function WalletSection() {
 /* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function AccountSection() {
+  const { address } = useWallet();
+
+  // Use wallet address as on-chain identity; neutral placeholder when disconnected
+  const displayName = address ? truncateAddress(address) : "—";
+
   return (
     <Panel>
       <PanelHeader title="Account" subtitle="Profile and plan information." />
       <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.055)" }}>
         <SettingRow label="Display name">
-          <span className="text-[12px] text-slate-300 font-medium">Openclaw</span>
+          <span className="text-[12px] text-slate-300 font-medium font-mono">{displayName}</span>
         </SettingRow>
         <SettingRow label="Email" description="Used for billing receipts only.">
-          <span className="text-[12px] text-slate-500">openclawbeta@gmail.com</span>
+          <span className="text-[12px] text-slate-500">—</span>
         </SettingRow>
         <SettingRow label="Timezone">
           <select
@@ -375,16 +380,7 @@ function AccountSection() {
         </SettingRow>
         <SettingRow label="Current plan" last>
           <div className="flex items-center gap-2">
-            <span
-              className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-              style={{
-                background: "linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.1))",
-                border: "1px solid rgba(251,191,36,0.28)",
-                color: "#fbbf24",
-              }}
-            >
-              â¡ PREMIUM
-            </span>
+            <span className="text-[12px] text-slate-500">—</span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-700" />
           </div>
         </SettingRow>
