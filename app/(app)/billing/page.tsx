@@ -7,16 +7,16 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { SectionTitle } from "@/components/ui-custom/section-title";
-import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui-custom/fade-in";
+import { FadeIn } from "@/components/ui-custom/fade-in";
 import { PremiumBadge } from "@/components/ui-custom/premium-badge";
 import { getBillingHistory, getBillingStatus, createPaymentRequest } from "@/lib/api/billing";
 import type { BillingPlanModel, BillingHistoryItem } from "@/lib/types/billing";
 import { useWallet } from "@/lib/wallet-context";
 import { cn, formatDate, truncateAddress } from "@/lib/utils";
 
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* ─────────────────────────────────────────────────────────────────── */
 /* Helpers                                                              */
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* ─────────────────────────────────────────────────────────────────── */
 
 function StatusDot({ status }: { status: "CONFIRMED" | "PENDING" | "FAILED" }) {
   const map = {
@@ -51,9 +51,9 @@ function EntitlementTag({ type }: { type: "ACTIVATED" | "EXTENDED" | "REACTIVATE
   );
 }
 
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* ─────────────────────────────────────────────────────────────────── */
 /* Page                                                                 */
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* ─────────────────────────────────────────────────────────────────── */
 
 export default function BillingPage() {
   const { walletState } = useWallet();
@@ -100,6 +100,8 @@ export default function BillingPage() {
 
   const pct = Math.round(((state.daysRemaining ?? 0) / 30) * 100);
   const selectedPlanData = plans.find((p: BillingPlanModel) => p.id === selectedPlan);
+  const nonFreePlans = plans.filter((p: BillingPlanModel) => p.id !== "FREE");
+  const featuredPlan = nonFreePlans.find((p: BillingPlanModel) => p.badge === "Best Value") ?? nonFreePlans[0];
 
   function copyAddress() {
     navigator.clipboard.writeText(state.walletAddress).catch(() => {});
@@ -112,10 +114,10 @@ export default function BillingPage() {
 
       <PageHeader
         title="Billing"
-        subtitle="Manage your premium subscription â paid in TAO, activated on-chain"
+        subtitle="Manage your premium subscription — paid in TAO, activated on-chain"
       />
 
-      {/* ââ Current Plan Hero ââ */}
+      {/* ── Current Plan Hero ── */}
       <FadeIn>
         <div
           className="rounded-2xl relative overflow-hidden"
@@ -174,10 +176,10 @@ export default function BillingPage() {
                     <Clock className="w-3 h-3 text-slate-600" />
                     Expires{" "}
                     <span className="text-white font-semibold ml-0.5">
-                      {state.premiumExpiresAt ? formatDate(state.premiumExpiresAt) : "â"}
+                      {state.premiumExpiresAt ? formatDate(state.premiumExpiresAt) : "—"}
                     </span>
                   </span>
-                  <span className="text-slate-700">Â·</span>
+                  <span className="text-slate-700">·</span>
                   <span className="flex items-center gap-1.5">
                     <Wallet className="w-3 h-3 text-slate-600" />
                     <code className="text-slate-400 font-mono">{truncateAddress(state.walletAddress)}</code>
@@ -222,128 +224,166 @@ export default function BillingPage() {
         </div>
       </FadeIn>
 
-      {/* ââ Plan Selection ââ */}
+      {/* ── Plan Selection ── */}
       <FadeIn delay={0.07}>
         <div
-          className="rounded-2xl"
+          className="rounded-2xl overflow-hidden"
           style={{
             background: "linear-gradient(145deg, rgba(255,255,255,0.028) 0%, rgba(255,255,255,0.014) 100%)",
             border: "1px solid rgba(255,255,255,0.068)",
             boxShadow: "inset 0 1px 0 rgba(255,255,255,0.045), 0 4px 24px rgba(0,0,0,0.28)",
-            padding: "24px 24px 28px",
           }}
         >
-          <SectionTitle
-            title="Extend or Upgrade"
-            subtitle="Pay in TAO. No auto-renewal. New days stack on top of any remaining time."
-          />
+          {/* Section header */}
+          <div className="px-6 pt-6 pb-5">
+            <SectionTitle
+              title="Extend or Upgrade"
+              subtitle="Pay in TAO. No auto-renewal. New days stack on top of any remaining time."
+            />
+          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
-            {plans.filter((p: BillingPlanModel) => p.id !== "FREE").map((plan: BillingPlanModel) => {
+          {/* Plan rows */}
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.055)" }}>
+            {nonFreePlans.map((plan: BillingPlanModel, idx: number) => {
               const isSelected = selectedPlan === plan.id;
               const isBestValue = plan.badge === "Best Value";
+              const isLast = idx === nonFreePlans.length - 1;
 
               return (
                 <div
                   key={plan.id}
                   onClick={() => setSelectedPlan(isSelected ? null : plan.id)}
-                  className="relative rounded-xl cursor-pointer"
+                  className="flex items-center gap-4 cursor-pointer transition-all duration-150"
                   style={{
-                    padding: "20px",
-                    transition: "border-color 0.2s, box-shadow 0.2s, background 0.2s",
+                    padding: "15px 24px",
+                    borderLeft: isSelected
+                      ? "3px solid rgba(34,211,238,0.7)"
+                      : isBestValue
+                      ? "3px solid rgba(251,191,36,0.45)"
+                      : "3px solid transparent",
                     background: isSelected
-                      ? "rgba(34,211,238,0.05)"
+                      ? "rgba(34,211,238,0.035)"
                       : isBestValue
-                        ? "rgba(167,139,250,0.04)"
-                        : "rgba(255,255,255,0.02)",
-                    border: isSelected
-                      ? "1px solid rgba(34,211,238,0.35)"
-                      : isBestValue
-                        ? "1px solid rgba(167,139,250,0.22)"
-                        : "1px solid rgba(255,255,255,0.07)",
-                    boxShadow: isSelected
-                      ? "0 0 0 1px rgba(34,211,238,0.12), 0 0 24px rgba(34,211,238,0.08)"
-                      : "none",
+                      ? "rgba(251,191,36,0.018)"
+                      : "transparent",
+                    borderBottom: isLast ? "none" : "1px solid rgba(255,255,255,0.05)",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      (e.currentTarget as HTMLElement).style.background = isBestValue
+                        ? "rgba(251,191,36,0.03)"
+                        : "rgba(255,255,255,0.02)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      (e.currentTarget as HTMLElement).style.background = isBestValue
+                        ? "rgba(251,191,36,0.018)"
+                        : "transparent";
+                    }
                   }}
                 >
-                  {/* Badge */}
-                  {plan.badge && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-                      <span
-                        className="text-[10px] font-bold px-3 py-[3px] rounded-full"
-                        style={{
-                          background: "linear-gradient(135deg, #a78bfa, #7c3aed)",
-                          color: "#fff",
-                          boxShadow: "0 0 12px rgba(167,139,250,0.3)",
-                          letterSpacing: "0.04em",
-                        }}
-                      >
-                        {plan.badge}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Selected ring overlay */}
-                  {isSelected && (
-                    <div
-                      className="absolute top-3 right-3 w-5 h-5 rounded-full flex items-center justify-center"
-                      style={{
-                        background: "rgba(34,211,238,0.15)",
-                        border: "1px solid rgba(34,211,238,0.4)",
-                      }}
-                    >
-                      <CheckCircle className="w-3 h-3" style={{ color: "#22d3ee" }} />
-                    </div>
-                  )}
-
-                  {/* Name + price */}
-                  <div className="mt-1 mb-4">
-                    <div
-                      className="font-semibold text-white mb-2"
+                  {/* Plan name */}
+                  <div className="flex-1 min-w-0">
+                    <span
+                      className="font-semibold text-white"
                       style={{ fontSize: "13px", letterSpacing: "-0.01em" }}
                     >
                       {plan.displayName}
-                    </div>
-                    <div className="flex items-baseline gap-1">
-                      <span
-                        className="font-black text-white leading-none"
-                        style={{ fontSize: "28px", letterSpacing: "-0.035em", fontVariantNumeric: "tabular-nums" }}
-                      >
-                        {plan.priceTao}
-                      </span>
-                      <span
-                        className="font-bold"
-                        style={{ fontSize: "15px", color: isSelected ? "#22d3ee" : "#67e8f9" }}
-                      >
-                        Ï
-                      </span>
-                    </div>
-                    <div className="text-[10px] text-slate-600 mt-0.5">
-                      â ${plan.priceUsd.toLocaleString()} USD
-                    </div>
+                    </span>
                   </div>
 
-                  {/* Features */}
-                  <ul className="space-y-2">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2">
-                        <CheckCircle
-                          className="w-3 h-3 flex-shrink-0 mt-[1px]"
-                          style={{ color: isSelected ? "#22d3ee" : "#34d399" }}
-                        />
-                        <span className="text-[11px] text-slate-400 leading-snug">{f}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {/* TAO price */}
+                  <div className="flex items-baseline gap-1 w-24 flex-shrink-0">
+                    <span
+                      className="font-black text-white tabular-nums"
+                      style={{ fontSize: "22px", letterSpacing: "-0.03em" }}
+                    >
+                      {plan.priceTao}
+                    </span>
+                    <span
+                      className="font-bold"
+                      style={{ fontSize: "14px", color: isSelected ? "#22d3ee" : "#67e8f9" }}
+                    >
+                      τ
+                    </span>
+                  </div>
+
+                  {/* USD equiv */}
+                  <div className="w-28 flex-shrink-0">
+                    <span className="text-[11px] text-slate-500 tabular-nums">
+                      ≈ ${plan.priceUsd.toLocaleString()} USD
+                    </span>
+                  </div>
+
+                  {/* Best value tag — amber, on-theme, only when not selected */}
+                  <div className="w-24 flex-shrink-0">
+                    {isBestValue && !isSelected && (
+                      <span
+                        className="text-[10px] font-semibold px-2 py-0.5 rounded-md"
+                        style={{
+                          background: "rgba(251,191,36,0.08)",
+                          border: "1px solid rgba(251,191,36,0.2)",
+                          color: "#fbbf24",
+                        }}
+                      >
+                        Best value
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Radio indicator */}
+                  <div
+                    className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{
+                      background: isSelected ? "rgba(34,211,238,0.12)" : "transparent",
+                      border: isSelected
+                        ? "1px solid rgba(34,211,238,0.55)"
+                        : "1px solid rgba(255,255,255,0.15)",
+                      transition: "border-color 0.15s, background 0.15s",
+                    }}
+                  >
+                    {isSelected && (
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ background: "#22d3ee" }}
+                      />
+                    )}
+                  </div>
                 </div>
               );
             })}
           </div>
 
-          {/* ââ Payment Instructions (revealed on select) ââ */}
+          {/* What's included — shared across all premium plans */}
+          {featuredPlan?.features?.length > 0 && (
+            <div
+              className="px-6 py-5"
+              style={{ borderTop: "1px solid rgba(255,255,255,0.055)" }}
+            >
+              <div
+                className="text-[10px] font-semibold text-slate-600 uppercase tracking-[0.1em] mb-3"
+              >
+                Included in all Premium plans
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1.5">
+                {featuredPlan.features.map((f: string) => (
+                  <div key={f} className="flex items-start gap-2">
+                    <CheckCircle
+                      className="w-3 h-3 flex-shrink-0 mt-[2px]"
+                      style={{ color: "#34d399" }}
+                    />
+                    <span className="text-[11px] text-slate-400 leading-snug">{f}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Payment Instructions — revealed when a plan is selected */}
           {selectedPlanData && (
             <div
-              className="mt-6 rounded-xl overflow-hidden"
+              className="mx-6 mb-6 rounded-xl overflow-hidden"
               style={{
                 background: "rgba(255,255,255,0.018)",
                 border: "1px solid rgba(255,255,255,0.06)",
@@ -357,14 +397,14 @@ export default function BillingPage() {
                 <div className="flex items-center gap-2">
                   <Zap className="w-3.5 h-3.5 text-cyan-400" />
                   <span className="text-xs font-semibold text-white">
-                    Payment Instructions â {selectedPlanData.displayName}
+                    Payment Instructions — {selectedPlanData.displayName}
                   </span>
                 </div>
                 <span
                   className="text-[11px] font-mono font-bold"
                   style={{ color: "#22d3ee" }}
                 >
-                  {selectedPlanData.priceTao} Ï
+                  {selectedPlanData.priceTao} τ
                 </span>
               </div>
 
@@ -378,13 +418,13 @@ export default function BillingPage() {
                   },
                   {
                     n: 2,
-                    title: `Send exactly ${selectedPlanData.priceTao} Ï`,
+                    title: `Send exactly ${selectedPlanData.priceTao} τ`,
                     body: "Send the exact amount to the address shown. Partial or over-payments require manual review.",
                   },
                   {
                     n: 3,
                     title: "Automatic on-chain activation",
-                    body: "Our chain watcher confirms the transaction (typically 3â6 blocks). Premium activates automatically â no action needed on your part.",
+                    body: "Our chain watcher confirms the transaction (typically 3–6 blocks). Premium activates automatically — no action needed on your part.",
                   },
                   {
                     n: 4,
@@ -442,7 +482,7 @@ export default function BillingPage() {
                   }}
                 >
                   <Zap className="w-4 h-4" />
-                  Generate Payment Address for {selectedPlanData.priceTao} Ï
+                  Generate Payment Address for {selectedPlanData.priceTao} τ
                   <ArrowRight className="w-3.5 h-3.5 opacity-70" />
                 </button>
               </div>
@@ -451,64 +491,62 @@ export default function BillingPage() {
         </div>
       </FadeIn>
 
-      {/* ââ Trust Pillars ââ */}
+      {/* ── Trust strip ── */}
       <FadeIn delay={0.12}>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[
-            {
-              icon: Shield,
-              color: "#34d399",
-              bg: "rgba(52,211,153,0.1)",
-              bdr: "rgba(52,211,153,0.2)",
-              title: "On-chain payments",
-              desc: "Every payment is a verifiable TAO transaction on the Bittensor network. No intermediaries, no black boxes.",
-            },
-            {
-              icon: Sparkles,
-              color: "#a78bfa",
-              bg: "rgba(167,139,250,0.1)",
-              bdr: "rgba(167,139,250,0.2)",
-              title: "Time stacks, never resets",
-              desc: "Upgrading or renewing while active always adds days on top. Your existing premium balance is never lost.",
-            },
-            {
-              icon: Lock,
-              color: "#22d3ee",
-              bg: "rgba(34,211,238,0.1)",
-              bdr: "rgba(34,211,238,0.2)",
-              title: "No card. No bank. Just TAO.",
-              desc: "We accept only TAO. No credit cards, no bank connections, no personal financial data collected.",
-            },
-          ].map(({ icon: Icon, color, bg, bdr, title, desc }) => (
-            <div
-              key={title}
-              className="rounded-xl"
-              style={{
-                background: "linear-gradient(145deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0.012) 100%)",
-                border: "1px solid rgba(255,255,255,0.065)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04), 0 2px 12px rgba(0,0,0,0.2)",
-                padding: "20px",
-              }}
-            >
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{
+            background: "linear-gradient(145deg, rgba(255,255,255,0.022) 0%, rgba(255,255,255,0.01) 100%)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.035), 0 2px 12px rgba(0,0,0,0.18)",
+          }}
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-3">
+            {[
+              {
+                icon: Shield,
+                color: "#34d399",
+                title: "On-chain payments",
+                desc: "Every payment is a verifiable TAO transaction on the Bittensor network. No intermediaries.",
+              },
+              {
+                icon: Sparkles,
+                color: "#a78bfa",
+                title: "Time stacks, never resets",
+                desc: "Renewing while active always adds days on top. Your existing premium balance is never lost.",
+              },
+              {
+                icon: Lock,
+                color: "#22d3ee",
+                title: "No card. No bank. Just TAO.",
+                desc: "We accept only TAO. No credit cards, no bank connections, no personal financial data.",
+              },
+            ].map(({ icon: Icon, color, title, desc }, idx, arr) => (
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center mb-4"
-                style={{ background: bg, border: `1px solid ${bdr}` }}
+                key={title}
+                className={cn(
+                  "flex items-start gap-3.5 px-6 py-5",
+                  idx < arr.length - 1 && "border-b sm:border-b-0 sm:border-r",
+                )}
+                style={idx < arr.length - 1 ? { borderColor: "rgba(255,255,255,0.055)" } : {}}
               >
-                <Icon className="w-4 h-4" style={{ color }} />
+                <Icon className="w-3.5 h-3.5 flex-shrink-0 mt-[2px]" style={{ color }} />
+                <div>
+                  <p
+                    className="font-semibold text-white mb-1"
+                    style={{ fontSize: "11px", letterSpacing: "-0.01em" }}
+                  >
+                    {title}
+                  </p>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">{desc}</p>
+                </div>
               </div>
-              <p
-                className="font-semibold text-white mb-1.5"
-                style={{ fontSize: "12px", letterSpacing: "-0.01em" }}
-              >
-                {title}
-              </p>
-              <p className="text-[11px] text-slate-500 leading-relaxed">{desc}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </FadeIn>
 
-      {/* ââ Payment History ââ */}
+      {/* ── Payment History ── */}
       <FadeIn delay={0.16}>
         <div
           className="rounded-2xl"
@@ -535,7 +573,7 @@ export default function BillingPage() {
                 borderBottom: "1px solid rgba(255,255,255,0.055)",
               }}
             >
-              {["Date", "Plan", "Ï Amount", "USD", "Type", "Tx Hash", "Status"].map((h) => (
+              {["Date", "Plan", "τ Amount", "USD", "Type", "Tx Hash", "Status"].map((h) => (
                 <span key={h} className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">
                   {h}
                 </span>
@@ -549,7 +587,7 @@ export default function BillingPage() {
                 className="grid items-center px-4 py-3.5 transition-colors duration-150"
                 style={{
                   gridTemplateColumns: "140px 1fr 80px 70px 100px 1fr 90px",
-                minWidth: "700px",
+                  minWidth: "700px",
                   borderBottom: i < paymentHistory.length - 1
                     ? "1px solid rgba(255,255,255,0.04)"
                     : "none",
@@ -567,7 +605,7 @@ export default function BillingPage() {
 
                 {/* TAO */}
                 <span className="text-xs font-mono font-bold" style={{ color: "#22d3ee", fontVariantNumeric: "tabular-nums" }}>
-                  {p.amountTao} Ï
+                  {p.amountTao} τ
                 </span>
 
                 {/* USD */}
@@ -579,7 +617,7 @@ export default function BillingPage() {
                 {/* Tx Hash */}
                 <div className="flex items-center gap-1.5">
                   <code className="text-[10px] font-mono text-slate-600">
-                    {p.txHash.slice(0, 14)}â¦
+                    {p.txHash.slice(0, 14)}…
                   </code>
                   <button
                     className="transition-colors duration-150"
@@ -600,7 +638,7 @@ export default function BillingPage() {
           {/* Footer */}
           <div className="flex items-center justify-between mt-4">
             <p className="text-[11px] text-slate-600">
-              {paymentHistory.length} transactions Â· all confirmed on-chain
+              {paymentHistory.length} transactions · all confirmed on-chain
             </p>
             <button
               className="flex items-center gap-1.5 text-[11px] font-semibold transition-colors duration-150"
