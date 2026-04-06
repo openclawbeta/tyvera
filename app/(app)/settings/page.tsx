@@ -9,8 +9,7 @@ import {
 import { PageHeader } from "@/components/layout/page-header";
 import { FadeIn } from "@/components/ui-custom/fade-in";
 import { useWallet } from "@/lib/wallet-context";
-import { truncateAddress } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { truncateAddress, cn } from "@/lib/utils";
 
 /* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 /* Primitives                                                           */
@@ -56,7 +55,7 @@ function SettingRow({
 }) {
   return (
     <div
-      className="flex items-center justify-between gap-6 py-4"
+      className="flex items-center justify-between gap-6 py-3.5"
       style={last ? undefined : { borderBottom: "1px solid rgba(255,255,255,0.04)" }}
     >
       <div className="flex-1">
@@ -160,22 +159,15 @@ function WalletSection() {
             </p>
           </div>
 
-          {/* Trust grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+          {/* Trust checklist */}
+          <div className="space-y-2 mb-5">
             {[
               { icon: Shield,      text: "Wallet stays fully in your control" },
-              { icon: Lock,        text: "No seed phrase stored â ever" },
+              { icon: Lock,        text: "No seed phrase stored — ever" },
               { icon: CheckCircle, text: "You approve every on-chain action" },
             ].map(({ icon: Icon, text }) => (
-              <div
-                key={text}
-                className="flex items-start gap-2.5 p-3 rounded-xl"
-                style={{
-                  background: "rgba(52,211,153,0.05)",
-                  border: "1px solid rgba(52,211,153,0.12)",
-                }}
-              >
-                <Icon className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-[1px]" />
+              <div key={text} className="flex items-center gap-2">
+                <Icon className="w-3 h-3 flex-shrink-0 text-emerald-400" />
                 <span className="text-[11px] text-slate-500 leading-snug">{text}</span>
               </div>
             ))}
@@ -232,7 +224,7 @@ function WalletSection() {
                   className="text-[12px] font-bold"
                   style={{ color: isVerified ? "#22d3ee" : "#fbbf24", letterSpacing: "-0.01em" }}
                 >
-                  {isVerified ? "Verified" : "Unverified"} Â· Polkadot.js
+                  {isVerified ? "Verified" : "Unverified"} · Polkadot.js
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -303,10 +295,7 @@ function WalletSection() {
           </div>
 
           {/* Trust copy */}
-          <div
-            className="p-4 rounded-xl mb-5 space-y-2"
-            style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.055)" }}
-          >
+          <div className="mt-4 pt-4 mb-5 space-y-2" style={{ borderTop: "1px solid rgba(255,255,255,0.045)" }}>
             {[
               { icon: Shield,      text: "Your wallet and keys never leave your device." },
               { icon: Lock,        text: "Tyvera stores no private keys and no seed phrases." },
@@ -558,7 +547,7 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState("account");
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       <FadeIn>
         <PageHeader
           title="Settings"
@@ -568,7 +557,7 @@ export default function SettingsPage() {
 
       <div className="flex flex-col lg:flex-row gap-6 mt-2">
         {/* ââ Section nav ââ */}
-        <div className="w-full lg:w-44 flex-shrink-0 pt-0 lg:pt-1">
+        <div className="w-full lg:w-40 flex-shrink-0 pt-0 lg:pt-1">
           <nav className="flex gap-1 overflow-x-auto pb-2 lg:pb-0 lg:flex-col lg:space-y-0.5 lg:sticky lg:top-20">
             {SECTIONS.map((s) => {
               const Icon = s.icon;
@@ -577,7 +566,7 @@ export default function SettingsPage() {
                 <button
                   key={s.id}
                   onClick={() => setActiveSection(s.id)}
-                  className="flex-shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150"
+                  className="flex-shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all duration-150"
                   style={{
                     fontSize: "12px",
                     fontWeight: isActive ? 600 : 500,
