@@ -274,7 +274,7 @@ export default function HomePage() {
 
       {/* ── MARKET STRIP ────────────────────────────────────────────── */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.012)", overflow: "hidden" }}>
-        <div className="flex py-2.5">
+        <div className="ticker-track inline-flex min-w-max whitespace-nowrap py-2.5">
           {[...TICKER, ...TICKER].map((item, i) => (
             <div
               key={i}
