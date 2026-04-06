@@ -1,17 +1,15 @@
 "use client";
 
-import { Search, Bell, Settings, Menu } from "lucide-react";
+import { Bell, Settings, Menu } from "lucide-react";
 import { LiveTicker } from "@/components/ui-custom/live-ticker";
 import { WalletStatusChip } from "@/components/wallet/wallet-status-chip";
 import { WalletConnectModal } from "@/components/wallet/wallet-connect-modal";
 import { WalletApprovalDialog } from "@/components/wallet/wallet-approval-dialog";
 import { useSidebar } from "@/lib/sidebar-context";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 export function Topbar() {
   const { toggle } = useSidebar();
-  const router = useRouter();
 
   return (
     <>
@@ -49,45 +47,6 @@ export function Topbar() {
 
         {/* Right controls */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
-
-          {/* Search — hidden on smallest screens */}
-          <button
-            onClick={() => router.push("/subnets")}
-            className="hidden sm:flex items-center gap-2 transition-all duration-200"
-            style={{
-              padding: "5px 12px",
-              borderRadius: "10px",
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.07)",
-              color: "#64748b",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.065)";
-              (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.11)";
-              (e.currentTarget as HTMLElement).style.color = "#94a3b8";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)";
-              (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.07)";
-              (e.currentTarget as HTMLElement).style.color = "#64748b";
-            }}
-          >
-            <Search className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="text-xs hidden lg:block whitespace-nowrap" style={{ letterSpacing: "-0.01em" }}>
-              Search subnets…
-            </span>
-            <kbd
-              className="hidden lg:block text-[9px] rounded px-1.5 py-0.5"
-              style={{
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.09)",
-                color: "#475569",
-                fontFamily: "inherit",
-              }}
-            >
-              ⌘K
-            </kbd>
-          </button>
 
           {/* Bell */}
           <button
