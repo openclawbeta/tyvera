@@ -7,9 +7,11 @@ import { WalletConnectModal } from "@/components/wallet/wallet-connect-modal";
 import { WalletApprovalDialog } from "@/components/wallet/wallet-approval-dialog";
 import { useSidebar } from "@/lib/sidebar-context";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export function Topbar() {
   const { toggle } = useSidebar();
+  const router = useRouter();
 
   return (
     <>
@@ -50,6 +52,7 @@ export function Topbar() {
 
           {/* Search — hidden on smallest screens */}
           <button
+            onClick={() => router.push("/subnets")}
             className="hidden sm:flex items-center gap-2 transition-all duration-200"
             style={{
               padding: "5px 12px",

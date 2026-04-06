@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/lib/sidebar-context";
+import { useWallet } from "@/lib/wallet-context";
+import { truncateAddress } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { label: "Dashboard",       href: "/dashboard",       icon: LayoutDashboard },
@@ -29,6 +31,7 @@ const NAV_ITEMS = [
 export function AppSidebar() {
   const pathname = usePathname();
   const { isOpen, close } = useSidebar();
+  const { address } = useWallet();
 
   // Close sidebar whenever the route changes (mobile nav tap)
   useEffect(() => {
@@ -183,40 +186,41 @@ export function AppSidebar() {
             </span>
           </div>
 
-          {/* User row */}
-          <div
-            className="flex items-center gap-2.5 px-2 py-2 rounded-xl cursor-pointer transition-all duration-200"
-            style={{
-              background: "transparent",
-              border: "1px solid transparent",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
-              (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.05)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "transparent";
-              (e.currentTarget as HTMLElement).style.borderColor = "transparent";
-            }}
-          >
+          {/* Wallet identity row — only render when a real address is present */}
+          {address ? (
             <div
-              className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] font-bold text-white"
-              style={{
-                background: "linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)",
-                boxShadow: "0 0 0 2px rgba(124,58,237,0.25)",
+              className="flex items-center gap-2.5 px-2 py-2 rounded-xl transition-all duration-200"
+              style={{ background: "transparent", border: "1px solid transparent" }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
+                (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.05)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = "transparent";
+                (e.currentTarget as HTMLElement).style.borderColor = "transparent";
               }}
             >
-              O
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[12px] font-semibold text-slate-300 leading-none truncate tracking-[-0.01em]">
-                openclaw.eth
+              <div
+                className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center"
+                style={{
+                  background: "rgba(34,211,238,0.1)",
+                  border: "1px solid rgba(34,211,238,0.2)",
+                }}
+              >
+                <Wallet className="w-3.5 h-3.5" style={{ color: "#22d3ee" }} />
               </div>
-              <div className="text-[10px] text-slate-600 font-mono mt-0.5 truncate">
-                5Grwva…utQY
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] font-mono text-slate-400 truncate">
+                  {truncateAddress(address)}
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-2">
+              <Wallet className="w-3 h-3 flex-shrink-0" style={{ color: "#334155" }} />
+              <span className="text-[10px] text-slate-700">No wallet connected</span>
+            </div>
+          )}
         </div>
       </aside>
     </>
