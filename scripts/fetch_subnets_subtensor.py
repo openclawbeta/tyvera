@@ -102,14 +102,20 @@ TAO_IN_CANDIDATES = [
 ]
 
 EMISSION_CANDIDATES = [
-    # Phase 5.2: Emission is a StorageValue<Vec<u64>>, NOT a StorageMap.
-    # We keep it in this list so it resolves, then query it as a plain Vec.
-    "Emission",
+    # Phase 5.3: dTAO-era StorageMaps (confirmed in opentensor/subtensor pallet source).
+    # These are tried first at query-time via the fallback loop in fetch_chain_metrics.
+    "SubnetTaoInEmission",   # StorageMap<Identity, NetUid, TaoBalance> — TAO emitted/block per subnet (dTAO)
+    "SubnetAlphaOutEmission",# StorageMap<Identity, NetUid, AlphaBalance> — alpha out/block (dTAO, needs price conv)
+    # Legacy / pre-dTAO candidates — kept for older runtime compatibility.
+    # Note: "Emission" resolves in metadata on Finney but is a StorageValue<Vec<u64>>
+    # that is all-zero in dTAO. It is NOT tried as a StorageMap; Layer 2 handles
+    # it separately as a plain Vec fallback.
     "EmissionValues",
     "SubnetEmission",
     "PendingEmission",
     "EmissionValue",
     "SubnetEmissionValues",
+    "Emission",              # kept last — Vec type, handled by Layer 2, not Layer 1 loop
 ]
 
 NAME_CANDIDATES = [
@@ -344,6 +350,47 @@ def resolve_storage_fn(
             file=sys.stderr,
         )
     return None
+
+
+def resolve_all_storage_fns(
+    substrate,
+    available: set[str],
+    candidates: list[str],
+    label: str = "",
+    verbose: bool = True,
+) -> list[str]:
+    """
+    Phase 5.3: Return ALL candidate names that exist in the runtime metadata,
+    preserving candidate order.
+
+    Unlike resolve_storage_fn (which returns only the first match), this allows
+    the emission layer to attempt multiple keys at query-time and stop at the
+    first one that actually returns non-zero data.  This decouples metadata
+    presence from semantic usefulness — e.g. "Emission" exists in metadata on
+    Finney but is all-zero in dTAO, while "SubnetTaoInEmission" is the correct
+    populated source.
+    """
+    if available:
+        found = [c for c in candidates if c in available]
+    else:
+        found = []
+        for c in candidates:
+            try:
+                if substrate.get_metadata_storage_function("SubtensorModule", c) is not None:
+                    found.append(c)
+            except Exception:
+                pass
+
+    if verbose:
+        label_str = label or "emission"
+        if found:
+            print(f"  [resolve] {label_str:12s} → all present: {found}", flush=True)
+        else:
+            print(
+                f"  [resolve] {label_str:12s} → NO candidates found  (tried: {candidates})",
+                file=sys.stderr,
+            )
+    return found
 
 
 def list_all_pallet_storage(subtensor, verbose: bool = True) -> None:
@@ -723,13 +770,20 @@ def fetch_chain_metrics(
     if verbose:
         print("[resolve]  mapping fields to storage functions …", flush=True)
 
+    # Phase 5.3: emission uses resolve_all_storage_fns so the query loop can try
+    # each present candidate in order rather than trusting the first-resolved key.
+    emission_keys: list[str] = resolve_all_storage_fns(
+        sub, available, EMISSION_CANDIDATES, "emission", verbose
+    )
+
     resolved = {
-        "tao_in":   resolve_storage_fn(sub, available, TAO_IN_CANDIDATES,   "tao_in",   verbose),
-        "emission": resolve_storage_fn(sub, available, EMISSION_CANDIDATES,  "emission", verbose),
-        "name":     resolve_storage_fn(sub, available, NAME_CANDIDATES,      "name",     verbose),
-        "symbol":   resolve_storage_fn(sub, available, SYMBOL_CANDIDATES,    "symbol",   verbose),
-        "stakers":  STAKERS_KEY if (STAKERS_KEY in available or not available) else None,
-        "reg_at":   REG_AT_KEY  if (REG_AT_KEY  in available or not available) else None,
+        "tao_in":        resolve_storage_fn(sub, available, TAO_IN_CANDIDATES, "tao_in",  verbose),
+        "emission":      emission_keys[0] if emission_keys else None,  # first present (for logging)
+        "emission_keys": emission_keys,
+        "name":          resolve_storage_fn(sub, available, NAME_CANDIDATES,   "name",    verbose),
+        "symbol":        resolve_storage_fn(sub, available, SYMBOL_CANDIDATES, "symbol",  verbose),
+        "stakers":       STAKERS_KEY if (STAKERS_KEY in available or not available) else None,
+        "reg_at":        REG_AT_KEY  if (REG_AT_KEY  in available or not available) else None,
     }
 
     if not available:
@@ -738,6 +792,8 @@ def fetch_chain_metrics(
 
     if verbose:
         for field, key in resolved.items():
+            if field == "emission_keys":
+                continue  # already printed by resolve_all_storage_fns
             status = key or "NOT FOUND"
             print(f"  [resolve] {field:12s} → {status}", flush=True)
 
@@ -755,45 +811,66 @@ def fetch_chain_metrics(
         for nuid, rao in tao_in_map.items():
             metrics.setdefault(nuid, {})["tao_in_rao"] = rao
 
-    # ── Emission — Layer 1: try as StorageMap ─────────────────────────────────
+    # ── Emission — Layer 1: query-time fallback loop across all present candidates ──
+    #
+    # Phase 5.3 fix: instead of trusting the first metadata-present key
+    # (which may be semantically useless, e.g. "Emission" Vec all-zero in dTAO),
+    # we iterate all present candidates as StorageMaps and stop at the first one
+    # that returns non-zero data.  "Emission" is kept in the list but moved last
+    # so dTAO keys (SubnetTaoInEmission) are tried first; it is also handled
+    # separately as a plain Vec in Layer 2 below.
     emission_source = "none"
-    if resolved["emission"]:
+    VEC_ONLY_KEYS = {"Emission"}   # keys known to be StorageValue<Vec>, not StorageMap
+
+    for emi_key in resolved["emission_keys"]:
+        if emi_key in VEC_ONLY_KEYS:
+            continue  # defer to Layer 2
         emi_map = batch_query_map(
-            sub, resolved["emission"], transform=lambda v: int(v or 0), verbose=verbose
+            sub, emi_key, transform=lambda v: int(v or 0), verbose=verbose
         )
         n_nonzero = sum(1 for v in emi_map.values() if v > 0)
+        if verbose:
+            print(
+                f"  [emission] Layer 1 {emi_key}: {n_nonzero}/{len(emi_map)} non-zero",
+                flush=True,
+            )
         if n_nonzero > 0:
             for nuid, rao in emi_map.items():
                 metrics.setdefault(nuid, {})["emission_rao_per_block"] = rao
-            emission_source = f"StorageMap:{resolved['emission']}"
+            emission_source = f"StorageMap:{emi_key}"
+            resolved["emission"] = emi_key   # record actual winner
             if verbose:
                 print(
-                    f"  [emission] Layer 1 (StorageMap) OK: "
-                    f"{n_nonzero} non-zero ({resolved['emission']})",
+                    f"  [emission] Layer 1 OK: {n_nonzero} non-zero via {emi_key}",
                     flush=True,
                 )
+            break
 
-    # ── Emission — Layer 2: try as plain Vec<u64> (Phase 5.2 root-cause fix) ──
-    if emission_source == "none" and resolved["emission"]:
+    # ── Emission — Layer 2: "Emission" as plain Vec<u64> (legacy runtime fallback) ──
+    #
+    # Only attempted if "Emission" was present in metadata and no StorageMap
+    # candidate succeeded above.  In dTAO this Vec is all-zero, but on older
+    # runtimes it carries real per-subnet emission at position = netuid.
+    if emission_source == "none" and "Emission" in resolved["emission_keys"]:
         if verbose:
             print(
-                f"  [emission] Layer 1 (StorageMap) returned all zeros — "
-                f"trying as plain Vec<u64> …",
+                "  [emission] all StorageMap candidates zero — "
+                "trying Emission as plain Vec<u64> …",
                 flush=True,
             )
         vec_map = query_plain_vec_as_map(
-            sub, resolved["emission"], transform=lambda v: int(v or 0), verbose=verbose
+            sub, "Emission", transform=lambda v: int(v or 0), verbose=verbose
         )
         n_nonzero = sum(1 for v in vec_map.values() if v > 0)
         if n_nonzero > 0:
             for nuid, rao in vec_map.items():
                 if nuid > 0:  # skip index 0 (root subnet)
                     metrics.setdefault(nuid, {})["emission_rao_per_block"] = rao
-            emission_source = f"PlainVec:{resolved['emission']}"
+            emission_source = "PlainVec:Emission"
+            resolved["emission"] = "Emission"
             if verbose:
                 print(
-                    f"  [emission] Layer 2 (plain Vec) OK: "
-                    f"{n_nonzero} non-zero ({resolved['emission']})",
+                    f"  [emission] Layer 2 (plain Vec) OK: {n_nonzero} non-zero",
                     flush=True,
                 )
 
