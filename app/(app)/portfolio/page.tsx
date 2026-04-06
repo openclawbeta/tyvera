@@ -1,9 +1,8 @@
 "use client";
 
-import { Wallet, TrendingUp, BarChart2, Zap, Download, RefreshCw } from "lucide-react";
+import { Download, RefreshCw, ArrowRight, Zap } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
-import { StatCard } from "@/components/ui-custom/stat-card";
 import { SectionTitle } from "@/components/ui-custom/section-title";
 import { FadeIn } from "@/components/ui-custom/fade-in";
 import { AllocationChartCard } from "@/components/portfolio/allocation-chart-card";
@@ -13,24 +12,23 @@ import { SimpleLineChart } from "@/components/charts/simple-line-chart";
 import { getPortfolio, getPortfolioActivity, getPortfolioHistory, getWatchlist } from "@/lib/api/portfolio";
 import { getRecommendations } from "@/lib/api/recommendations";
 import { cn, subnetGradient, formatDate } from "@/lib/utils";
-import { ArrowRight } from "lucide-react";
 
 export default function PortfolioPage() {
-  const portfolio = getPortfolio();
-  const history = getPortfolioHistory();
-  const recentChanges = getPortfolioActivity();
-  const watchlist = getWatchlist();
-  const recommendations = getRecommendations();
+  const portfolio        = getPortfolio();
+  const history          = getPortfolioHistory();
+  const recentChanges    = getPortfolioActivity();
+  const watchlist        = getWatchlist();
+  const recommendations  = getRecommendations();
 
   const { stats: portfolioStats, allocations } = portfolio;
-  const earningsData = Array.from({ length: 30 }, (_, i) => ({
-    label: `d${i + 1}`,
-    value: parseFloat((0.004 + Math.sin(i * 0.3) * 0.001 + i * 0.0001).toFixed(5)),
-  }));
   const topRec = recommendations[1] ?? recommendations[0];
 
+  // Risk posture — factual derivation, no prose
+  const topAlloc    = [...allocations].sort((a, b) => b.fraction - a.fraction)[0];
+  const diversScore = portfolioStats.diversificationScore;
+
   return (
-    <div className="max-w-[1400px] mx-auto space-y-6">
+    <div className="max-w-[1400px] mx-auto space-y-5">
       <PageHeader
         title="Portfolio"
         subtitle="Your staked TAO positions and performance"
@@ -45,110 +43,212 @@ export default function PortfolioPage() {
         </button>
       </PageHeader>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard label="Total Staked"    value={`${portfolioStats.totalStakedTao.toFixed(2)} τ`}   change={2.4}  accent="cyan"    icon={<Wallet className="w-4 h-4" />}    index={0} />
-        <StatCard label="Weighted Yield"  value={`${portfolioStats.weightedYield.toFixed(1)}%`}      change={0.6}  accent="emerald" icon={<TrendingUp className="w-4 h-4" />} index={1} />
-        <StatCard label="30-Day Earnings" value={`${portfolioStats.earnings30d.toFixed(4)} τ`}       change={8.2}  accent="violet"  icon={<Zap className="w-4 h-4" />}       index={2} />
-        <StatCard label="Diversification" value={`${portfolioStats.diversificationScore}/100`}       change={0}    accent="amber"   icon={<BarChart2 className="w-4 h-4" />}  index={3} />
-      </div>
+      {/* ── Metric strip ───────────────────────────────────────────── */}
+      <FadeIn>
+        <GlassCard>
+          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-white/[0.05]">
+            {[
+              {
+                label: "Total staked",
+                value: `${portfolioStats.totalStakedTao.toFixed(2)} τ`,
+                delta: "+2.4% 30d",
+              },
+              {
+                label: "Weighted yield",
+                value: `${portfolioStats.weightedYield.toFixed(1)}%`,
+                delta: "+0.6pp 30d",
+              },
+              {
+                label: "30-day earnings",
+                value: `${portfolioStats.earnings30d.toFixed(4)} τ`,
+                delta: "+8.2% 30d",
+              },
+              {
+                label: "Portfolio value",
+                value: `$${portfolioStats.totalValueUsd.toLocaleString()}`,
+                delta: null,
+              },
+            ].map(({ label, value, delta }, i) => (
+              <div
+                key={label}
+                className="px-5 py-4"
+                style={{
+                  paddingLeft:  i === 0 ? 0     : undefined,
+                  paddingRight: i === 3 ? 0     : undefined,
+                }}
+              >
+                <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-[0.08em] mb-2">
+                  {label}
+                </p>
+                <p className="text-[20px] font-bold text-white tracking-tight leading-none">
+                  {value}
+                </p>
+                {delta && (
+                  <p className="text-[10px] text-emerald-400 font-medium mt-1.5">{delta}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      </FadeIn>
 
-      {/* Main grid */}
-      <div className="grid grid-cols-12 gap-4">
+      {/* ── Main zone ──────────────────────────────────────────────── */}
+      <div className="grid grid-cols-12 gap-5">
 
-        {/* Left — allocation + holdings */}
-        <div className="col-span-12 lg:col-span-8 space-y-4">
+        {/* Allocation + value trend */}
+        <div className="col-span-12 lg:col-span-8 space-y-5">
 
-          {/* Allocation chart */}
-          <FadeIn delay={0.1}>
+          <FadeIn delay={0.05}>
             <GlassCard>
-              <SectionTitle title="Allocation Breakdown" subtitle="Current stake distribution" />
+              <SectionTitle
+                title="Allocation"
+                subtitle={`${allocations.length} active positions`}
+              />
               <AllocationChartCard allocations={allocations} />
             </GlassCard>
           </FadeIn>
 
-          {/* Holdings table */}
-          <FadeIn delay={0.15}>
+          <FadeIn delay={0.1}>
             <GlassCard>
-              <SectionTitle title="Holdings" subtitle={`${allocations.length} active positions`}>
-                <button className="btn-ghost text-xs">View all</button>
-              </SectionTitle>
-              <HoldingsList allocations={allocations} />
-            </GlassCard>
-          </FadeIn>
-
-          {/* Daily earnings chart */}
-          <FadeIn delay={0.2}>
-            <GlassCard>
-              <SectionTitle title="Daily Earnings" subtitle="τ earned per day (30d)" />
+              <SectionTitle title="Portfolio value" subtitle="30-day trend" />
               <SimpleLineChart
-                data={earningsData}
-                color="#10b981"
-                height={120}
-                suffix=" τ"
-                gradientId="earningsGrad"
+                data={history.value}
+                color="#22d3ee"
+                height={110}
+                prefix="$"
+                gradientId="portfolioValueGrad"
               />
             </GlassCard>
           </FadeIn>
 
-          {/* Recent changes */}
-          <FadeIn delay={0.22}>
-            <GlassCard>
-              <SectionTitle title="Transaction History" subtitle="Stake moves and additions" />
-              <div className="space-y-0">
-                {recentChanges.map((c) => (
-                  <div key={c.id} className="flex items-center gap-4 py-3.5 border-b border-white/[0.04] last:border-0">
-                    <div className={cn(
-                      "w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white flex-shrink-0",
-                      c.type === "MOVE" ? "bg-gradient-to-br from-cyan-500 to-sky-700" : "bg-gradient-to-br from-emerald-500 to-teal-700",
-                    )}>
-                      {c.type === "MOVE" ? "→" : "+"}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white">
-                        {c.type === "MOVE" ? `${c.fromSubnet} → ${c.toSubnet}` : `Staked to ${c.subnet}`}
-                      </p>
-                      <p className="text-xs text-slate-500 font-mono mt-0.5 truncate">tx: {c.txHash ? `${c.txHash.slice(0, 20)}…` : "—"}</p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-semibold text-white">{c.amount.toFixed(2)} τ</p>
-                      <p className="text-xs text-slate-500">{formatDate(c.timestamp)}</p>
-                    </div>
-                    <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-2 py-1 rounded-md flex-shrink-0">
-                      {c.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </GlassCard>
-          </FadeIn>
         </div>
 
-        {/* Right sidebar */}
-        <div className="col-span-12 lg:col-span-4 space-y-4">
+        {/* Analysis panel */}
+        <div className="col-span-12 lg:col-span-4 space-y-5">
 
-          {/* Portfolio stats summary */}
-          <FadeIn delay={0.12}>
+          {/* Summary + risk posture */}
+          <FadeIn delay={0.08}>
             <GlassCard>
               <SectionTitle title="Summary" />
-              <div className="space-y-3">
+              <div className="space-y-0">
                 {[
-                  { label: "Total positions",    value: `${allocations.length} subnets`                  },
-                  { label: "Top position",        value: portfolioStats.topSubnet                        },
-                  { label: "Est. monthly yield",  value: `${portfolioStats.earnings30d.toFixed(4)} τ`    },
-                  { label: "Portfolio value",     value: `$${portfolioStats.totalValueUsd.toLocaleString()}` },
-                  { label: "Avg validator take",  value: "15.5%"                                          },
+                  { label: "Positions",         value: `${allocations.length} subnets`                              },
+                  { label: "Top position",       value: portfolioStats.topSubnet                                     },
+                  { label: "Est. monthly yield", value: `${portfolioStats.earnings30d.toFixed(4)} τ`                 },
+                  { label: "Avg validator take", value: "15.5%"                                                      },
                 ].map(({ label, value }) => (
-                  <div key={label} className="flex items-center justify-between py-2 border-b border-white/[0.04] last:border-0">
-                    <span className="text-xs text-slate-500">{label}</span>
-                    <span className="text-xs font-semibold text-white">{value}</span>
+                  <div
+                    key={label}
+                    className="flex items-center justify-between py-2.5 border-b border-white/[0.04] last:border-0"
+                  >
+                    <span className="text-[11px] text-slate-500">{label}</span>
+                    <span className="text-[12px] font-semibold text-white">{value}</span>
                   </div>
                 ))}
+              </div>
+
+              {/* Risk posture */}
+              <div
+                className="mt-4 pt-4"
+                style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
+              >
+                <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-[0.08em] mb-2.5">
+                  Risk posture
+                </p>
+                <div className="space-y-0">
+                  {[
+                    {
+                      label: "Diversification",
+                      value: `${diversScore} / 100`,
+                    },
+                    {
+                      label: "Largest position",
+                      value: topAlloc
+                        ? `${(topAlloc.fraction * 100).toFixed(1)}% — ${topAlloc.name}`
+                        : "—",
+                    },
+                    {
+                      label: "Active subnets",
+                      value: `${allocations.length} of 128`,
+                    },
+                  ].map(({ label, value }) => (
+                    <div
+                      key={label}
+                      className="flex items-center justify-between py-2.5 border-b border-white/[0.04] last:border-0"
+                    >
+                      <span className="text-[11px] text-slate-500">{label}</span>
+                      <span className="text-[12px] font-semibold text-slate-300">{value}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </GlassCard>
           </FadeIn>
 
-          {/* Watchlist */}
+          {/* Suggested move */}
+          {topRec && (
+            <FadeIn delay={0.14}>
+              <div
+                className="rounded-2xl p-5"
+                style={{
+                  background: "rgba(34,211,238,0.03)",
+                  border: "1px solid rgba(34,211,238,0.14)",
+                }}
+              >
+                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.08em] mb-3">
+                  Suggested move
+                </p>
+                <div className="flex items-center gap-2 mb-3">
+                  <div
+                    className={cn(
+                      "w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white",
+                      `bg-gradient-to-br ${subnetGradient(topRec.fromSubnet.netuid)}`,
+                    )}
+                  >
+                    {topRec.fromSubnet.netuid}
+                  </div>
+                  <ArrowRight className="w-3 h-3 text-slate-600" />
+                  <div
+                    className={cn(
+                      "w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white",
+                      `bg-gradient-to-br ${subnetGradient(topRec.toSubnet.netuid)}`,
+                    )}
+                  >
+                    {topRec.toSubnet.netuid}
+                  </div>
+                  <div className="ml-auto flex items-baseline gap-1">
+                    <span className="text-[14px] font-bold text-emerald-400">
+                      +{topRec.projectedEdge.toFixed(1)}%
+                    </span>
+                    <span className="text-[10px] text-slate-600">edge</span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-500 mb-3 line-clamp-2">{topRec.rationale}</p>
+                <button className="w-full btn-primary justify-center text-xs py-2">
+                  <Zap className="w-3.5 h-3.5" />
+                  Review move
+                </button>
+              </div>
+            </FadeIn>
+          )}
+
+        </div>
+      </div>
+
+      {/* ── Holdings — full width ───────────────────────────────────── */}
+      <FadeIn delay={0.12}>
+        <GlassCard>
+          <SectionTitle title="Holdings" subtitle={`${allocations.length} positions`}>
+            <button className="btn-ghost text-xs">View all</button>
+          </SectionTitle>
+          <HoldingsList allocations={allocations} />
+        </GlassCard>
+      </FadeIn>
+
+      {/* ── Lower row: watchlist + tx history ──────────────────────── */}
+      <div className="grid grid-cols-12 gap-5">
+
+        <div className="col-span-12 lg:col-span-7">
           <FadeIn delay={0.16}>
             <GlassCard>
               <SectionTitle title="Watchlist" subtitle="Subnets you're tracking">
@@ -160,33 +260,49 @@ export default function PortfolioPage() {
               <WatchlistCard items={watchlist} />
             </GlassCard>
           </FadeIn>
-
-          {/* Recommended move */}
-          {topRec && (
-            <FadeIn delay={0.2}>
-              <div className="rounded-2xl border border-cyan-400/25 bg-cyan-400/[0.04] p-5">
-                <p className="text-[10px] font-semibold text-cyan-300 uppercase tracking-wider mb-3">Suggested Move</p>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white", `bg-gradient-to-br ${subnetGradient(topRec.fromSubnet.netuid)}`)}>
-                    {topRec.fromSubnet.netuid}
-                  </div>
-                  <ArrowRight className="w-3 h-3 text-cyan-400" />
-                  <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white", `bg-gradient-to-br ${subnetGradient(topRec.toSubnet.netuid)}`)}>
-                    {topRec.toSubnet.netuid}
-                  </div>
-                  <div className="ml-auto">
-                    <span className="text-sm font-bold text-emerald-400">+{topRec.projectedEdge.toFixed(1)}%</span>
-                  </div>
-                </div>
-                <p className="text-[11px] text-slate-400 mb-3 line-clamp-2">{topRec.rationale}</p>
-                <button className="w-full btn-primary justify-center text-xs py-2">
-                  <Zap className="w-3.5 h-3.5" />
-                  Review Move
-                </button>
-              </div>
-            </FadeIn>
-          )}
         </div>
+
+        <div className="col-span-12 lg:col-span-5">
+          <FadeIn delay={0.18}>
+            <GlassCard>
+              <SectionTitle title="Transaction history" subtitle="Stake moves and additions" />
+              <div className="space-y-0">
+                {recentChanges.map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex items-center gap-3 py-3 border-b border-white/[0.04] last:border-0"
+                  >
+                    <div
+                      className={cn(
+                        "w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold text-white flex-shrink-0",
+                        c.type === "MOVE"
+                          ? "bg-gradient-to-br from-cyan-500 to-sky-700"
+                          : "bg-gradient-to-br from-emerald-500 to-teal-700",
+                      )}
+                    >
+                      {c.type === "MOVE" ? "→" : "+"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-semibold text-white leading-none">
+                        {c.type === "MOVE"
+                          ? `${c.fromSubnet} → ${c.toSubnet}`
+                          : `Staked to ${c.subnet}`}
+                      </p>
+                      <p className="text-[10px] text-slate-600 font-mono mt-0.5 truncate">
+                        {c.txHash ? `${c.txHash.slice(0, 16)}…` : "—"}
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-[12px] font-semibold text-white">{c.amount.toFixed(2)} τ</p>
+                      <p className="text-[10px] text-slate-500">{formatDate(c.timestamp)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </GlassCard>
+          </FadeIn>
+        </div>
+
       </div>
     </div>
   );
