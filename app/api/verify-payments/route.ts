@@ -18,13 +18,24 @@ import { runVerificationCycle } from "@/lib/db/payment-verifier";
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
+if (!CRON_SECRET) {
+  console.error(
+    "[VerifyPayments] CRON_SECRET env var is not set — endpoint will reject all requests.",
+  );
+}
+
 export async function GET(request: NextRequest) {
-  /* Require CRON_SECRET in production to prevent public triggering */
-  if (CRON_SECRET) {
-    const authHeader = request.headers.get("Authorization");
-    if (authHeader !== `Bearer ${CRON_SECRET}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  /* Fail-closed: reject all requests when CRON_SECRET is not configured */
+  if (!CRON_SECRET) {
+    return NextResponse.json(
+      { error: "CRON_SECRET not configured" },
+      { status: 503 },
+    );
+  }
+
+  const authHeader = request.headers.get("Authorization");
+  if (authHeader !== `Bearer ${CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
     const result = await runVerificationCycle();

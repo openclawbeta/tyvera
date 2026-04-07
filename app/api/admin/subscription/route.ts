@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { adminGrantSubscription, getEntitlement } from "@/lib/db/subscriptions";
 
 /* ─────────────────────────────────────────────────────────────────── */
@@ -17,10 +18,25 @@ if (!ADMIN_SECRET) {
   );
 }
 
+/**
+ * Constant-time auth check to prevent timing attacks.
+ */
 function checkAuth(request: NextRequest): boolean {
   if (!ADMIN_SECRET) return false;
   const authHeader = request.headers.get("Authorization");
-  return authHeader === `Bearer ${ADMIN_SECRET}`;
+  if (!authHeader) return false;
+
+  const expected = `Bearer ${ADMIN_SECRET}`;
+  if (authHeader.length !== expected.length) return false;
+
+  try {
+    return timingSafeEqual(
+      Buffer.from(authHeader, "utf-8"),
+      Buffer.from(expected, "utf-8"),
+    );
+  } catch {
+    return false;
+  }
 }
 
 /**

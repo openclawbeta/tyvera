@@ -31,10 +31,13 @@ export function GlobalTicker() {
         const res = await fetch("/api/tao-rate");
         if (!res.ok) throw new Error("Failed to fetch ticker");
         const data: TickerData = await res.json();
-        setTicker(data);
+        if (typeof data.taoUsd === "number" && data.taoUsd > 0) {
+          setTicker(data);
+        }
         setIsLoading(false);
-      } catch (err) {
+      } catch {
         setIsLoading(false);
+        // Keep previous ticker data if available — don't clear on error
       }
     };
 
