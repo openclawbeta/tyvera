@@ -1,46 +1,32 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Zap,
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
   ArrowRight,
   Shield,
-  CheckCircle,
   Wallet,
   ChevronRight,
-  AlertCircle,
 } from "lucide-react";
 
 const TRUST_ITEMS = [
   { icon: Shield,       text: "No seed phrase storage",       sub: "We never see your private keys." },
-  { icon: CheckCircle,  text: "You approve every move",        sub: "Nothing executes without your signature." },
-  { icon: Lock,         text: "Non-custodial, end-to-end",     sub: "Your wallet, your funds, your control." },
+  { icon: Wallet,       text: "You approve every move",        sub: "Nothing executes without your signature." },
+  { icon: Shield,       text: "Non-custodial, end-to-end",     sub: "Your wallet, your funds, your control." },
 ];
 
-type AuthMode = "wallet" | "email";
-
 export default function LoginPage() {
-  const [mode,        setMode]        = useState<AuthMode>("wallet");
-  const [email,       setEmail]       = useState("");
-  const [password,    setPassword]    = useState("");
-  const [showPw,      setShowPw]      = useState(false);
-  const [loading,     setLoading]     = useState(false);
-  const [walletState, setWalletState] = useState<"idle" | "connecting" | "connected">("idle");
+  const router = useRouter();
+  const [walletState, setWalletState] = useState<"idle" | "connecting">("idle");
 
   function handleWalletConnect() {
     setWalletState("connecting");
-    setTimeout(() => setWalletState("connected"), 1800);
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
+    setTimeout(() => {
+      router.push("/dashboard");
+    }, 800);
   }
 
   return (
@@ -196,284 +182,75 @@ export default function LoginPage() {
               </p>
             </div>
 
-            {/* Mode toggle */}
-            <div
-              className="flex rounded-xl p-1 mb-6"
-              style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.07)",
-              }}
-            >
-              {(["wallet", "email"] as AuthMode[]).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMode(m)}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-lg py-2 text-[12px] font-semibold transition-all duration-200"
-                  style={{
-                    background: mode === m
-                      ? "rgba(255,255,255,0.08)"
-                      : "transparent",
-                    color: mode === m ? "#f8fafc" : "#64748b",
-                    border: mode === m ? "1px solid rgba(255,255,255,0.1)" : "1px solid transparent",
-                    boxShadow: mode === m ? "0 1px 0 rgba(255,255,255,0.05) inset" : "none",
-                  }}
-                >
-                  {m === "wallet" ? <Wallet className="w-3.5 h-3.5" /> : <Mail className="w-3.5 h-3.5" />}
-                  {m === "wallet" ? "Wallet" : "Email"}
-                </button>
-              ))}
-            </div>
-
-            {/* Wallet mode */}
-            {mode === "wallet" && (
-              <div className="space-y-4">
-                {walletState === "idle" && (
-                  <>
-                    <button
-                      onClick={handleWalletConnect}
-                      className="w-full flex items-center gap-3 rounded-xl px-4 py-3.5 transition-all duration-200"
-                      style={{
-                        background: "rgba(255,255,255,0.045)",
-                        border: "1px solid rgba(255,255,255,0.09)",
-                        boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset",
-                      }}
-                    >
-                      <div
-                        className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{
-                          background: "linear-gradient(135deg, #e6007a 0%, #c0006a 100%)",
-                          boxShadow: "0 2px 8px rgba(230,0,122,0.3)",
-                        }}
-                      >
-                        <span className="text-white text-[11px] font-black">P</span>
-                      </div>
-                      <div className="flex-1 text-left">
-                        <div className="text-[13px] font-semibold text-white" style={{ letterSpacing: "-0.01em" }}>
-                          Polkadot.js Extension
-                        </div>
-                        <div className="text-[10px] text-slate-600 mt-0.5">Connect via browser extension</div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-slate-600" />
-                    </button>
-
-                    <button
-                      className="w-full flex items-center gap-3 rounded-xl px-4 py-3.5 transition-all duration-200"
-                      style={{
-                        background: "rgba(255,255,255,0.03)",
-                        border: "1px solid rgba(255,255,255,0.065)",
-                      }}
-                    >
-                      <div
-                        className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{
-                          background: "rgba(255,255,255,0.08)",
-                          border: "1px solid rgba(255,255,255,0.1)",
-                        }}
-                      >
-                        <Wallet className="w-4 h-4 text-slate-400" />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <div className="text-[13px] font-semibold text-slate-400" style={{ letterSpacing: "-0.01em" }}>
-                          Other wallets
-                        </div>
-                        <div className="text-[10px] text-slate-600 mt-0.5">WalletConnect, Talisman, SubWallet</div>
-                      </div>
-                      <span
-                        className="text-[9px] font-bold uppercase tracking-wider rounded-md px-1.5 py-0.5"
-                        style={{ background: "rgba(255,255,255,0.06)", color: "#475569" }}
-                      >
-                        Soon
-                      </span>
-                    </button>
-                  </>
-                )}
-
-                {walletState === "connecting" && (
-                  <div
-                    className="flex flex-col items-center justify-center py-8 rounded-xl"
+            {/* Wallet connection */}
+            <div className="space-y-4">
+              {walletState === "idle" && (
+                <>
+                  <div className="mb-6 p-4 rounded-xl" style={{ background: "rgba(34,211,238,0.05)", border: "1px solid rgba(34,211,238,0.15)" }}>
+                    <p className="text-[12px] text-slate-300">Connect your Polkadot.js or Talisman wallet to get started.</p>
+                  </div>
+                  <button
+                    onClick={handleWalletConnect}
+                    className="w-full flex items-center gap-3 rounded-xl px-4 py-3.5 transition-all duration-200"
                     style={{
-                      background: "rgba(255,255,255,0.025)",
-                      border: "1px solid rgba(255,255,255,0.07)",
+                      background: "rgba(255,255,255,0.045)",
+                      border: "1px solid rgba(255,255,255,0.09)",
+                      boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset",
                     }}
                   >
                     <div
-                      className="w-10 h-10 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin mb-3"
-                      style={{ borderTopColor: "transparent" }}
-                    />
-                    <p className="text-[13px] font-medium text-slate-300">Waiting for wallet…</p>
-                    <p className="text-[11px] text-slate-600 mt-1">Approve the connection in your extension.</p>
-                  </div>
-                )}
-
-                {walletState === "connected" && (
-                  <div
-                    className="rounded-xl p-4"
-                    style={{
-                      background: "rgba(34,211,238,0.05)",
-                      border: "1px solid rgba(34,211,238,0.2)",
-                    }}
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      <div
-                        className="w-8 h-8 rounded-xl flex items-center justify-center"
-                        style={{ background: "rgba(34,211,238,0.1)", border: "1px solid rgba(34,211,238,0.2)" }}
-                      >
-                        <CheckCircle className="w-4 h-4 text-cyan-400" />
-                      </div>
-                      <div>
-                        <p className="text-[12px] font-semibold text-cyan-300">Wallet connected</p>
-                        <code className="text-[10px] text-slate-500 font-mono">5Grwva…utQY</code>
-                      </div>
+                      className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{
+                        background: "linear-gradient(135deg, #e6007a 0%, #c0006a 100%)",
+                        boxShadow: "0 2px 8px rgba(230,0,122,0.3)",
+                      }}
+                    >
+                      <span className="text-white text-[11px] font-black">P</span>
                     </div>
-                    <Link href="/dashboard">
-                      <button
-                        className="w-full flex items-center justify-center gap-2 rounded-xl font-semibold text-[13px] py-2.5 transition-all duration-200"
-                        style={{
-                          background: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
-                          color: "#04060d",
-                          boxShadow: "0 0 0 1px rgba(34,211,238,0.35), 0 4px 14px rgba(34,211,238,0.2), inset 0 1px 0 rgba(255,255,255,0.2)",
-                        }}
-                      >
-                        Enter App <ArrowRight className="w-4 h-4" />
-                      </button>
-                    </Link>
-                  </div>
-                )}
+                    <div className="flex-1 text-left">
+                      <div className="text-[13px] font-semibold text-white" style={{ letterSpacing: "-0.01em" }}>
+                        Connect Wallet
+                      </div>
+                      <div className="text-[10px] text-slate-600 mt-0.5">Polkadot.js Extension</div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-600" />
+                  </button>
 
-                {/* Read-only note */}
-                {walletState === "idle" && (
-                  <div className="flex items-start gap-2 px-1">
+                  {/* Trust note */}
+                  <div className="flex items-start gap-2 px-1 mt-4">
                     <Shield className="w-3 h-3 text-slate-700 flex-shrink-0 mt-0.5" />
                     <p className="text-[10px] text-slate-700 leading-relaxed">
-                      Read-only connection. We request only your public address. Nothing is signed until you explicitly approve a transaction.
+                      Read-only connection. We never access your private keys or execute transactions without your approval.
                     </p>
                   </div>
-                )}
-              </div>
-            )}
+                </>
+              )}
 
-            {/* Email mode */}
-            {mode === "email" && (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Email */}
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                    Email
-                  </label>
-                  <div className="relative">
-                    <Mail
-                      className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-                      style={{ color: "#475569" }}
-                    />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      className="w-full pl-10 pr-4 py-3 rounded-xl text-[13px] text-slate-200 placeholder-slate-600 outline-none transition-all duration-200"
-                      style={{
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.09)",
-                      }}
-                      onFocus={(e) => {
-                        e.currentTarget.style.borderColor = "rgba(34,211,238,0.4)";
-                        e.currentTarget.style.boxShadow = "0 0 0 3px rgba(34,211,238,0.08)";
-                      }}
-                      onBlur={(e) => {
-                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.09)";
-                        e.currentTarget.style.boxShadow = "none";
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Password */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                      Password
-                    </label>
-                    <a href="#" className="text-[11px] text-cyan-500 hover:text-cyan-400 transition-colors">
-                      Forgot password?
-                    </a>
-                  </div>
-                  <div className="relative">
-                    <Lock
-                      className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-                      style={{ color: "#475569" }}
-                    />
-                    <input
-                      type={showPw ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••••••"
-                      className="w-full pl-10 pr-11 py-3 rounded-xl text-[13px] text-slate-200 placeholder-slate-700 outline-none transition-all duration-200"
-                      style={{
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.09)",
-                      }}
-                      onFocus={(e) => {
-                        e.currentTarget.style.borderColor = "rgba(34,211,238,0.4)";
-                        e.currentTarget.style.boxShadow = "0 0 0 3px rgba(34,211,238,0.08)";
-                      }}
-                      onBlur={(e) => {
-                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.09)";
-                        e.currentTarget.style.boxShadow = "none";
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPw(!showPw)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 transition-colors"
-                      style={{ color: "#475569" }}
-                    >
-                      {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl font-semibold text-[13px] py-3 mt-2 transition-all duration-200"
+              {walletState === "connecting" && (
+                <div
+                  className="flex flex-col items-center justify-center py-8 rounded-xl"
                   style={{
-                    background: loading
-                      ? "rgba(34,211,238,0.4)"
-                      : "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
-                    color: "#04060d",
-                    boxShadow: loading
-                      ? "none"
-                      : "0 0 0 1px rgba(34,211,238,0.35), 0 4px 14px rgba(34,211,238,0.2), inset 0 1px 0 rgba(255,255,255,0.2)",
-                    letterSpacing: "-0.01em",
+                    background: "rgba(255,255,255,0.025)",
+                    border: "1px solid rgba(255,255,255,0.07)",
                   }}
                 >
-                  {loading ? "Signing in…" : <><span>Sign In</span><ArrowRight className="w-4 h-4" /></>}
-                </button>
-              </form>
-            )}
-
-            {/* Divider */}
-            <div className="my-6 flex items-center gap-3">
-              <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
-              <span className="text-[10px] text-slate-700 uppercase tracking-wider">or</span>
-              <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.06)" }} />
+                  <div
+                    className="w-10 h-10 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin mb-3"
+                    style={{ borderTopColor: "transparent" }}
+                  />
+                  <p className="text-[13px] font-medium text-slate-300">Connecting wallet…</p>
+                  <p className="text-[11px] text-slate-600 mt-1">Approve the connection in your extension.</p>
+                </div>
+              )}
             </div>
-
-            {/* Sign up link */}
-            <p className="text-center text-[12px] text-slate-600">
-              No account yet?{" "}
-              <Link href="/signup" className="text-cyan-400 font-semibold hover:text-cyan-300 transition-colors">
-                Create one — it&apos;s free
-              </Link>
-            </p>
           </div>
 
           {/* Below-card disclaimer */}
           <p className="text-center text-[10px] text-slate-700 mt-5 px-4 leading-relaxed">
             By continuing, you agree to the{" "}
-            <a href="#" className="underline hover:text-slate-500 transition-colors">Terms of Service</a>
+            <Link href="/terms" className="underline hover:text-slate-500 transition-colors">Terms of Service</Link>
             {" "}and{" "}
-            <a href="#" className="underline hover:text-slate-500 transition-colors">Privacy Policy</a>.
+            <Link href="/privacy" className="underline hover:text-slate-500 transition-colors">Privacy Policy</Link>.
             Not financial advice.
           </p>
         </motion.div>

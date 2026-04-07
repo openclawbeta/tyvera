@@ -1,5 +1,3 @@
-import { mapRecommendationDtoToUiModel } from "@/lib/adapters/recommendations";
-import { ACTIVE_RECOMMENDATIONS } from "@/lib/mock-data/recommendations";
 import { getSubnets } from "@/lib/api/subnets";
 import { deriveBreakeven, deriveConfidence, deriveRisk, deriveScoreBreakdown } from "@/lib/data/subnets-real-helpers";
 import type { RecommendationBand, RecommendationFactorBullet } from "@/lib/types/recommendations";
@@ -12,10 +10,14 @@ function confidenceLabelFromScore(confidence: number): "HIGH" | "GOOD" | "FAIR" 
 }
 
 export function getRecommendations(_address?: string) {
-  const base = ACTIVE_RECOMMENDATIONS.map(mapRecommendationDtoToUiModel);
   const subnets = getSubnets()
     .filter((s) => s.liquidity > 0 && s.netuid !== 0)
     .sort((a, b) => b.score - a.score);
+
+  // If no subnets are available, return empty array
+  if (subnets.length === 0) {
+    return [];
+  }
 
   const topCandidates = subnets.slice(0, 18);
   const generated = topCandidates.slice(0, 6).flatMap((target, index) => {
@@ -88,9 +90,5 @@ export function getRecommendations(_address?: string) {
     }];
   });
 
-  const merged = [...generated, ...base]
-    .sort((a, b) => (b.score + b.projectedEdge / 100) - (a.score + a.projectedEdge / 100))
-    .slice(0, 8);
-
-  return merged;
+  return generated.slice(0, 8);
 }

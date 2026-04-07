@@ -104,7 +104,7 @@ function ScreenSelect() {
       {/* Wallet list */}
       <div className="space-y-2.5">
         {EXTENSIONS.map((ext) => {
-          const isAvailable = availableExtensions[ext.id];
+          const isAvailable = availableExtensions.includes(ext.id);
 
           if (isAvailable) {
             /* ── Installed: clickable connect button ── */

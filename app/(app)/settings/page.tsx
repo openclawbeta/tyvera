@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Wallet, Shield, CheckCircle, AlertCircle, Copy, ExternalLink,
   LogOut, Bell, Lock, Eye, ChevronRight, Loader2,
@@ -9,7 +9,8 @@ import {
 import { PageHeader } from "@/components/layout/page-header";
 import { FadeIn } from "@/components/ui-custom/fade-in";
 import { useWallet } from "@/lib/wallet-context";
-import { truncateAddress, cn } from "@/lib/utils";
+import { truncateAddress } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 /* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 /* Primitives                                                           */
@@ -55,7 +56,7 @@ function SettingRow({
 }) {
   return (
     <div
-      className="flex items-center justify-between gap-6 py-3.5"
+      className="flex items-center justify-between gap-6 py-4"
       style={last ? undefined : { borderBottom: "1px solid rgba(255,255,255,0.04)" }}
     >
       <div className="flex-1">
@@ -159,15 +160,22 @@ function WalletSection() {
             </p>
           </div>
 
-          {/* Trust checklist */}
-          <div className="space-y-2 mb-5">
+          {/* Trust grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
             {[
               { icon: Shield,      text: "Wallet stays fully in your control" },
-              { icon: Lock,        text: "No seed phrase stored — ever" },
+              { icon: Lock,        text: "No seed phrase stored â ever" },
               { icon: CheckCircle, text: "You approve every on-chain action" },
             ].map(({ icon: Icon, text }) => (
-              <div key={text} className="flex items-center gap-2">
-                <Icon className="w-3 h-3 flex-shrink-0 text-emerald-400" />
+              <div
+                key={text}
+                className="flex items-start gap-2.5 p-3 rounded-xl"
+                style={{
+                  background: "rgba(52,211,153,0.05)",
+                  border: "1px solid rgba(52,211,153,0.12)",
+                }}
+              >
+                <Icon className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-[1px]" />
                 <span className="text-[11px] text-slate-500 leading-snug">{text}</span>
               </div>
             ))}
@@ -224,7 +232,7 @@ function WalletSection() {
                   className="text-[12px] font-bold"
                   style={{ color: isVerified ? "#22d3ee" : "#fbbf24", letterSpacing: "-0.01em" }}
                 >
-                  {isVerified ? "Verified" : "Unverified"} · Polkadot.js
+                  {isVerified ? "Verified" : "Unverified"} Â· Polkadot.js
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -295,7 +303,10 @@ function WalletSection() {
           </div>
 
           {/* Trust copy */}
-          <div className="mt-4 pt-4 mb-5 space-y-2" style={{ borderTop: "1px solid rgba(255,255,255,0.045)" }}>
+          <div
+            className="p-4 rounded-xl mb-5 space-y-2"
+            style={{ background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.055)" }}
+          >
             {[
               { icon: Shield,      text: "Your wallet and keys never leave your device." },
               { icon: Lock,        text: "Tyvera stores no private keys and no seed phrases." },
@@ -339,20 +350,15 @@ function WalletSection() {
 /* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function AccountSection() {
-  const { address } = useWallet();
-
-  // Use wallet address as on-chain identity; neutral placeholder when disconnected
-  const displayName = address ? truncateAddress(address) : "—";
-
   return (
     <Panel>
       <PanelHeader title="Account" subtitle="Profile and plan information." />
       <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.055)" }}>
         <SettingRow label="Display name">
-          <span className="text-[12px] text-slate-300 font-medium font-mono">{displayName}</span>
+          <span className="text-[12px] text-slate-300 font-medium">Openclaw</span>
         </SettingRow>
         <SettingRow label="Email" description="Used for billing receipts only.">
-          <span className="text-[12px] text-slate-500">—</span>
+          <span className="text-[12px] text-slate-500">openclawbeta@gmail.com</span>
         </SettingRow>
         <SettingRow label="Timezone">
           <select
@@ -369,7 +375,16 @@ function AccountSection() {
         </SettingRow>
         <SettingRow label="Current plan" last>
           <div className="flex items-center gap-2">
-            <span className="text-[12px] text-slate-500">—</span>
+            <span
+              className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{
+                background: "linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.1))",
+                border: "1px solid rgba(251,191,36,0.28)",
+                color: "#fbbf24",
+              }}
+            >
+              â¡ PREMIUM
+            </span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-700" />
           </div>
         </SettingRow>
@@ -383,13 +398,33 @@ function AccountSection() {
 /* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function NotificationsSection() {
-  const [prefs, setPrefs] = useState({
+  const defaultPrefs = {
     newRecs: true, yieldAlerts: true, txConfirmed: true,
     premiumExpiry: true, weeklyDigest: false, systemUpdates: true,
-  });
+  };
+
+  const [prefs, setPrefs] = useState(defaultPrefs);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("tyvera_notifications");
+    if (stored) {
+      try {
+        setPrefs(JSON.parse(stored));
+      } catch {
+        setPrefs(defaultPrefs);
+      }
+    }
+  }, []);
 
   function toggle(key: keyof typeof prefs) {
-    setPrefs((p) => ({ ...p, [key]: !p[key] }));
+    setPrefs((p) => {
+      const updated = { ...p, [key]: !p[key] };
+      localStorage.setItem("tyvera_notifications", JSON.stringify(updated));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      return updated;
+    });
   }
 
   const rows = [
@@ -407,7 +442,12 @@ function NotificationsSection() {
       <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.055)" }}>
         {rows.map(({ key, label, desc }, i) => (
           <SettingRow key={key} label={label} description={desc} last={i === rows.length - 1}>
-            <Toggle enabled={prefs[key as keyof typeof prefs]} onChange={() => toggle(key as keyof typeof prefs)} />
+            <div className="flex items-center gap-3">
+              {saved && (
+                <span className="text-[10px] text-emerald-400 font-semibold">Saved</span>
+              )}
+              <Toggle enabled={prefs[key as keyof typeof prefs]} onChange={() => toggle(key as keyof typeof prefs)} />
+            </div>
           </SettingRow>
         ))}
       </div>
@@ -420,19 +460,56 @@ function NotificationsSection() {
 /* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function GuardrailsSection() {
-  const [blockSpeculative, setBlockSpeculative] = useState(false);
-  const [enableRecs, setEnableRecs] = useState(true);
+  const defaultGuardrails = {
+    enableRecs: true,
+    scoreThreshold: 0.15,
+    maxMoveSize: "25%",
+    blockSpeculative: false,
+    cooldown: "24 hours",
+  };
+
+  const [guardrails, setGuardrails] = useState(defaultGuardrails);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("tyvera_guardrails");
+    if (stored) {
+      try {
+        setGuardrails(JSON.parse(stored));
+      } catch {
+        setGuardrails(defaultGuardrails);
+      }
+    }
+  }, []);
+
+  function updateGuardrails(updates: Partial<typeof guardrails>) {
+    const updated = { ...guardrails, ...updates };
+    setGuardrails(updated);
+    localStorage.setItem("tyvera_guardrails", JSON.stringify(updated));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
 
   return (
     <Panel>
       <PanelHeader title="Recommendation Guardrails" subtitle="Control when and how the engine surfaces suggestions." />
       <div className="rounded-xl overflow-hidden mb-4" style={{ border: "1px solid rgba(255,255,255,0.055)" }}>
         <SettingRow label="Enable recommendations" description="Turn off to suppress all recommendation generation.">
-          <Toggle enabled={enableRecs} onChange={setEnableRecs} />
+          <div className="flex items-center gap-3">
+            {saved && (
+              <span className="text-[10px] text-emerald-400 font-semibold">Saved</span>
+            )}
+            <Toggle enabled={guardrails.enableRecs} onChange={(v) => updateGuardrails({ enableRecs: v })} />
+          </div>
         </SettingRow>
         <SettingRow label="Minimum score threshold" description="Only show recommendations above this score.">
           <input
-            type="number" defaultValue="0.15" step="0.01" min="0.1" max="0.5"
+            type="number"
+            value={guardrails.scoreThreshold}
+            onChange={(e) => updateGuardrails({ scoreThreshold: parseFloat(e.target.value) })}
+            step="0.01"
+            min="0.1"
+            max="0.5"
             className="w-20 px-2.5 py-1.5 rounded-lg text-xs text-white text-center focus:outline-none transition-colors"
             style={{
               background: "rgba(255,255,255,0.04)",
@@ -442,6 +519,8 @@ function GuardrailsSection() {
         </SettingRow>
         <SettingRow label="Maximum single move size" description="Cap any recommended move as % of source stake.">
           <select
+            value={guardrails.maxMoveSize}
+            onChange={(e) => updateGuardrails({ maxMoveSize: e.target.value })}
             className="px-3 py-1.5 rounded-lg text-xs text-slate-300 focus:outline-none"
             style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
           >
@@ -452,10 +531,12 @@ function GuardrailsSection() {
           </select>
         </SettingRow>
         <SettingRow label="Block SPECULATIVE-risk moves" description="Never show recommendations rated as Speculative.">
-          <Toggle enabled={blockSpeculative} onChange={setBlockSpeculative} />
+          <Toggle enabled={guardrails.blockSpeculative} onChange={(v) => updateGuardrails({ blockSpeculative: v })} />
         </SettingRow>
         <SettingRow label="Cooldown period" description="Minimum hours between moves on the same subnet pair." last>
           <select
+            value={guardrails.cooldown}
+            onChange={(e) => updateGuardrails({ cooldown: e.target.value })}
             className="px-3 py-1.5 rounded-lg text-xs text-slate-300 focus:outline-none"
             style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
           >
@@ -465,17 +546,9 @@ function GuardrailsSection() {
           </select>
         </SettingRow>
       </div>
-      <button
-        className="flex items-center gap-2 font-semibold text-[12px] px-4 py-2.5 rounded-xl transition-all duration-200"
-        style={{
-          background: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
-          color: "#04060d",
-          boxShadow: "0 0 0 1px rgba(34,211,238,0.4), 0 4px 12px rgba(34,211,238,0.18), inset 0 1px 0 rgba(255,255,255,0.2)",
-        }}
-      >
-        <Save className="w-3.5 h-3.5" />
-        Save Guardrails
-      </button>
+      {saved && (
+        <div className="text-[11px] text-emerald-400 font-semibold mb-4">All changes saved to localStorage</div>
+      )}
     </Panel>
   );
 }
@@ -485,21 +558,53 @@ function GuardrailsSection() {
 /* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
 
 function SecuritySection() {
-  const [showAddress, setShowAddress] = useState(true);
-  const [activityLog, setActivityLog] = useState(true);
+  const defaultSecurity = {
+    showAddress: true,
+    activityLog: true,
+    sessionTimeout: "30 min",
+  };
+
+  const [security, setSecurity] = useState(defaultSecurity);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("tyvera_security");
+    if (stored) {
+      try {
+        setSecurity(JSON.parse(stored));
+      } catch {
+        setSecurity(defaultSecurity);
+      }
+    }
+  }, []);
+
+  function updateSecurity(updates: Partial<typeof security>) {
+    const updated = { ...security, ...updates };
+    setSecurity(updated);
+    localStorage.setItem("tyvera_security", JSON.stringify(updated));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
 
   return (
     <Panel>
       <PanelHeader title="Security & Privacy" subtitle="Session and display preferences." />
       <div className="rounded-xl overflow-hidden mb-5" style={{ border: "1px solid rgba(255,255,255,0.055)" }}>
         <SettingRow label="Show wallet address in topbar" description="Display truncated address in the navigation bar.">
-          <Toggle enabled={showAddress} onChange={setShowAddress} />
+          <div className="flex items-center gap-3">
+            {saved && (
+              <span className="text-[10px] text-emerald-400 font-semibold">Saved</span>
+            )}
+            <Toggle enabled={security.showAddress} onChange={(v) => updateSecurity({ showAddress: v })} />
+          </div>
         </SettingRow>
         <SettingRow label="Activity log" description="Log all platform actions. No keys are stored.">
-          <Toggle enabled={activityLog} onChange={setActivityLog} />
+          <Toggle enabled={security.activityLog} onChange={(v) => updateSecurity({ activityLog: v })} />
         </SettingRow>
         <SettingRow label="Session timeout" description="Auto-disconnect wallet after inactivity.">
           <select
+            value={security.sessionTimeout}
+            onChange={(e) => updateSecurity({ sessionTimeout: e.target.value })}
             className="px-3 py-1.5 rounded-lg text-xs text-slate-300 focus:outline-none"
             style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
           >
@@ -547,7 +652,7 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState("account");
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       <FadeIn>
         <PageHeader
           title="Settings"
@@ -557,7 +662,7 @@ export default function SettingsPage() {
 
       <div className="flex flex-col lg:flex-row gap-6 mt-2">
         {/* ââ Section nav ââ */}
-        <div className="w-full lg:w-40 flex-shrink-0 pt-0 lg:pt-1">
+        <div className="w-full lg:w-44 flex-shrink-0 pt-0 lg:pt-1">
           <nav className="flex gap-1 overflow-x-auto pb-2 lg:pb-0 lg:flex-col lg:space-y-0.5 lg:sticky lg:top-20">
             {SECTIONS.map((s) => {
               const Icon = s.icon;
@@ -566,7 +671,7 @@ export default function SettingsPage() {
                 <button
                   key={s.id}
                   onClick={() => setActiveSection(s.id)}
-                  className="flex-shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition-all duration-150"
+                  className="flex-shrink-0 lg:w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all duration-150"
                   style={{
                     fontSize: "12px",
                     fontWeight: isActive ? 600 : 500,
