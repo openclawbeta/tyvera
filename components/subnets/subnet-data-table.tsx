@@ -154,13 +154,15 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
                 setCurrentPage(0);
               }}
               placeholder="Search by Subnet or Netuid..."
+              aria-label="Search subnets by name or netuid"
               className="w-full pl-9 pr-3 py-2 rounded-lg border border-white/[0.07] bg-white/[0.03] text-sm text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-cyan-400/40 transition-colors"
             />
           </div>
 
-          <div className="flex items-center gap-1.5 bg-white/[0.03] rounded-lg p-1 border border-white/[0.07]">
+          <div className="flex items-center gap-1.5 bg-white/[0.03] rounded-lg p-1 border border-white/[0.07]" role="group" aria-label="Currency toggle">
             <button
               onClick={() => setCurrency("tau")}
+              aria-pressed={currency === "tau"}
               className={cn(
                 "px-3 py-1.5 rounded text-xs font-medium transition-all",
                 currency === "tau"
@@ -172,6 +174,7 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
             </button>
             <button
               onClick={() => setCurrency("usd")}
+              aria-pressed={currency === "usd"}
               className={cn(
                 "px-3 py-1.5 rounded text-xs font-medium transition-all",
                 currency === "usd"
@@ -215,6 +218,7 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
                 setRowsPerPage(Number(e.target.value));
                 setCurrentPage(0);
               }}
+              aria-label="Rows per page"
               className="bg-white/[0.05] border border-white/[0.07] rounded px-2 py-1 text-slate-300 text-xs"
             >
               <option>10</option>
@@ -233,8 +237,8 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
             No subnets match your filters.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+          <div className="overflow-x-auto" role="region" aria-label="Subnet data table">
+            <table className="w-full text-xs" aria-label="Bittensor subnets">
               <thead>
                 <tr className="bg-white/[0.02] border-b border-white/[0.04]">
                   {headers.map((header) => (
@@ -245,6 +249,8 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
                           toggleSort(header.key);
                         }
                       }}
+                      scope="col"
+                      aria-sort={sort.key === header.key ? (sort.direction === "asc" ? "ascending" : "descending") : undefined}
                       className={cn(
                         "px-3 py-2.5 font-semibold text-slate-500 uppercase tracking-wider",
                         header.align === "right" && "text-right",
@@ -273,6 +279,10 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
                   <tr
                     key={subnet.netuid}
                     onClick={() => onSelect(subnet.netuid)}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`View details for ${subnet.name} (SN${subnet.netuid})`}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(subnet.netuid); } }}
                     className="border-b border-white/[0.04] hover:bg-white/[0.03] cursor-pointer transition-colors h-11"
                   >
                     {/* Rank */}
@@ -284,6 +294,7 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
                     <td className="px-3 py-2 text-center">
                       <button
                         onClick={(e) => e.stopPropagation()}
+                        aria-label={`Bookmark subnet ${subnet.name}`}
                         className="text-slate-600 hover:text-yellow-400 transition-colors"
                       >
                         <Star className="w-3.5 h-3.5" />
@@ -440,6 +451,7 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
             <button
               onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
               disabled={currentPage === 0}
+              aria-label="Previous page"
               className="px-2.5 py-1.5 rounded border border-white/[0.07] bg-white/[0.03] hover:bg-white/[0.05] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Previous
@@ -449,6 +461,8 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
                 <button
                   key={i}
                   onClick={() => setCurrentPage(i)}
+                  aria-label={`Page ${i + 1}`}
+                  aria-current={currentPage === i ? "page" : undefined}
                   className={cn(
                     "px-2 py-1 rounded text-xs transition-colors",
                     currentPage === i
@@ -463,6 +477,7 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
             <button
               onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
               disabled={currentPage >= totalPages - 1}
+              aria-label="Next page"
               className="px-2.5 py-1.5 rounded border border-white/[0.07] bg-white/[0.03] hover:bg-white/[0.05] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Next

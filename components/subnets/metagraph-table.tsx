@@ -162,11 +162,12 @@ export function MetagraphTable({ netuid }: MetagraphTableProps) {
               setSearchTerm(e.target.value);
               setCurrentPage(0);
             }}
+            aria-label="Search neurons by hotkey"
             className="px-3 py-1.5 rounded-lg text-sm bg-slate-900/40 border border-white/[0.08] text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-400/30"
           />
 
           {/* Type tabs */}
-          <div className="flex items-center gap-1 bg-slate-900/20 rounded-lg p-0.5 border border-white/[0.08]">
+          <div className="flex items-center gap-1 bg-slate-900/20 rounded-lg p-0.5 border border-white/[0.08]" role="group" aria-label="Filter by neuron type">
             {(["all", "validators", "miners"] as const).map((type) => (
               <button
                 key={type}
@@ -174,6 +175,7 @@ export function MetagraphTable({ netuid }: MetagraphTableProps) {
                   setTypeFilter(type);
                   setCurrentPage(0);
                 }}
+                aria-pressed={typeFilter === type}
                 className={cn(
                   "px-3 py-1 rounded-md text-xs font-medium transition-all duration-150",
                   typeFilter === type
@@ -197,7 +199,7 @@ export function MetagraphTable({ netuid }: MetagraphTableProps) {
         }}
       >
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full" aria-label="Metagraph neurons">
             <thead>
               <tr className="border-b border-white/[0.04]">
                 {[
@@ -214,6 +216,8 @@ export function MetagraphTable({ netuid }: MetagraphTableProps) {
                   <th
                     key={field}
                     onClick={() => handleSort(field)}
+                    scope="col"
+                    aria-sort={sortField === field ? (sortOrder === "asc" ? "ascending" : "descending") : undefined}
                     className={cn("px-4 py-3 text-left cursor-pointer hover:bg-slate-800/20 transition-colors", width)}
                   >
                     <div className="flex items-center gap-2">
