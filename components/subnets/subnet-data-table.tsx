@@ -139,7 +139,7 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
   ];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 max-w-full overflow-hidden">
       {/* Controls */}
       <div className="glass rounded-xl p-4 space-y-4">
         {/* Search and currency */}

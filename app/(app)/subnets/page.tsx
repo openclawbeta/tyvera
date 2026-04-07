@@ -103,7 +103,7 @@ export default function SubnetsPage() {
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto space-y-6">
+    <div className="max-w-full mx-auto space-y-6 overflow-x-hidden">
       <PageHeader
         title="Subnet Explorer"
         subtitle={liveLoaded
@@ -180,18 +180,20 @@ export default function SubnetsPage() {
           Cards
         </button>
 
-        {/* Filter toggle on mobile */}
-        <button
-          onClick={() => setFilterCollapsed(!filterCollapsed)}
-          className="ml-auto md:hidden px-3 py-2 rounded-lg text-xs font-medium bg-white/[0.03] text-slate-500 border border-white/[0.07] hover:text-slate-300 hover:bg-white/[0.05] transition-all"
-        >
-          {filterCollapsed ? "Show" : "Hide"} Filters
-        </button>
+        {/* Filter toggle on mobile — only in cards view */}
+        {viewMode === "cards" && (
+          <button
+            onClick={() => setFilterCollapsed(!filterCollapsed)}
+            className="ml-auto md:hidden px-3 py-2 rounded-lg text-xs font-medium bg-white/[0.03] text-slate-500 border border-white/[0.07] hover:text-slate-300 hover:bg-white/[0.05] transition-all"
+          >
+            {filterCollapsed ? "Show" : "Hide"} Filters
+          </button>
+        )}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-5">
-        {/* Left filter rail */}
-        {(!filterCollapsed || viewMode === "cards") && (
+        {/* Left filter rail — only shown in cards view */}
+        {viewMode === "cards" && !filterCollapsed && (
           <div className="w-full lg:w-52 flex-shrink-0">
             <SubnetFilterPanel
               search={search}     onSearch={setSearch}
@@ -204,12 +206,12 @@ export default function SubnetsPage() {
 
         {/* Center content */}
         <div className="flex-1 min-w-0">
-          {filtered.length === 0 ? (
+          {viewMode === "table" ? (
+            <SubnetDataTable subnets={subnets} onSelect={handleSelectSubnet} />
+          ) : filtered.length === 0 ? (
             <div className="glass flex items-center justify-center h-48 text-slate-500 text-sm rounded-xl">
               No subnets match your filters.
             </div>
-          ) : viewMode === "table" ? (
-            <SubnetDataTable subnets={filtered} onSelect={handleSelectSubnet} />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               {filtered.map((subnet, i) => (
@@ -227,7 +229,7 @@ export default function SubnetsPage() {
           )}
         </div>
 
-        {/* Right detail preview - hide in table view on smaller screens */}
+        {/* Right detail preview — only in cards view */}
         {viewMode === "cards" && (
           <div className="w-full lg:w-72 flex-shrink-0 lg:sticky lg:top-20 lg:h-[calc(100vh-7rem)]">
             <SubnetDetailPreview subnet={selected} />

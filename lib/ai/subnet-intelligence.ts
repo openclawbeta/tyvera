@@ -42,12 +42,26 @@ function matchIntent(query: string): string {
   // Comparisons
   if (/compare|vs|versus|SN\d+.*SN\d+|^([a-z]+)\s+vs\s+([a-z]+)/i.test(q)) return "compare";
 
-  // Calculations
-  if (/earn|stake|how much|calculate|yield.*on|return.*on/i.test(q)) return "calculate-yield";
+  // Advisory / strategy — MUST come before calculate-yield to catch "should I stake" questions
+  if (/should\s+i\s+stake|root\s+(or|vs)|where.*stake|which.*better.*stak|recommend.*stak|advice.*stak|root.*subnet|subnet.*root/i.test(q)) return "staking-advice";
+  if (/what.*do.*with|how.*allocat|diversif|split.*between|strategy|rebalance/i.test(q)) return "strategy-advice";
+
+  // Calculations — only match when there's a specific subnet reference (SN\d+) or explicit "calculate"
+  if (/(?:earn|how much|return.*on|yield.*on).*SN\d+|SN\d+.*(?:earn|yield|return)|calculate/i.test(q)) return "calculate-yield";
+
+  // Stake with amount but no specific subnet → show top options
+  if (/\d+\s*(?:tau|tao|τ)\s/i.test(q) || /stake\s+\d+/i.test(q)) return "stake-options";
+
+  // General stake/earn questions without specifics
+  if (/earn|stake|how much|yield.*on|return.*on/i.test(q)) return "staking-advice";
+
   if (/yield.*above|yield.*threshold|filter.*yield/i.test(q)) return "filter-yield";
 
   // Portfolio
   if (/portfolio|summary|all.*stake|my.*stake/i.test(q)) return "portfolio";
+
+  // Catch-all conversational
+  if (/what\s+is|explain|how\s+does|tell\s+me\s+about/i.test(q)) return "explain";
 
   return "general";
 }
@@ -354,13 +368,175 @@ function getPortfolioSummary(subnets: SubnetDetailModel[]): ChatResponse {
   };
 }
 
+function getStakingAdvice(query: string, subnets: SubnetDetailModel[]): ChatResponse {
+  // Compare root (SN0) vs top subnet yields
+  const root = subnets.find((s) => s.netuid === 0);
+  const rootYield = root?.yield ?? 18;
+
+  const topSubnets = [...subnets]
+    .filter((s) => s.netuid !== 0 && s.yield > 0)
+    .sort((a, b) => b.yield - a.yield)
+    .slice(0, 5);
+
+  const safeSubnets = [...subnets]
+    .filter((s) => s.netuid !== 0 && (s.risk === "LOW" || s.risk === "MODERATE"))
+    .sort((a, b) => b.yield - a.yield)
+    .slice(0, 3);
+
+  const avgSubnetYield = topSubnets.reduce((sum, s) => sum + s.yield, 0) / (topSubnets.length || 1);
+
+  // Parse any amount from the query
+  const amountMatch = query.match(/(\d+(?:\.\d+)?)\s*(?:tau|tao|τ|k)?/i);
+  let amount = amountMatch ? parseFloat(amountMatch[1]) : 0;
+  if (amountMatch && amountMatch[0].toLowerCase().includes("k")) amount *= 1000;
+
+  const amountStr = amount > 0 ? `${amount.toLocaleString()} τ` : "your TAO";
+
+  const rootDaily = amount > 0 ? (amount * (rootYield / 100)) / 365 : 0;
+  const topSubnetDaily = amount > 0 && topSubnets[0] ? (amount * (topSubnets[0].yield / 100)) / 365 : 0;
+
+  let summaryParts: string[] = [];
+
+  summaryParts.push(`Root network (SN0) currently yields ~${rootYield.toFixed(1)}% APR — it's the lowest-risk option with steady, predictable returns.`);
+  summaryParts.push(`The top 5 alpha subnets average ${avgSubnetYield.toFixed(1)}% APR, with ${topSubnets[0]?.name} leading at ${topSubnets[0]?.yield.toFixed(1)}%.`);
+
+  if (amount > 0) {
+    summaryParts.push(`Staking ${amountStr}: Root earns ~${rootDaily.toFixed(2)} τ/day vs ${topSubnets[0]?.name} at ~${topSubnetDaily.toFixed(2)} τ/day.`);
+  }
+
+  summaryParts.push(`For beginners or conservative stakers, root is the safe play. For higher returns with more risk, consider spreading across top-performing subnets.`);
+
+  const metrics: Record<string, string | number> = {
+    "Root (SN0) APR": `${rootYield.toFixed(1)}%`,
+    "Root risk": root?.risk ?? "LOW",
+    [`Top subnet (${topSubnets[0]?.name})`]: `${topSubnets[0]?.yield.toFixed(1)}% APR`,
+    "Top subnet risk": topSubnets[0]?.risk ?? "unknown",
+    "Avg top-5 APR": `${avgSubnetYield.toFixed(1)}%`,
+  };
+
+  if (amount > 0) {
+    metrics["Root daily yield"] = `${rootDaily.toFixed(2)} τ`;
+    metrics["Top subnet daily"] = `${topSubnetDaily.toFixed(2)} τ`;
+  }
+
+  return {
+    type: "insight",
+    title: "Root vs Subnet Staking",
+    summary: summaryParts.join(" "),
+    data: [root, ...topSubnets].filter(Boolean) as SubnetDetailModel[],
+    metrics,
+    suggestion: safeSubnets.length > 0
+      ? `Safe middle ground: ${safeSubnets.map((s) => s.name).join(", ")} offer decent yield with lower risk. Ask me to compare any two.`
+      : "Ask me to compare specific subnets, or check the yield calculator for exact projections.",
+  };
+}
+
+function getStrategyAdvice(query: string, subnets: SubnetDetailModel[]): ChatResponse {
+  const lowRisk = subnets.filter((s) => s.risk === "LOW").sort((a, b) => b.yield - a.yield).slice(0, 3);
+  const highYield = subnets.filter((s) => s.yield > 0).sort((a, b) => b.yield - a.yield).slice(0, 3);
+  const balanced = subnets.filter((s) => s.risk === "MODERATE" && s.yield > 5).sort((a, b) => b.score - a.score).slice(0, 3);
+
+  return {
+    type: "insight",
+    title: "Staking Strategy Overview",
+    summary: `Three approaches: (1) Conservative — stick to root or low-risk subnets like ${lowRisk[0]?.name ?? "SN0"} for steady returns. (2) Balanced — spread across moderate-risk subnets like ${balanced[0]?.name ?? "mid-tier options"} for better yield without extreme exposure. (3) Aggressive — chase top yields in ${highYield[0]?.name ?? "high-emission subnets"}, but monitor closely and set alerts for risk changes.`,
+    data: [...lowRisk, ...balanced, ...highYield].filter((s, i, arr) => arr.findIndex((x) => x.netuid === s.netuid) === i).slice(0, 8),
+    metrics: {
+      "Conservative APR": `${lowRisk[0]?.yield.toFixed(1) ?? "~15"}%`,
+      "Balanced APR": `${balanced[0]?.yield.toFixed(1) ?? "~20"}%`,
+      "Aggressive APR": `${highYield[0]?.yield.toFixed(1) ?? "~30"}%`,
+    },
+    suggestion: "Tell me your risk tolerance (low/medium/high) and amount, and I'll suggest a specific allocation split.",
+  };
+}
+
+function getStakeOptions(query: string, subnets: SubnetDetailModel[]): ChatResponse {
+  // User gave an amount but no specific subnet — show top options
+  const amountMatch = query.match(/(\d+(?:\.\d+)?)\s*(?:tau|tao|τ|k)?/i);
+  let amount = amountMatch ? parseFloat(amountMatch[1]) : 100;
+  if (amountMatch && amountMatch[0].toLowerCase().includes("k")) amount *= 1000;
+
+  const topOptions = [...subnets]
+    .filter((s) => s.yield > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+
+  const rows = topOptions.map((s) => {
+    const daily = (amount * (s.yield / 100)) / 365;
+    const monthly = daily * 30;
+    return `${s.name} (SN${s.netuid}): ${s.yield.toFixed(1)}% APR → ~${daily.toFixed(2)} τ/day, ~${monthly.toFixed(1)} τ/month — Risk: ${s.risk}`;
+  });
+
+  return {
+    type: "calculation",
+    title: `Staking ${amount.toLocaleString()} τ — Top Options`,
+    summary: rows.join("\n"),
+    data: topOptions,
+    metrics: Object.fromEntries(
+      topOptions.map((s) => [
+        `${s.name} daily`,
+        `${((amount * (s.yield / 100)) / 365).toFixed(2)} τ`,
+      ]),
+    ),
+    suggestion: `Pick a subnet and ask "stake ${amount} TAO in SN${topOptions[0]?.netuid}" for a detailed breakdown.`,
+  };
+}
+
+function getExplainer(query: string, subnets: SubnetDetailModel[]): ChatResponse {
+  const q = query.toLowerCase();
+
+  if (/root|sn0/i.test(q)) {
+    return {
+      type: "insight",
+      title: "Root Network (SN0)",
+      summary: "The root network is Bittensor's base staking layer. It offers lower but more stable yields compared to alpha subnets. Staking on root means your TAO is distributed across all subnets proportionally — it's the 'index fund' approach to Bittensor staking. Risk is lowest here, making it ideal for conservative stakers or large holdings.",
+      suggestion: "Ask 'root vs subnet' to see a yield comparison, or 'top 5 by yield' for the best alternatives.",
+    };
+  }
+
+  if (/subnet|alpha/i.test(q)) {
+    return {
+      type: "insight",
+      title: "Alpha Subnets",
+      summary: `Bittensor has ${subnets.length} active subnets, each focused on a specific AI task (text generation, image models, data scraping, etc.). Staking on individual subnets offers higher yield potential but more volatility. Each subnet has its own emission rate, validator set, and risk profile. Use the Subnets page to explore or ask me to rank by any metric.`,
+      suggestion: 'Try "top 5 by yield", "lowest risk subnets", or "compare SN1 and SN49".',
+    };
+  }
+
+  if (/yield|apr|return|earn/i.test(q)) {
+    return {
+      type: "insight",
+      title: "Understanding Yield",
+      summary: "Yield (APR) represents the annualized return you earn from staking TAO on a subnet. It's driven by the subnet's emission rate and total stake. High emission + low total stake = higher yield per staker. Yields change daily as stake moves between subnets and emission weights are recalculated.",
+      suggestion: "Ask 'top 5 by yield' to see current leaders, or use the Yield Calculator page for projections.",
+    };
+  }
+
+  if (/risk|safe/i.test(q)) {
+    return {
+      type: "insight",
+      title: "Risk Levels Explained",
+      summary: "Tyvera rates subnets as LOW, MODERATE, HIGH, or SPECULATIVE based on age, liquidity, staker count, yield stability, and emission consistency. LOW risk subnets are well-established with deep liquidity. SPECULATIVE subnets are new or volatile — they may offer high yield but can lose value quickly.",
+      suggestion: 'Ask "lowest risk subnets" or "safest subnets" to see current LOW-risk options.',
+    };
+  }
+
+  // Generic explainer
+  return {
+    type: "insight",
+    title: "Bittensor Staking Basics",
+    summary: `Bittensor is a decentralized AI network with ${subnets.length} subnets. You can stake TAO on root (SN0) for stable returns, or on individual alpha subnets for higher but riskier yields. I can help you analyze yields, compare subnets, assess risk, and plan staking strategies.`,
+    suggestion: 'Try: "should I stake root or subnet?", "top 5 by yield", "compare SN1 and SN49", "lowest risk subnets"',
+  };
+}
+
 function getGeneralHelpMessage(subnets: SubnetDetailModel[]): ChatResponse {
   return {
     type: "insight",
     title: "I can help with subnet analysis",
-    summary: `I have live data on ${subnets.length} Bittensor subnets. Ask me about yields, risk, comparisons, or staking calculations.`,
+    summary: `I have live data on ${subnets.length} Bittensor subnets. Here's what I can do:\n\n• Rank subnets by yield, risk, liquidity, or emissions\n• Compare any two subnets side-by-side\n• Calculate staking returns for specific amounts\n• Advise on root vs subnet staking strategy\n• Explain how Bittensor staking works`,
     suggestion:
-      'Try: "Top 5 by yield", "Compare SN1 and SN49", "How much would I earn staking 100 TAO in Tensorium?", "Lowest risk subnets"',
+      'Try: "Should I stake root or subnet?", "Top 5 by yield", "Compare SN1 and SN49", "Stake 100 TAO", "Lowest risk subnets"',
   };
 }
 
@@ -391,10 +567,18 @@ export function analyzeQuery(
       return getHighEmission(subnets);
     case "compare":
       return compareSubnets(query, subnets);
+    case "staking-advice":
+      return getStakingAdvice(query, subnets);
+    case "strategy-advice":
+      return getStrategyAdvice(query, subnets);
+    case "stake-options":
+      return getStakeOptions(query, subnets);
     case "calculate-yield":
       return calculateYield(query, subnets);
     case "filter-yield":
       return filterYield(query, subnets);
+    case "explain":
+      return getExplainer(query, subnets);
     case "portfolio":
       return getPortfolioSummary(subnets);
     default:
@@ -406,9 +590,11 @@ export function analyzeQuery(
 
 export const QUICK_ASKS = [
   "Top 5 by yield",
+  "Should I stake root or subnet?",
   "Lowest risk subnets",
   "Trending this week",
-  "High emission subnets",
+  "Stake 100 TAO",
   "Compare top 2",
-  "New subnets",
+  "What is root staking?",
+  "High emission subnets",
 ];

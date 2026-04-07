@@ -14,16 +14,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <AppSidebar />
 
           {/* On mobile: full width (no left margin). On desktop: offset by sidebar width. */}
-          <div className="flex-1 lg:ml-60 flex flex-col min-h-screen">
-            {/* Global ticker at the very top (32px) */}
+          <div className="flex-1 lg:ml-60 flex flex-col min-h-screen overflow-x-hidden">
+            {/* Fixed bars — GlobalTicker (z-40 top-0) + Topbar (z-30 top-8) */}
             <GlobalTicker />
-
-            {/* Topbar renders WalletConnectModal + WalletApprovalDialog internally */}
             <Topbar />
 
-            {/* 32px ticker + 52px topbar + page content = 84px offset */}
+            {/* 32px ticker + 52px topbar = 84px total fixed header offset */}
             <main
-              className="flex-1 overflow-auto px-4 sm:px-6 lg:px-7"
+              className="flex-1 px-4 sm:px-6 lg:px-7 overflow-x-hidden"
               style={{ marginTop: "84px", paddingTop: "20px", paddingBottom: "48px" }}
             >
               {children}
