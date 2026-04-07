@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Shield, Lock, CheckCircle, Loader2, ExternalLink, AlertCircle } from "lucide-react";
+import { X, Shield, Lock, CheckCircle, Loader2, ExternalLink, AlertCircle, Download } from "lucide-react";
 import { useWallet, type WalletExtension } from "@/lib/wallet-context";
 import { truncateAddress } from "@/lib/utils";
 
@@ -19,7 +19,7 @@ const EXTENSIONS: Array<{
   {
     id: "polkadotjs",
     name: "Polkadot.js",
-    tagline: "Official browser extension · Most compatible",
+    tagline: "Official browser extension \u00b7 Most compatible",
     recommended: true,
     icon: (
       <div
@@ -54,7 +54,7 @@ const EXTENSIONS: Array<{
   {
     id: "talisman",
     name: "Talisman",
-    tagline: "Multi-chain · Polkadot native",
+    tagline: "Multi-chain \u00b7 Polkadot native",
     icon: (
       <div
         className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white"
@@ -70,6 +70,13 @@ const EXTENSIONS: Array<{
   },
 ];
 
+/** Install URLs for undetected extensions */
+const INSTALL_URLS: Record<WalletExtension, string> = {
+  polkadotjs: "https://polkadot.js.org/extension/",
+  subwallet: "https://www.subwallet.app/download.html",
+  talisman: "https://www.talisman.xyz/download",
+};
+
 /* ─────────────────────────────────────────────────────────────────── */
 /* Inner screens                                                        */
 /* ─────────────────────────────────────────────────────────────────── */
@@ -84,7 +91,7 @@ function TrustPill({ icon: Icon, text }: { icon: React.ElementType; text: string
 }
 
 function ScreenSelect() {
-  const { connect } = useWallet();
+  const { connect, availableExtensions, connectionError } = useWallet();
 
   return (
     <motion.div
@@ -96,56 +103,128 @@ function ScreenSelect() {
     >
       {/* Wallet list */}
       <div className="space-y-2.5">
-        {EXTENSIONS.map((ext) => (
-          <button
-            key={ext.id}
-            onClick={() => connect(ext.id)}
-            className="w-full flex items-center gap-4 rounded-xl text-left transition-all duration-200 group"
-            style={{
-              padding: "14px 16px",
-              background: "rgba(255,255,255,0.025)",
-              border: "1px solid rgba(255,255,255,0.065)",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "rgba(34,211,238,0.05)";
-              (e.currentTarget as HTMLElement).style.borderColor = "rgba(34,211,238,0.2)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.025)";
-              (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.065)";
-            }}
-          >
-            {ext.icon}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span
-                  className="text-[13px] font-semibold text-white group-hover:text-cyan-100 transition-colors"
-                  style={{ letterSpacing: "-0.01em" }}
-                >
-                  {ext.name}
-                </span>
-                {ext.recommended && (
+        {EXTENSIONS.map((ext) => {
+          const isAvailable = availableExtensions[ext.id];
+
+          if (isAvailable) {
+            /* ── Installed: clickable connect button ── */
+            return (
+              <button
+                key={ext.id}
+                onClick={() => connect(ext.id)}
+                className="w-full flex items-center gap-4 rounded-xl text-left transition-all duration-200 group"
+                style={{
+                  padding: "14px 16px",
+                  background: "rgba(255,255,255,0.025)",
+                  border: "1px solid rgba(255,255,255,0.065)",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(34,211,238,0.05)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(34,211,238,0.2)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.025)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.065)";
+                }}
+              >
+                {ext.icon}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="text-[13px] font-semibold text-white group-hover:text-cyan-100 transition-colors"
+                      style={{ letterSpacing: "-0.01em" }}
+                    >
+                      {ext.name}
+                    </span>
+                    {ext.recommended && (
+                      <span
+                        className="text-[9px] font-bold px-1.5 py-[2px] rounded-md uppercase tracking-wider"
+                        style={{
+                          background: "rgba(34,211,238,0.12)",
+                          border: "1px solid rgba(34,211,238,0.22)",
+                          color: "#67e8f9",
+                        }}
+                      >
+                        Recommended
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-600 mt-0.5">{ext.tagline}</p>
+                </div>
+                <ExternalLink
+                  className="w-3.5 h-3.5 opacity-0 group-hover:opacity-40 transition-opacity flex-shrink-0"
+                  style={{ color: "#22d3ee" }}
+                />
+              </button>
+            );
+          }
+
+          /* ── Not installed: dimmed with install link ── */
+          return (
+            <a
+              key={ext.id}
+              href={INSTALL_URLS[ext.id]}
+              target="_blank"
+              rel="noreferrer"
+              className="w-full flex items-center gap-4 rounded-xl text-left transition-all duration-200 group"
+              style={{
+                padding: "14px 16px",
+                background: "rgba(255,255,255,0.015)",
+                border: "1px solid rgba(255,255,255,0.04)",
+                opacity: 0.55,
+                textDecoration: "none",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.opacity = "0.75";
+                (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.08)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.opacity = "0.55";
+                (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.04)";
+              }}
+            >
+              {ext.icon}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="text-[13px] font-semibold text-slate-400"
+                    style={{ letterSpacing: "-0.01em" }}
+                  >
+                    {ext.name}
+                  </span>
                   <span
                     className="text-[9px] font-bold px-1.5 py-[2px] rounded-md uppercase tracking-wider"
                     style={{
-                      background: "rgba(34,211,238,0.12)",
-                      border: "1px solid rgba(34,211,238,0.22)",
-                      color: "#67e8f9",
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      color: "#64748b",
                     }}
                   >
-                    Recommended
+                    Not installed
                   </span>
-                )}
+                </div>
+                <p className="text-[11px] text-slate-700 mt-0.5">
+                  Install to continue
+                </p>
               </div>
-              <p className="text-[11px] text-slate-600 mt-0.5">{ext.tagline}</p>
-            </div>
-            <ExternalLink
-              className="w-3.5 h-3.5 opacity-0 group-hover:opacity-40 transition-opacity flex-shrink-0"
-              style={{ color: "#22d3ee" }}
-            />
-          </button>
-        ))}
+              <Download
+                className="w-3.5 h-3.5 flex-shrink-0 opacity-40 group-hover:opacity-60 transition-opacity"
+                style={{ color: "#64748b" }}
+              />
+            </a>
+          );
+        })}
       </div>
+
+      {/* Connection error */}
+      {connectionError && (
+        <p
+          className="text-[11px] text-center mt-3"
+          style={{ color: "#f87171" }}
+        >
+          {connectionError}
+        </p>
+      )}
 
       {/* Trust copy */}
       <div
@@ -423,17 +502,17 @@ export function WalletConnectModal() {
 
   const title: Record<string, string> = {
     disconnected: "Connect your wallet",
-    connecting:   "Connecting…",
+    connecting:   "Connecting\u2026",
     connected:    "Wallet connected",
-    verifying:    "Signing message…",
+    verifying:    "Signing message\u2026",
     verified:     "Ready to go",
   };
 
   const subtitle: Record<string, string> = {
     disconnected: "Select a Polkadot-compatible wallet to continue.",
-    connecting:   "Communicating with your extension…",
+    connecting:   "Communicating with your extension\u2026",
     connected:    "One more step to confirm ownership.",
-    verifying:    "Confirming your wallet signature…",
+    verifying:    "Confirming your wallet signature\u2026",
     verified:     "Your wallet is linked and verified.",
   };
 

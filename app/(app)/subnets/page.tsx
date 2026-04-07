@@ -95,7 +95,7 @@ export default function SubnetsPage() {
       <PageHeader
         title="Subnet Explorer"
         subtitle={liveLoaded
-          ? `${totalSubnets} subnets Â· scored, ranked, and filtered`
+          ? `${totalSubnets} subnets · scored, ranked, and filtered`
           : "Scored, ranked, and filtered across the subnet universe"}
       >
         <div className="text-xs text-slate-500">

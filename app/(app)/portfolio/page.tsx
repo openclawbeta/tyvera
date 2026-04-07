@@ -1,6 +1,6 @@
 "use client";
 
-import { Wallet, TrendingUp, BarChart2, Zap, Download, RefreshCw } from "lucide-react";
+import { Wallet, TrendingUp, BarChart2, Zap, Download, RefreshCw, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
 import { StatCard } from "@/components/ui-custom/stat-card";
@@ -14,7 +14,6 @@ import { getPortfolio, getPortfolioActivity, getPortfolioHistory, getWatchlist }
 import { getRecommendations } from "@/lib/api/recommendations";
 import { useWallet } from "@/lib/wallet-context";
 import { cn, subnetGradient, formatDate } from "@/lib/utils";
-import { ArrowRight } from "lucide-react";
 
 export default function PortfolioPage() {
   const { walletState } = useWallet();
