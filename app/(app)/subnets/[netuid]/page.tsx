@@ -36,6 +36,7 @@ import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui-custom/fa
 import { MetricPill } from "@/components/ui-custom/metric-pill";
 import { SectionTitle } from "@/components/ui-custom/section-title";
 import { SimpleLineChart } from "@/components/charts/simple-line-chart";
+import { MetagraphTable } from "@/components/subnets/metagraph-table";
 import { cn, subnetGradient, scoreColor, scoreBg, riskBg } from "@/lib/utils";
 
 // ── Per-subnet extended mock data ──────────────────────────────────────────
@@ -510,6 +511,25 @@ export default function SubnetDetailPage() {
               suffix=" τ"
               height={72}
             />
+          </div>
+        </div>
+      </FadeIn>
+
+      {/* ── Metagraph table ── */}
+      <FadeIn delay={0.15}>
+        <div>
+          <div className="mb-5">
+            <SectionTitle title="Metagraph" subtitle="Validators & miners on this subnet" />
+          </div>
+          <div
+            className="rounded-2xl p-6"
+            style={{
+              background: "rgba(255,255,255,0.018)",
+              border: "1px solid rgba(255,255,255,0.065)",
+              boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 20px rgba(0,0,0,0.24)",
+            }}
+          >
+            <MetagraphTable netuid={subnet.netuid} />
           </div>
         </div>
       </FadeIn>
