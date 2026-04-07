@@ -1,4 +1,5 @@
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { GlobalTicker } from "@/components/layout/global-ticker";
 import { Topbar } from "@/components/layout/topbar";
 import { WalletProvider } from "@/lib/wallet-context";
 import { SidebarProvider } from "@/lib/sidebar-context";
@@ -14,13 +15,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
           {/* On mobile: full width (no left margin). On desktop: offset by sidebar width. */}
           <div className="flex-1 lg:ml-60 flex flex-col min-h-screen">
+            {/* Global ticker at the very top (32px) */}
+            <GlobalTicker />
+
             {/* Topbar renders WalletConnectModal + WalletApprovalDialog internally */}
             <Topbar />
 
-            {/* 52px topbar + page content */}
+            {/* 32px ticker + 52px topbar + page content = 84px offset */}
             <main
               className="flex-1 overflow-auto px-4 sm:px-6 lg:px-7"
-              style={{ marginTop: "52px", paddingTop: "20px", paddingBottom: "48px" }}
+              style={{ marginTop: "84px", paddingTop: "20px", paddingBottom: "48px" }}
             >
               {children}
             </main>

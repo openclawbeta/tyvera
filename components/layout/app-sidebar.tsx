@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Network,
   Wallet,
   TrendingUp,
   Lightbulb,
+  Bell,
   CreditCard,
   FileText,
   Settings,
@@ -16,17 +17,24 @@ import {
   Shield,
   X,
   Activity,
+  MessageSquare,
+  FlaskConical,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/lib/sidebar-context";
 
 const NAV_ITEMS = [
   { label: "Dashboard",       href: "/dashboard",       icon: LayoutDashboard },
+  { label: "AI Intel",        href: "/chat",            icon: MessageSquare },
   { label: "Subnets",         href: "/subnets",         icon: Network },
+  { label: "Validators",      href: "/validators",      icon: Users },
   { label: "Yield",           href: "/yield",           icon: TrendingUp },
   { label: "Portfolio",       href: "/portfolio",       icon: Wallet },
   { label: "Activity",        href: "/activity",        icon: Activity },
   { label: "Recommendations", href: "/recommendations", icon: Lightbulb, badge: "3" },
+  { label: "Alerts",          href: "/alerts",          icon: Bell },
+  { label: "Backtest",        href: "/backtest",        icon: FlaskConical },
   { label: "Billing",         href: "/billing",         icon: CreditCard },
   { label: "Tax Report",      href: "/tax",             icon: FileText },
   { label: "Settings",        href: "/settings",        icon: Settings },
@@ -35,6 +43,36 @@ const NAV_ITEMS = [
 export function AppSidebar() {
   const pathname = usePathname();
   const { isOpen, close } = useSidebar();
+  const [unacknowledgedCount, setUnacknowledgedCount] = useState(0);
+
+  // Load unacknowledged alerts count
+  useEffect(() => {
+    const updateAlertCount = () => {
+      try {
+        const history = localStorage.getItem("tyvera_alert_history");
+        if (history) {
+          const events = JSON.parse(history);
+          const unacknowledged = events.filter(
+            (e: any) => !e.acknowledged
+          ).length;
+          setUnacknowledgedCount(unacknowledged);
+        }
+      } catch {
+        // silently fail
+      }
+    };
+
+    updateAlertCount();
+    // Check for updates every 30 seconds
+    const interval = setInterval(updateAlertCount, 30000);
+    // Also listen for storage changes (from other tabs/windows)
+    window.addEventListener("storage", updateAlertCount);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("storage", updateAlertCount);
+    };
+  }, []);
 
   // Close sidebar whenever the route changes (mobile nav tap)
   useEffect(() => {
@@ -113,6 +151,12 @@ export function AppSidebar() {
             const Icon = item.icon;
             const isActive =
               pathname === item.href || pathname.startsWith(item.href + "/");
+            // Show alert count for Alerts nav item if there are unacknowledged alerts
+            const alertBadge =
+              item.label === "Alerts" && unacknowledgedCount > 0
+                ? String(unacknowledgedCount)
+                : item.badge;
+            const isAlertBadge = item.label === "Alerts" && unacknowledgedCount > 0;
 
             return (
               <Link key={item.href} href={item.href}>
@@ -128,17 +172,22 @@ export function AppSidebar() {
                   />
                   <span className="flex-1 leading-none">{item.label}</span>
 
-                  {item.badge && (
+                  {alertBadge && (
                     <span
-                      className="flex-shrink-0 text-[10px] font-bold text-cyan-300 tabular-nums"
+                      className="flex-shrink-0 text-[10px] font-bold tabular-nums"
                       style={{
-                        background: "rgba(34,211,238,0.12)",
-                        border: "1px solid rgba(34,211,238,0.2)",
+                        background: isAlertBadge
+                          ? "rgba(244,63,94,0.15)"
+                          : "rgba(34,211,238,0.12)",
+                        border: isAlertBadge
+                          ? "1px solid rgba(244,63,94,0.2)"
+                          : "1px solid rgba(34,211,238,0.2)",
                         borderRadius: "6px",
                         padding: "1px 6px",
+                        color: isAlertBadge ? "#f87171" : "#67e8f9",
                       }}
                     >
-                      {item.badge}
+                      {alertBadge}
                     </span>
                   )}
                 </div>

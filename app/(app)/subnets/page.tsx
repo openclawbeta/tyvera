@@ -1,16 +1,15 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { GitCompare, X } from "lucide-react";
+import { GitCompare, X, Layout, Grid3x3 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/layout/page-header";
 import { SubnetFilterPanel } from "@/components/subnets/subnet-filter-panel";
 import { SubnetCard } from "@/components/subnets/subnet-card";
 import { SubnetDetailPreview } from "@/components/subnets/subnet-detail-preview";
 import { SubnetComparePanel } from "@/components/subnets/subnet-compare-panel";
-import { SubnetHistoryPanel } from "@/components/subnets/subnet-history-panel";
-import { FeatureGate } from "@/components/entitlement/feature-gate";
-import { useWallet } from "@/lib/wallet-context";
-import { useEntitlement } from "@/lib/hooks/use-entitlement";
+import { SubnetDataTable } from "@/components/subnets/subnet-data-table";
+import { SubnetSummaryCards } from "@/components/subnets/subnet-summary-cards";
 import { getSubnets, fetchSubnetsFromApi } from "@/lib/api/subnets";
 import type { SubnetDetailModel, RiskLevel } from "@/lib/types/subnets";
 
@@ -22,9 +21,6 @@ export default function SubnetsPage() {
   const [subnets, setSubnets] = useState<SubnetDetailModel[]>(() => seedSubnets);
   const [totalSubnets, setTotalSubnets] = useState<number>(seedSubnets.length);
   const [liveLoaded, setLiveLoaded] = useState(false);
-
-  const { walletState, address } = useWallet();
-  const { tier } = useEntitlement(walletState === "disconnected" ? null : address);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,11 +48,13 @@ export default function SubnetsPage() {
   const [sortBy, setSortBy]     = useState("score");
   const [selected, setSelected] = useState<SubnetDetailModel | null>(null);
   const [compareNetuids, setCompareNetuids] = useState<number[]>([]);
+  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
+  const [filterCollapsed, setFilterCollapsed] = useState(false);
 
   function toggleCompare(subnet: SubnetDetailModel) {
     setCompareNetuids((prev) => {
       if (prev.includes(subnet.netuid)) return prev.filter((id) => id !== subnet.netuid);
-      if (prev.length >= 4) return [...prev.slice(1), subnet.netuid];
+      if (prev.length >= 2) return [prev[1], subnet.netuid];
       return [...prev, subnet.netuid];
     });
   }
@@ -97,8 +95,15 @@ export default function SubnetsPage() {
     return list;
   }, [subnets, search, category, risk, sortBy]);
 
+  const handleSelectSubnet = (netuid: number) => {
+    const subnet = subnets.find((s) => s.netuid === netuid);
+    if (subnet) {
+      setSelected(subnet);
+    }
+  };
+
   return (
-    <div className="max-w-[1400px] mx-auto space-y-6">
+    <div className="max-w-[1600px] mx-auto space-y-6">
       <PageHeader
         title="Subnet Explorer"
         subtitle={liveLoaded
@@ -116,57 +121,95 @@ export default function SubnetsPage() {
         </div>
       </PageHeader>
 
-      {compareSubnets.length > 0 && compareSubnets.length < 2 && (
-        <div className="mb-5 rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.03] p-4">
+      {compareSubnets.length > 0 && (
+        <div className="rounded-xl border border-cyan-400/15 bg-cyan-400/[0.03] p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-sm text-slate-300">
               <GitCompare className="w-4 h-4 text-cyan-300" />
-              1 subnet selected — choose 1–3 more to compare (up to 4)
+              {compareSubnets.length === 1
+                ? `1 subnet selected — choose one more to compare`
+                : `${compareSubnets[0].name} vs ${compareSubnets[1].name}`}
             </div>
             <button
               className="btn-ghost text-xs gap-1.5"
               onClick={() => setCompareNetuids([])}
             >
               <X className="w-3.5 h-3.5" />
-              Clear
+              Clear compare
             </button>
           </div>
         </div>
       )}
 
-      {compareSubnets.length >= 2 && (
-        <div className="mb-5">
+      {compareSubnets.length === 2 && (
+        <div>
           <SubnetComparePanel
-            subnets={compareSubnets}
+            subnets={[compareSubnets[0], compareSubnets[1]]}
             onClear={() => setCompareNetuids([])}
           />
         </div>
       )}
 
-      {/* Historical Analytics — shown when a subnet is selected */}
-      {selected && (
-        <div className="mb-5">
-          <FeatureGate feature="history_30d">
-            <SubnetHistoryPanel subnet={selected} tier={tier} />
-          </FeatureGate>
-        </div>
-      )}
+      {/* Summary cards */}
+      {viewMode === "table" && <SubnetSummaryCards subnets={filtered} />}
+
+      {/* View toggle */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setViewMode("table")}
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all",
+            viewMode === "table"
+              ? "bg-cyan-400/15 text-cyan-300 border border-cyan-400/25"
+              : "bg-white/[0.03] text-slate-500 border border-white/[0.07] hover:text-slate-300 hover:bg-white/[0.05]",
+          )}
+        >
+          <Layout className="w-3.5 h-3.5" />
+          Table
+        </button>
+        <button
+          onClick={() => setViewMode("cards")}
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all",
+            viewMode === "cards"
+              ? "bg-cyan-400/15 text-cyan-300 border border-cyan-400/25"
+              : "bg-white/[0.03] text-slate-500 border border-white/[0.07] hover:text-slate-300 hover:bg-white/[0.05]",
+          )}
+        >
+          <Grid3x3 className="w-3.5 h-3.5" />
+          Cards
+        </button>
+
+        {/* Filter toggle on mobile */}
+        <button
+          onClick={() => setFilterCollapsed(!filterCollapsed)}
+          className="ml-auto md:hidden px-3 py-2 rounded-lg text-xs font-medium bg-white/[0.03] text-slate-500 border border-white/[0.07] hover:text-slate-300 hover:bg-white/[0.05] transition-all"
+        >
+          {filterCollapsed ? "Show" : "Hide"} Filters
+        </button>
+      </div>
 
       <div className="flex flex-col lg:flex-row gap-5">
         {/* Left filter rail */}
-        <SubnetFilterPanel
-          search={search}     onSearch={setSearch}
-          category={category} onCategory={setCategory}
-          risk={risk}         onRisk={setRisk}
-          sortBy={sortBy}     onSort={setSortBy}
-        />
+        {(!filterCollapsed || viewMode === "cards") && (
+          <div className="w-full lg:w-52 flex-shrink-0">
+            <SubnetFilterPanel
+              search={search}     onSearch={setSearch}
+              category={category} onCategory={setCategory}
+              risk={risk}         onRisk={setRisk}
+              sortBy={sortBy}     onSort={setSortBy}
+            />
+          </div>
+        )}
 
-        {/* Center subnet grid */}
+        {/* Center content */}
         <div className="flex-1 min-w-0">
           {filtered.length === 0 ? (
-            <div className="glass flex items-center justify-center h-48 text-slate-500 text-sm">
+            <div className="glass flex items-center justify-center h-48 text-slate-500 text-sm rounded-xl">
               No subnets match your filters.
             </div>
+          ) : viewMode === "table" ? (
+            <SubnetDataTable subnets={filtered} onSelect={handleSelectSubnet} />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               {filtered.map((subnet, i) => (
@@ -184,10 +227,12 @@ export default function SubnetsPage() {
           )}
         </div>
 
-        {/* Right detail preview */}
-        <div className="w-full lg:w-72 flex-shrink-0 lg:sticky lg:top-20 lg:h-[calc(100vh-7rem)]">
-          <SubnetDetailPreview subnet={selected} />
-        </div>
+        {/* Right detail preview - hide in table view on smaller screens */}
+        {viewMode === "cards" && (
+          <div className="w-full lg:w-72 flex-shrink-0 lg:sticky lg:top-20 lg:h-[calc(100vh-7rem)]">
+            <SubnetDetailPreview subnet={selected} />
+          </div>
+        )}
       </div>
     </div>
   );

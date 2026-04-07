@@ -42,6 +42,19 @@ export interface SubnetDetailModel extends SubnetCardModel {
   thesis?: string[];
   useCases?: string[];
   links?: SubnetLinkSet;
+  alphaPrice?: number;
+  marketCap?: number;
+  volume24h?: number;
+  volumeCapRatio?: number;
+  change1h?: number;
+  change24h?: number;
+  change1w?: number;
+  change1m?: number;
+  flow24h?: number;
+  flow1w?: number;
+  flow1m?: number;
+  dailyChainBuys?: number;
+  incentivePct?: number;
 }
 
 export interface TimeSeriesPoint {
@@ -54,4 +67,14 @@ export interface SubnetHistoryModel {
   inflow: TimeSeriesPoint[];
   liquidity: TimeSeriesPoint[];
   emissions: TimeSeriesPoint[];
+}
+
+/* ── TAO Staking Baseline (root network netuid 0) ────────────────── */
+
+export interface TaoBaseline {
+  yield: number;
+  liquidity: number;
+  emissions: number;
+  source: "subtensor-snapshot" | "taostats-live" | "unavailable";
+  fetchedAt: string;
 }
