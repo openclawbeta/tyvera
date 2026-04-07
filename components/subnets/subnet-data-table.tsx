@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Search, ChevronDown, ChevronUp, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { YieldOutlierTag } from "@/components/subnets/subnet-risk-banner";
 import type { SubnetDetailModel } from "@/lib/types/subnets";
 
 interface SubnetDataTableProps {
@@ -313,8 +314,11 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
                           {subnet.netuid}
                         </div>
                         <div className="min-w-0">
-                          <div className="font-semibold text-white truncate text-xs">
-                            {subnet.name}
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-white truncate text-xs">
+                              {subnet.name}
+                            </span>
+                            <YieldOutlierTag yield={subnet.yield} />
                           </div>
                           <div className="text-[9px] text-slate-600 font-mono">
                             SN{subnet.netuid}

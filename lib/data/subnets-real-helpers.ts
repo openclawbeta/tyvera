@@ -153,3 +153,94 @@ export function deriveYield(emissionsPerDay: number, taoIn: number): number {
   if (!taoIn || taoIn <= 0) return 0;
   return +((emissionsPerDay / taoIn) * 365 * 100).toFixed(2);
 }
+
+/* ─── Outlier / Risk Flag Detection ─────────────────────────────────── */
+
+/**
+ * Risk flags surfaced to users before they commit capital.
+ * Each flag has a severity ("caution" or "warning") and a plain-English message.
+ */
+export interface RiskFlag {
+  id: string;
+  severity: "caution" | "warning";
+  title: string;
+  message: string;
+}
+
+/**
+ * Detect outlier conditions that warrant explicit user acknowledgment.
+ *
+ * Flags:
+ *   EXTREME_YIELD     yield > 100% — unsustainable or artifact of low liquidity
+ *   HIGH_YIELD        yield > 50%  — elevated, may attract dilution quickly
+ *   LOW_LIQUIDITY     liquidity < 100 000 τ — thin pool, high slippage risk
+ *   YIELD_LIQUIDITY   yield > 50% AND liquidity < 500 000 τ — red flag combo
+ *   ZERO_EMISSION     emissions === 0 — subnet may be inactive or deregistered
+ *   YOUNG_SUBNET      age < 30 days — limited track record
+ */
+export function detectRiskFlags(subnet: {
+  yield: number;
+  liquidity: number;
+  emissions: number;
+  stakers: number;
+  age: number;
+  risk: string;
+}): RiskFlag[] {
+  const flags: RiskFlag[] = [];
+
+  // Extreme yield outlier (SN102-type: 800%+ on thin liquidity)
+  if (subnet.yield > 100) {
+    flags.push({
+      id: "extreme_yield",
+      severity: "warning",
+      title: "Extreme yield outlier",
+      message: `This subnet shows ${subnet.yield.toFixed(0)}% estimated APR — far above network norms. Yields this high are usually unsustainable and driven by low liquidity rather than strong fundamentals. New stakers dilute the pool rapidly.`,
+    });
+  } else if (subnet.yield > 50) {
+    flags.push({
+      id: "high_yield",
+      severity: "caution",
+      title: "Elevated yield",
+      message: `This subnet's ${subnet.yield.toFixed(1)}% estimated APR is well above the network average. High yields often compress quickly as new stake flows in. Research the subnet's emission schedule and staker trend before allocating.`,
+    });
+  }
+
+  // Low liquidity
+  if (subnet.liquidity < 100_000 && subnet.liquidity > 0) {
+    flags.push({
+      id: "low_liquidity",
+      severity: "warning",
+      title: "Low liquidity pool",
+      message: `Only ${Math.round(subnet.liquidity).toLocaleString()} τ is staked in this subnet. Thin pools mean higher slippage, greater price impact when entering or exiting, and more volatile yield swings.`,
+    });
+  } else if (subnet.liquidity < 500_000 && subnet.yield > 50) {
+    flags.push({
+      id: "yield_liquidity_mismatch",
+      severity: "warning",
+      title: "High yield on thin liquidity",
+      message: `A ${subnet.yield.toFixed(1)}% yield on just ${Math.round(subnet.liquidity).toLocaleString()} τ of liquidity is a common red-flag combination. The yield will compress rapidly as new stake enters.`,
+    });
+  }
+
+  // Zero emission — subnet may be inactive
+  if (subnet.emissions === 0) {
+    flags.push({
+      id: "zero_emission",
+      severity: "caution",
+      title: "No active emissions",
+      message: "This subnet is not currently receiving TAO emissions from the network. It may be inactive, in a registration gap, or not yet included in the current emission cycle. Staking here produces no yield until emissions resume.",
+    });
+  }
+
+  // Young subnet
+  if (subnet.age > 0 && subnet.age < 30) {
+    flags.push({
+      id: "young_subnet",
+      severity: "caution",
+      title: "New subnet",
+      message: `This subnet is only ${subnet.age} days old. New subnets have limited track records, volatile emission patterns, and higher operator risk. Early metrics may not reflect long-term performance.`,
+    });
+  }
+
+  return flags;
+}

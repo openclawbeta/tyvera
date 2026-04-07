@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Bookmark, BookmarkCheck, GitCompare } from "lucide-react";
 import { cn, subnetGradient, scoreBg, riskBg } from "@/lib/utils";
 import { MetricPill } from "@/components/ui-custom/metric-pill";
+import { YieldOutlierTag } from "@/components/subnets/subnet-risk-banner";
 import type { SubnetCardModel as Subnet } from "@/lib/types/subnets";
 
 interface SubnetCardProps {
@@ -172,7 +173,10 @@ export const SubnetCard = memo(function SubnetCard({
           >
             {subnet.yield}%
           </div>
-          <div className="text-[10px] text-slate-600 mt-0.5">est. APR</div>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-[10px] text-slate-600">est. APR</span>
+            <YieldOutlierTag yield={subnet.yield} />
+          </div>
           <div className="mt-1.5">
             <MetricPill value={subnet.yieldDelta7d} size="xs" />
           </div>

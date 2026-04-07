@@ -38,6 +38,8 @@ import { SectionTitle } from "@/components/ui-custom/section-title";
 import { SimpleLineChart } from "@/components/charts/simple-line-chart";
 import { MetagraphTable } from "@/components/subnets/metagraph-table";
 import { cn, subnetGradient, scoreColor, scoreBg, riskBg } from "@/lib/utils";
+import { detectRiskFlags } from "@/lib/data/subnets-real-helpers";
+import { SubnetRiskBanner } from "@/components/subnets/subnet-risk-banner";
 
 // ── Per-subnet extended mock data ──────────────────────────────────────────
 
@@ -477,6 +479,20 @@ export default function SubnetDetailPage() {
         </div>
       </StaggerContainer>
 
+      {/* ── Risk flags banner ── */}
+      {(() => {
+        const riskFlags = detectRiskFlags(subnet);
+        return riskFlags.length > 0 ? (
+          <FadeIn delay={0.12}>
+            <SubnetRiskBanner
+              flags={riskFlags}
+              subnetName={subnet.name}
+              mode="full"
+            />
+          </FadeIn>
+        ) : null;
+      })()}
+
       {/* ── Charts ── */}
       <FadeIn delay={0.15}>
         <div className="grid grid-cols-12 gap-5">
@@ -840,23 +856,46 @@ export default function SubnetDetailPage() {
                 ))}
               </div>
 
-              {/* Risk notice if applicable */}
-              {(subnet.risk === "HIGH" || subnet.risk === "SPECULATIVE") && (
-                <div
-                  className="flex items-start gap-2.5 p-3 rounded-xl"
-                  style={{
-                    background: "rgba(251,191,36,0.06)",
-                    border: "1px solid rgba(251,191,36,0.16)",
-                  }}
-                >
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-amber-200/60 leading-relaxed">
-                    {subnet.risk === "SPECULATIVE"
-                      ? "This subnet is rated Speculative. Thin liquidity and high concentration. Only allocate what you can afford to lose."
-                      : "This subnet carries elevated risk. Yields are volatile and liquidity is below average."}
-                  </p>
-                </div>
-              )}
+              {/* Risk notice — now powered by detectRiskFlags */}
+              {(() => {
+                const sideFlags = detectRiskFlags(subnet);
+                if (sideFlags.length === 0 && (subnet.risk === "HIGH" || subnet.risk === "SPECULATIVE")) {
+                  // Fallback for HIGH/SPECULATIVE subnets that don't trip specific flags
+                  return (
+                    <div
+                      className="flex items-start gap-2.5 p-3 rounded-xl"
+                      style={{
+                        background: "rgba(251,191,36,0.06)",
+                        border: "1px solid rgba(251,191,36,0.16)",
+                      }}
+                    >
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" />
+                      <p className="text-[11px] text-amber-200/60 leading-relaxed">
+                        {subnet.risk === "SPECULATIVE"
+                          ? "This subnet is rated Speculative. Thin liquidity and high concentration. Only allocate what you can afford to lose."
+                          : "This subnet carries elevated risk. Yields are volatile and liquidity is below average."}
+                      </p>
+                    </div>
+                  );
+                }
+                if (sideFlags.length > 0) {
+                  return (
+                    <div
+                      className="flex items-start gap-2.5 p-3 rounded-xl"
+                      style={{
+                        background: sideFlags[0].severity === "warning" ? "rgba(239,68,68,0.06)" : "rgba(251,191,36,0.06)",
+                        border: `1px solid ${sideFlags[0].severity === "warning" ? "rgba(239,68,68,0.16)" : "rgba(251,191,36,0.16)"}`,
+                      }}
+                    >
+                      <AlertTriangle className={`w-3.5 h-3.5 flex-shrink-0 mt-0.5 ${sideFlags[0].severity === "warning" ? "text-red-400" : "text-amber-400"}`} />
+                      <p className={`text-[11px] leading-relaxed ${sideFlags[0].severity === "warning" ? "text-red-200/60" : "text-amber-200/60"}`}>
+                        {sideFlags.length} risk {sideFlags.length === 1 ? "factor" : "factors"} detected. Review the risk banner above before allocating.
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               <p className="text-[10px] text-slate-700 leading-relaxed mt-4">
                 Subnet data is sourced from on-chain records and is not financial advice.
