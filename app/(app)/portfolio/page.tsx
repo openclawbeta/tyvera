@@ -1,193 +1,79 @@
 "use client";
 
-import { Wallet, TrendingUp, BarChart2, Zap, Download, RefreshCw } from "lucide-react";
+import { Wallet, TrendingUp, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
-import { GlassCard } from "@/components/ui-custom/glass-card";
-import { StatCard } from "@/components/ui-custom/stat-card";
-import { SectionTitle } from "@/components/ui-custom/section-title";
 import { FadeIn } from "@/components/ui-custom/fade-in";
-import { AllocationChartCard } from "@/components/portfolio/allocation-chart-card";
-import { HoldingsList } from "@/components/portfolio/holdings-list";
-import { WatchlistCard } from "@/components/portfolio/watchlist-card";
-import { SimpleLineChart } from "@/components/charts/simple-line-chart";
-import { getPortfolio, getPortfolioActivity, getPortfolioHistory, getWatchlist } from "@/lib/api/portfolio";
-import { getRecommendations } from "@/lib/api/recommendations";
-import { cn, subnetGradient, formatDate } from "@/lib/utils";
-import { ArrowRight } from "lucide-react";
 
 export default function PortfolioPage() {
-  const portfolio = getPortfolio();
-  const history = getPortfolioHistory();
-  const recentChanges = getPortfolioActivity();
-  const watchlist = getWatchlist();
-  const recommendations = getRecommendations();
-
-  const { stats: portfolioStats, allocations } = portfolio;
-  const earningsData = Array.from({ length: 30 }, (_, i) => ({
-    label: `d${i + 1}`,
-    value: parseFloat((0.004 + Math.sin(i * 0.3) * 0.001 + i * 0.0001).toFixed(5)),
-  }));
-  const topRec = recommendations[1] ?? recommendations[0];
-
   return (
-    <div className="max-w-[1400px] mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-7">
       <PageHeader
         title="Portfolio"
         subtitle="Your staked TAO positions and performance"
-      >
-        <button className="btn-ghost text-xs gap-1.5">
-          <Download className="w-3.5 h-3.5" />
-          Export
-        </button>
-        <button className="btn-ghost text-xs gap-1.5">
-          <RefreshCw className="w-3.5 h-3.5" />
-          Refresh
-        </button>
-      </PageHeader>
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard label="Total Staked"    value={`${portfolioStats.totalStakedTao.toFixed(2)} TAO`}   change={2.4}  accent="cyan"    icon={<Wallet className="w-4 h-4" />}    index={0} />
-        <StatCard label="Weighted Yield"  value={`${portfolioStats.weightedYield.toFixed(1)}%`}      change={0.6}  accent="emerald" icon={<TrendingUp className="w-4 h-4" />} index={1} />
-        <StatCard label="30-Day Earnings" value={`${portfolioStats.earnings30d.toFixed(4)} TAO`}       change={8.2}  accent="violet"  icon={<Zap className="w-4 h-4" />}       index={2} />
-        <StatCard label="Diversification" value={`${portfolioStats.diversificationScore}/100`}       change={0}    accent="amber"   icon={<BarChart2 className="w-4 h-4" />}  index={3} />
-      </div>
+      <FadeIn>
+        <div
+          className="rounded-2xl relative overflow-hidden text-center py-16 px-8"
+          style={{
+            background: "linear-gradient(145deg, rgba(34,211,238,0.04) 0%, rgba(6,182,212,0.02) 60%, rgba(255,255,255,0.012) 100%)",
+            border: "1px solid rgba(34,211,238,0.12)",
+            boxShadow: "0 0 48px rgba(34,211,238,0.03), inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 24px rgba(0,0,0,0.25)",
+          }}
+        >
+          {/* Icon */}
+          <div
+            className="mx-auto mb-5 w-14 h-14 rounded-2xl flex items-center justify-center"
+            style={{
+              background: "linear-gradient(135deg, rgba(34,211,238,0.1), rgba(6,182,212,0.05))",
+              border: "1px solid rgba(34,211,238,0.18)",
+            }}
+          >
+            <Wallet className="w-6 h-6 text-cyan-400" />
+          </div>
 
-      {/* Main grid */}
-      <div className="grid grid-cols-12 gap-4">
+          <h2 className="text-xl font-semibold text-white mb-2">
+            Connect Your Wallet
+          </h2>
 
-        {/* Left -- allocation + holdings */}
-        <div className="col-span-12 lg:col-span-8 space-y-4">
+          <p className="text-sm text-slate-400 max-w-md mx-auto leading-relaxed mb-6">
+            Portfolio tracking is coming soon. Connect a Bittensor wallet to see
+            your staked positions, earnings history, and personalized recommendations.
+          </p>
 
-          {/* Allocation chart */}
-          <FadeIn delay={0.1}>
-            <GlassCard>
-              <SectionTitle title="Allocation Breakdown" subtitle="Current stake distribution" />
-              <AllocationChartCard allocations={allocations} />
-            </GlassCard>
-          </FadeIn>
+          {/* Feature preview */}
+          <div className="flex flex-wrap justify-center gap-3 mb-8">
+            {["Staking positions", "Earnings history", "Yield tracking", "Reallocation tools"].map((feature) => (
+              <span
+                key={feature}
+                className="text-[11px] font-medium px-3 py-1.5 rounded-full"
+                style={{
+                  background: "rgba(34,211,238,0.05)",
+                  border: "1px solid rgba(34,211,238,0.1)",
+                  color: "rgba(34,211,238,0.65)",
+                }}
+              >
+                <TrendingUp className="w-3 h-3 inline mr-1 -mt-0.5" />
+                {feature}
+              </span>
+            ))}
+          </div>
 
-          {/* Holdings table */}
-          <FadeIn delay={0.15}>
-            <GlassCard>
-              <SectionTitle title="Holdings" subtitle={`${allocations.length} active positions`}>
-                <button className="btn-ghost text-xs">View all</button>
-              </SectionTitle>
-              <HoldingsList allocations={allocations} />
-            </GlassCard>
-          </FadeIn>
-
-          {/* Daily earnings chart */}
-          <FadeIn delay={0.2}>
-            <GlassCard>
-              <SectionTitle title="Daily Earnings" subtitle="TAO earned per day (30d)" />
-              <SimpleLineChart
-                data={earningsData}
-                color="#10b981"
-                height={120}
-                suffix=" TAO"
-                gradientId="earningsGrad"
-              />
-            </GlassCard>
-          </FadeIn>
-
-          {/* Recent changes */}
-          <FadeIn delay={0.22}>
-            <GlassCard>
-              <SectionTitle title="Transaction History" subtitle="Stake moves and additions" />
-              <div className="space-y-0">
-                {recentChanges.map((c) => (
-                  <div key={c.id} className="flex items-center gap-4 py-3.5 border-b border-white/[0.04] last:border-0">
-                    <div className={cn(
-                      "w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white flex-shrink-0",
-                      c.type === "MOVE" ? "bg-gradient-to-br from-cyan-500 to-sky-700" : "bg-gradient-to-br from-emerald-500 to-teal-700",
-                    )}>
-                      {c.type === "MOVE" ? "--" : "+"}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white">
-                        {c.type === "MOVE" ? `${c.fromSubnet} -- ${c.toSubnet}` : `Staked to ${c.subnet}`}
-                      </p>
-                      <p className="text-xs text-slate-500 font-mono mt-0.5 truncate">tx: {c.txHash ? `${c.txHash.slice(0, 20)}--` : "--"}</p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-semibold text-white">{c.amount.toFixed(2)} TAO</p>
-                      <p className="text-xs text-slate-500">{formatDate(c.timestamp)}</p>
-                    </div>
-                    <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-2 py-1 rounded-md flex-shrink-0">
-                      {c.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </GlassCard>
-          </FadeIn>
+          {/* CTA */}
+          <a
+            href="/subnets"
+            className="inline-flex items-center gap-2 text-sm font-medium px-5 py-2.5 rounded-xl transition-all hover:brightness-110"
+            style={{
+              background: "linear-gradient(135deg, rgba(34,211,238,0.12), rgba(6,182,212,0.06))",
+              border: "1px solid rgba(34,211,238,0.2)",
+              color: "#22d3ee",
+            }}
+          >
+            Explore subnets
+            <ArrowRight className="w-4 h-4" />
+          </a>
         </div>
-
-        {/* Right sidebar */}
-        <div className="col-span-12 lg:col-span-4 space-y-4">
-
-          {/* Portfolio stats summary */}
-          <FadeIn delay={0.12}>
-            <GlassCard>
-              <SectionTitle title="Summary" />
-              <div className="space-y-3">
-                {[
-                  { label: "Total positions",    value: `${allocations.length} subnets`                  },
-                  { label: "Top position",        value: portfolioStats.topSubnet                        },
-                  { label: "Est. monthly yield",  value: `${portfolioStats.earnings30d.toFixed(4)} TAO`    },
-                  { label: "Portfolio value",     value: `$${portfolioStats.totalValueUsd.toLocaleString()}` },
-                  { label: "Avg validator take",  value: "15.5%"                                          },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex items-center justify-between py-2 border-b border-white/[0.04] last:border-0">
-                    <span className="text-xs text-slate-500">{label}</span>
-                    <span className="text-xs font-semibold text-white">{value}</span>
-                  </div>
-                ))}
-              </div>
-            </GlassCard>
-          </FadeIn>
-
-          {/* Watchlist */}
-          <FadeIn delay={0.16}>
-            <GlassCard>
-              <SectionTitle title="Watchlist" subtitle="Subnets you're tracking">
-                <div className="flex items-center gap-2">
-                  <button className="btn-ghost text-xs">Compare</button>
-                  <button className="btn-ghost text-xs">Edit</button>
-                </div>
-              </SectionTitle>
-              <WatchlistCard items={watchlist} />
-            </GlassCard>
-          </FadeIn>
-
-          {/* Recommended move */}
-          {topRec && (
-            <FadeIn delay={0.2}>
-              <div className="rounded-2xl border border-cyan-400/25 bg-cyan-400/[0.04] p-5">
-                <p className="text-[10px] font-semibold text-cyan-300 uppercase tracking-wider mb-3">Suggested Move</p>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white", `bg-gradient-to-br ${subnetGradient(topRec.fromSubnet.netuid)}`)}>
-                    {topRec.fromSubnet.netuid}
-                  </div>
-                  <ArrowRight className="w-3 h-3 text-cyan-400" />
-                  <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold text-white", `bg-gradient-to-br ${subnetGradient(topRec.toSubnet.netuid)}`)}>
-                    {topRec.toSubnet.netuid}
-                  </div>
-                  <div className="ml-auto">
-                    <span className="text-sm font-bold text-emerald-400">+{topRec.projectedEdge.toFixed(1)}%</span>
-                  </div>
-                </div>
-                <p className="text-[11px] text-slate-400 mb-3 line-clamp-2">{topRec.rationale}</p>
-                <button className="w-full btn-primary justify-center text-xs py-2">
-                  <Zap className="w-3.5 h-3.5" />
-                  Review Move
-                </button>
-              </div>
-            </FadeIn>
-          )}
-        </div>
-      </div>
+      </FadeIn>
     </div>
   );
 }

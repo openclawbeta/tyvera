@@ -7,6 +7,7 @@ interface TickerData {
   change24h: number;
   marketCap: number;
   volume24h: number;
+  blockHeight: number | null;
   fetchedAt: string | null;
   fallback: boolean;
 }
@@ -107,8 +108,10 @@ export function GlobalTicker() {
   };
 
   const formatBlockHeight = (): string => {
-    // Placeholder: "7914629" (will be replaced if an API is added)
-    return "7914629";
+    if (ticker.blockHeight && ticker.blockHeight > 0) {
+      return ticker.blockHeight.toLocaleString();
+    }
+    return "—";
   };
 
   // Mobile: Show only price and 24h change

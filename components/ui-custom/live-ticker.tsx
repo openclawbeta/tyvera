@@ -1,21 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
-const TICKER_ITEMS = [
-  { label: "SN1 · Apex",              yield: "18.4%", delta: +0.6 },
-  { label: "SN49 · Hivetrain",        yield: "24.2%", delta: +1.3 },
-  { label: "SN18 · Cortex.t",         yield: "21.8%", delta: +1.2 },
-  { label: "SN25 · Mainframe",        yield: "19.7%", delta: +0.9 },
-  { label: "SN4 · Targon",            yield: "20.1%", delta: +0.4 },
-  { label: "SN8 · Taoshi",            yield: "17.6%", delta: +2.1 },
-  { label: "SN21 · OMEGA",            yield: "16.9%", delta: +0.8 },
-  { label: "SN32 · ItsAI",            yield: "15.3%", delta: -0.5 },
-  { label: "SN3 · Templar",           yield: "14.2%", delta: +1.8 },
-  { label: "SN19 · Nineteen",         yield: "22.4%", delta: -1.2 },
-  { label: "SN40 · Chunking",         yield: "18.7%", delta: -2.3 },
-  { label: "SN11 · Transcription",    yield: "12.9%", delta: +0.5 },
-];
+interface SubnetTicker {
+  label: string;
+  yieldRate: string;
+  delta: number;
+}
 
 function TickerItem({ label, yieldRate, delta }: { label: string; yieldRate: string; delta: number }) {
   const isPos = delta >= 0;
@@ -33,14 +25,68 @@ function TickerItem({ label, yieldRate, delta }: { label: string; yieldRate: str
           isPos ? "text-emerald-400" : "text-rose-400",
         )}
       >
-        {isPos ? "▲" : "▼"}&thinsp;{Math.abs(delta).toFixed(1)}%
+        {isPos ? "▲" : "▼"}{"\u2009"}{Math.abs(delta).toFixed(1)}%
       </span>
     </div>
   );
 }
 
 export function LiveTicker() {
-  const items = [...TICKER_ITEMS, ...TICKER_ITEMS];
+  const [items, setItems] = useState<SubnetTicker[]>([]);
+  const [isLive, setIsLive] = useState(false);
+
+  useEffect(() => {
+    const fetchSubnets = async () => {
+      try {
+        const res = await fetch("/api/subnets");
+        if (!res.ok) throw new Error("Failed to fetch subnets");
+
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) return;
+
+        // Sort by yield descending, take top 16
+        const sorted = [...data]
+          .filter((s: any) => typeof s.yield === "number" && s.yield > 0)
+          .sort((a: any, b: any) => b.yield - a.yield)
+          .slice(0, 16);
+
+        const mapped: SubnetTicker[] = sorted.map((s: any) => ({
+          label: `SN${s.netuid} · ${s.name}`,
+          yieldRate: `${Number(s.yield).toFixed(1)}%`,
+          delta: Number(s.yieldDelta7d ?? 0),
+        }));
+
+        if (mapped.length > 0) {
+          setItems(mapped);
+          setIsLive(true);
+        }
+      } catch {
+        // Keep whatever data we have — don't clear on error
+      }
+    };
+
+    fetchSubnets();
+    // Refresh every 5 minutes (matches API cache TTL)
+    const interval = setInterval(fetchSubnets, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Don't render until we have data
+  if (items.length === 0) {
+    return (
+      <div className="flex items-center gap-3 min-w-0 w-full">
+        <div className="flex items-center gap-1.5 flex-shrink-0 pr-3" style={{ borderRight: "1px solid rgba(255,255,255,0.07)" }}>
+          <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
+          <span className="font-semibold text-slate-600 uppercase" style={{ fontSize: "9px", letterSpacing: "0.1em" }}>
+            Loading
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // Duplicate for seamless scroll
+  const scrollItems = [...items, ...items];
 
   return (
     <div className="flex items-center gap-3 min-w-0 w-full">
@@ -54,18 +100,18 @@ export function LiveTicker() {
           className="font-semibold text-slate-600 uppercase"
           style={{ fontSize: "9px", letterSpacing: "0.1em" }}
         >
-          Live
+          {isLive ? "Live" : "Loading"}
         </span>
       </div>
 
       {/* Scrolling strip */}
       <div className="flex-1 overflow-hidden min-w-0">
         <div className="ticker-track inline-flex min-w-max whitespace-nowrap will-change-transform">
-          {items.map((item, i) => (
+          {scrollItems.map((item, i) => (
             <TickerItem
               key={i}
               label={item.label}
-              yieldRate={item.yield}
+              yieldRate={item.yieldRate}
               delta={item.delta}
             />
           ))}
