@@ -10,9 +10,13 @@ import { FadeIn } from "@/components/ui-custom/fade-in";
 import { AllocationChartCard } from "@/components/portfolio/allocation-chart-card";
 import { HoldingsList } from "@/components/portfolio/holdings-list";
 import { WatchlistCard } from "@/components/portfolio/watchlist-card";
+import { ReallocationSimulator } from "@/components/portfolio/reallocation-simulator";
+import { AlertsPanel } from "@/components/portfolio/alerts-panel";
 import { SimpleLineChart } from "@/components/charts/simple-line-chart";
+import { FeatureGate } from "@/components/entitlement/feature-gate";
 import { getPortfolio, getPortfolioActivity, getPortfolioHistory, getWatchlist } from "@/lib/api/portfolio";
 import { getRecommendations } from "@/lib/api/recommendations";
+import { getSubnets } from "@/lib/api/subnets";
 import { useWallet } from "@/lib/wallet-context";
 import { cn, subnetGradient, formatDate } from "@/lib/utils";
 
@@ -64,6 +68,7 @@ export default function PortfolioPage() {
   const recentChanges = getPortfolioActivity();
   const watchlist = getWatchlist();
   const recommendations = getRecommendations();
+  const allSubnets = getSubnets();
 
   const { stats: portfolioStats, allocations } = portfolio;
   const earningsData = Array.from({ length: 30 }, (_, i) => ({
@@ -134,8 +139,26 @@ export default function PortfolioPage() {
             </GlassCard>
           </FadeIn>
 
-          {/* Recent changes */}
+          {/* Reallocation Simulator — Gold tier */}
           <FadeIn delay={0.22}>
+            <FeatureGate feature="reallocation">
+              <ReallocationSimulator
+                allocations={allocations}
+                subnets={allSubnets}
+                totalStakedTao={portfolioStats.totalStakedTao}
+              />
+            </FeatureGate>
+          </FadeIn>
+
+          {/* Alerts & Notifications — Gold tier */}
+          <FadeIn delay={0.25}>
+            <FeatureGate feature="alerts">
+              <AlertsPanel subnets={allSubnets} />
+            </FeatureGate>
+          </FadeIn>
+
+          {/* Recent changes */}
+          <FadeIn delay={0.28}>
             <GlassCard>
               <SectionTitle title="Transaction History" subtitle="Stake moves and additions" />
               <div className="space-y-0">

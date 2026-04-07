@@ -7,6 +7,10 @@ import { SubnetFilterPanel } from "@/components/subnets/subnet-filter-panel";
 import { SubnetCard } from "@/components/subnets/subnet-card";
 import { SubnetDetailPreview } from "@/components/subnets/subnet-detail-preview";
 import { SubnetComparePanel } from "@/components/subnets/subnet-compare-panel";
+import { SubnetHistoryPanel } from "@/components/subnets/subnet-history-panel";
+import { FeatureGate } from "@/components/entitlement/feature-gate";
+import { useWallet } from "@/lib/wallet-context";
+import { useEntitlement } from "@/lib/hooks/use-entitlement";
 import { getSubnets, fetchSubnetsFromApi } from "@/lib/api/subnets";
 import type { SubnetDetailModel, RiskLevel } from "@/lib/types/subnets";
 
@@ -38,6 +42,9 @@ export default function SubnetsPage() {
       cancelled = true;
     };
   }, []);
+
+  const { walletState, address } = useWallet();
+  const { tier } = useEntitlement(walletState === "disconnected" ? null : address);
 
   const [search, setSearch]     = useState("");
   const [category, setCategory] = useState("All");
@@ -133,6 +140,15 @@ export default function SubnetsPage() {
             subnets={compareSubnets}
             onClear={() => setCompareNetuids([])}
           />
+        </div>
+      )}
+
+      {/* Historical Analytics — shown when a subnet is selected */}
+      {selected && (
+        <div className="mb-5">
+          <FeatureGate feature="history_30d">
+            <SubnetHistoryPanel subnet={selected} tier={tier} />
+          </FeatureGate>
         </div>
       )}
 
