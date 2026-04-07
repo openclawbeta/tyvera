@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { Tier, GatedFeature } from "@/lib/types/tiers";
 import { tierHasFeature, normalizeTier } from "@/lib/types/tiers";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Phase 2E — useEntitlement hook                                      */
@@ -45,7 +46,7 @@ export function useEntitlement(address: string | null): EntitlementState {
 
     setState((prev) => ({ ...prev, loading: true }));
 
-    fetch(`/api/entitlement?address=${encodeURIComponent(address)}`)
+    fetchWithTimeout(`/api/entitlement?address=${encodeURIComponent(address)}`, { timeoutMs: 8_000 })
       .then((res) => {
         if (!res.ok) throw new Error(`Entitlement fetch failed: ${res.status}`);
         return res.json();

@@ -2,11 +2,30 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 interface SubnetTicker {
   label: string;
   yieldRate: string;
   delta: number;
+}
+
+/** Minimal shape we read from the API response — no `any` needed */
+interface SubnetApiRow {
+  netuid: number;
+  name: string;
+  yield: number;
+  yieldDelta7d?: number;
+}
+
+function isSubnetRow(v: unknown): v is SubnetApiRow {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v as Record<string, unknown>;
+  return (
+    typeof r.netuid === "number" &&
+    typeof r.name === "string" &&
+    typeof r.yield === "number"
+  );
 }
 
 function TickerItem({ label, yieldRate, delta }: { label: string; yieldRate: string; delta: number }) {
@@ -34,26 +53,31 @@ function TickerItem({ label, yieldRate, delta }: { label: string; yieldRate: str
 export function LiveTicker() {
   const [items, setItems] = useState<SubnetTicker[]>([]);
   const [isLive, setIsLive] = useState(false);
+  const [dataSource, setDataSource] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchSubnets = async () => {
       try {
-        const res = await fetch("/api/subnets");
+        const res = await fetchWithTimeout("/api/subnets", { timeoutMs: 10_000 });
         if (!res.ok) throw new Error("Failed to fetch subnets");
 
-        const data = await res.json();
+        const source = res.headers.get("X-Data-Source");
+        setDataSource(source);
+
+        const data: unknown = await res.json();
         if (!Array.isArray(data) || data.length === 0) return;
 
         // Sort by yield descending, take top 16
-        const sorted = [...data]
-          .filter((s: any) => typeof s.yield === "number" && s.yield > 0)
-          .sort((a: any, b: any) => b.yield - a.yield)
+        const sorted = data
+          .filter(isSubnetRow)
+          .filter((s) => s.yield > 0)
+          .sort((a, b) => b.yield - a.yield)
           .slice(0, 16);
 
-        const mapped: SubnetTicker[] = sorted.map((s: any) => ({
+        const mapped: SubnetTicker[] = sorted.map((s) => ({
           label: `SN${s.netuid} · ${s.name}`,
-          yieldRate: `${Number(s.yield).toFixed(1)}%`,
-          delta: Number(s.yieldDelta7d ?? 0),
+          yieldRate: `${s.yield.toFixed(1)}%`,
+          delta: s.yieldDelta7d ?? 0,
         }));
 
         if (mapped.length > 0) {
@@ -88,6 +112,16 @@ export function LiveTicker() {
   // Duplicate for seamless scroll
   const scrollItems = [...items, ...items];
 
+  // Source label for the ticker — helps with data honesty
+  const sourceLabel =
+    dataSource === "chain-live" || dataSource === "chain-on-demand"
+      ? "Chain"
+      : dataSource === "taostats-live"
+        ? "TaoStats"
+        : dataSource?.startsWith("static")
+          ? "Static"
+          : null;
+
   return (
     <div className="flex items-center gap-3 min-w-0 w-full">
       {/* Live indicator */}
@@ -102,6 +136,14 @@ export function LiveTicker() {
         >
           {isLive ? "Live" : "Loading"}
         </span>
+        {sourceLabel && (
+          <span
+            className="text-slate-700 uppercase"
+            style={{ fontSize: "8px", letterSpacing: "0.08em" }}
+          >
+            · {sourceLabel}
+          </span>
+        )}
       </div>
 
       {/* Scrolling strip */}

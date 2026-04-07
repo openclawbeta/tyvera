@@ -98,11 +98,7 @@ function readSubtensorSnapshot(netuidFilter?: number): {
 
     const isStale = ageMs > SNAPSHOT_MAX_AGE_HOURS * 60 * 60 * 1000;
 
-    if (isStale) {
-      console.log(
-        `[/api/subnets] Subtensor snapshot is ${Math.round(ageMs / 3600000)}h old — serving stale snapshot`
-      );
-    }
+    // Stale snapshot is still served — the X-Data-Source header signals staleness to the UI
 
     const raw = readFileSync(SUBTENSOR_SNAPSHOT_PATH, "utf-8");
     const payload: SubtensorPayload = JSON.parse(raw);
@@ -296,7 +292,7 @@ export async function GET(request: NextRequest) {
   // list, fall through to the snapshot file (always deployed on disk).
   if (netuidFilter != null) {
     try {
-      console.log(`[/api/subnets] Chain cache cold — on-demand fetch for netuid ${netuidFilter}...`);
+      // Chain cache cold — attempt on-demand fetch for single netuid
       const fetchPromise = fetchSubnetsFromChain();
       const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 12_000));
       const freshSnapshot = await Promise.race([fetchPromise, timeoutPromise]);
@@ -321,7 +317,7 @@ export async function GET(request: NextRequest) {
       console.error("[/api/subnets] On-demand chain fetch failed:", err);
     }
   } else {
-    console.log("[/api/subnets] Chain cache cold, full-list request — skipping on-demand (too slow), falling through to snapshot");
+    // Chain cache cold, full-list request — skip on-demand (too slow), fall through to snapshot
   }
 
   // ── Priority 1: Subtensor snapshot (Python script output) ──────────────

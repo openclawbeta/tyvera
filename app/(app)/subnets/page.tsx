@@ -12,6 +12,7 @@ import { SubnetDataTable } from "@/components/subnets/subnet-data-table";
 import { SubnetSummaryCards } from "@/components/subnets/subnet-summary-cards";
 import { SubnetHeatmap } from "@/components/subnets/subnet-heatmap";
 import { SubnetNetworkAlerts } from "@/components/subnets/subnet-network-alerts";
+import { DataSourceBadge } from "@/components/ui-custom/data-source-badge";
 import { getSubnets, fetchSubnetsFromApi } from "@/lib/api/subnets";
 import type { SubnetDetailModel, RiskLevel } from "@/lib/types/subnets";
 
@@ -22,16 +23,18 @@ export default function SubnetsPage() {
   const seedSubnets = getSubnets();
   const [subnets, setSubnets] = useState<SubnetDetailModel[]>(() => seedSubnets);
   const [totalSubnets, setTotalSubnets] = useState<number>(seedSubnets.length);
+  const [dataSource, setDataSource] = useState<string>("static-snapshot");
   const [liveLoaded, setLiveLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     fetchSubnetsFromApi()
-      .then((data) => {
+      .then((result) => {
         if (cancelled) return;
-        setSubnets(data);
-        setTotalSubnets(data.length);
+        setSubnets(result.subnets);
+        setTotalSubnets(result.subnets.length);
+        setDataSource(result.dataSource);
         setLiveLoaded(true);
       })
       .catch(() => {
@@ -111,8 +114,11 @@ export default function SubnetsPage() {
         title="Subnet Explorer"
         subtitle={`${totalSubnets} subnets · scored, ranked, and filtered`}
       >
-        <div className="text-xs text-slate-500">
-          Showing <span className="text-white font-semibold">{filtered.length}</span> of {totalSubnets}
+        <div className="flex items-center gap-3">
+          <DataSourceBadge source={dataSource} />
+          <div className="text-xs text-slate-500">
+            Showing <span className="text-white font-semibold">{filtered.length}</span> of {totalSubnets}
+          </div>
         </div>
       </PageHeader>
 

@@ -33,6 +33,7 @@
  */
 
 import { SUBNETS_REAL, SUBNETS_REAL_BY_NETUID } from "@/lib/data/subnets-real";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import type { SubnetDetailModel } from "@/lib/types/subnets";
 
 // ── Seeded deterministic random generation ───────────────────────────────────
@@ -164,18 +165,25 @@ export function getSubnetHistory(
  * When the key is absent or the fetch fails, falls back to the static snapshot.
  * Safe to call from any "use client" component — API key is server-side only.
  */
-export async function fetchSubnetsFromApi(): Promise<SubnetDetailModel[]> {
+export interface SubnetFetchResult {
+  subnets: SubnetDetailModel[];
+  dataSource: string;
+}
+
+export async function fetchSubnetsFromApi(): Promise<SubnetFetchResult> {
   try {
-    const resp = await fetch("/api/subnets", { cache: "no-store" });
-    if (!resp.ok) return getSubnets();
+    const resp = await fetchWithTimeout("/api/subnets", { cache: "no-store", timeoutMs: 10_000 });
+    if (!resp.ok) return { subnets: getSubnets(), dataSource: "static-snapshot" };
+    const dataSource = resp.headers.get("X-Data-Source") ?? "unknown";
     const data: unknown = await resp.json();
-    if (!Array.isArray(data) || data.length === 0) return getSubnets();
-    return (data as SubnetDetailModel[]).map((subnet) => ({
+    if (!Array.isArray(data) || data.length === 0) return { subnets: getSubnets(), dataSource: "static-snapshot" };
+    const subnets = (data as SubnetDetailModel[]).map((subnet) => ({
       ...subnet,
       ...deriveTableFields(subnet),
     }));
+    return { subnets, dataSource };
   } catch {
-    return getSubnets();
+    return { subnets: getSubnets(), dataSource: "static-snapshot" };
   }
 }
 
@@ -184,19 +192,25 @@ export async function fetchSubnetsFromApi(): Promise<SubnetDetailModel[]> {
  *
  * Falls back to the static snapshot if the fetch fails or the subnet isn't found.
  */
-export async function fetchSubnetByNetuid(netuid: number): Promise<SubnetDetailModel | undefined> {
+export interface SingleSubnetFetchResult {
+  subnet: SubnetDetailModel | undefined;
+  dataSource: string;
+}
+
+export async function fetchSubnetByNetuid(netuid: number): Promise<SingleSubnetFetchResult> {
   try {
-    const resp = await fetch(`/api/subnets?netuid=${netuid}`, { cache: "no-store" });
-    if (!resp.ok) return getSubnetByNetuid(netuid);
+    const resp = await fetchWithTimeout(`/api/subnets?netuid=${netuid}`, { cache: "no-store", timeoutMs: 10_000 });
+    if (!resp.ok) return { subnet: getSubnetByNetuid(netuid), dataSource: "static-snapshot" };
+    const dataSource = resp.headers.get("X-Data-Source") ?? "unknown";
     const data: unknown = await resp.json();
     const first = Array.isArray(data) ? (data as SubnetDetailModel[])[0] : undefined;
-    if (!first) return getSubnetByNetuid(netuid);
+    if (!first) return { subnet: getSubnetByNetuid(netuid), dataSource: "static-snapshot" };
     return {
-      ...first,
-      ...deriveTableFields(first),
+      subnet: { ...first, ...deriveTableFields(first) },
+      dataSource,
     };
   } catch {
-    return getSubnetByNetuid(netuid);
+    return { subnet: getSubnetByNetuid(netuid), dataSource: "static-snapshot" };
   }
 }
 

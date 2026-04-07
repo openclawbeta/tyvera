@@ -66,9 +66,9 @@ export default function AlertsPage() {
 
     // Fetch fresh subnet data
     fetchSubnetsFromApi()
-      .then((fresh) => {
-        setSubnets(fresh);
-        const moreEvents = evaluateAlerts(initialRules, fresh);
+      .then((result) => {
+        setSubnets(result.subnets);
+        const moreEvents = evaluateAlerts(initialRules, result.subnets);
         if (moreEvents.length > 0) {
           setHistory(getAlertHistory());
         }
@@ -82,10 +82,10 @@ export default function AlertsPage() {
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
-        const fresh = await fetchSubnetsFromApi();
-        setSubnets(fresh);
+        const result = await fetchSubnetsFromApi();
+        setSubnets(result.subnets);
         const currentRules = getAlertRules();
-        const newEvents = evaluateAlerts(currentRules, fresh);
+        const newEvents = evaluateAlerts(currentRules, result.subnets);
         if (newEvents.length > 0) {
           setHistory(getAlertHistory());
           setToastMessage(`${newEvents.length} new alert${newEvents.length !== 1 ? "s" : ""} triggered`);

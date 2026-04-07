@@ -23,9 +23,9 @@ export default function YieldPage() {
     let cancelled = false;
 
     fetchSubnetsFromApi()
-      .then((data) => {
+      .then((result) => {
         if (cancelled) return;
-        setSubnets(data);
+        setSubnets(result.subnets);
         setLiveLoaded(true);
       })
       .catch(() => {

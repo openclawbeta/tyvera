@@ -11,9 +11,9 @@ import { useWallet } from "@/lib/wallet-context";
 import type { RecommendationUiModel as Recommendation } from "@/lib/types/recommendations";
 
 const BANDS = [
-  { dot: "#22d3ee",  dotGlow: "rgba(34,211,238,0.6)",  label: "Strong",   range: "score --¥ 0.35" },
-  { dot: "#fbbf24",  dotGlow: "rgba(251,191,36,0.5)",   label: "Moderate", range: "score --¥ 0.22" },
-  { dot: "#64748b",  dotGlow: "",                        label: "Mild",     range: "score --¥ 0.15" },
+  { dot: "#22d3ee",  dotGlow: "rgba(34,211,238,0.6)",  label: "Strong",   range: "score ≥ 0.35" },
+  { dot: "#fbbf24",  dotGlow: "rgba(251,191,36,0.5)",   label: "Moderate", range: "score ≥ 0.22" },
+  { dot: "#64748b",  dotGlow: "",                        label: "Mild",     range: "score ≥ 0.15" },
 ];
 
 /* -------------------------------------------------------------------------------------------------------------------------------------- */
@@ -225,12 +225,12 @@ export default function RecommendationsPage() {
                 border: "1px solid rgba(255,255,255,0.06)",
               }}
             >
-              <Clock className="w-7 h-7 mx-auto mb-2.5" style={{ color: "#334155" }} />
-              <p className="text-[13px] font-medium text-slate-500">
-                Next scoring run in ~18 minutes
+              <AlertCircle className="w-7 h-7 mx-auto mb-2.5" style={{ color: "#fbbf24" }} />
+              <p className="text-[13px] font-medium text-amber-300/80">
+                Demo Recommendations
               </p>
-              <p className="text-[11px] text-slate-700 mt-1">
-                The engine scores all subnets every 30 minutes.
+              <p className="text-[11px] text-slate-600 mt-1">
+                These are simulated examples. Live scoring is coming soon.
               </p>
             </div>
           </FadeIn>

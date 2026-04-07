@@ -1,6 +1,6 @@
 "use client";
 
-import { Wallet, TrendingUp, ArrowRight } from "lucide-react";
+import { Wallet, TrendingUp, ArrowRight, Construction } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { FadeIn } from "@/components/ui-custom/fade-in";
 
@@ -11,6 +11,23 @@ export default function PortfolioPage() {
         title="Portfolio"
         subtitle="Your staked TAO positions and performance"
       />
+
+      {/* Honest placeholder label */}
+      <FadeIn>
+        <div
+          className="flex items-center gap-3 px-4 py-3 rounded-xl"
+          style={{
+            background: "rgba(251,191,36,0.04)",
+            border: "1px solid rgba(251,191,36,0.14)",
+          }}
+        >
+          <Construction className="w-4 h-4 text-amber-400 flex-shrink-0" />
+          <p className="text-[12px] text-slate-400">
+            <span className="font-semibold text-amber-300">Under Construction.</span>{" "}
+            This page is a preview of an upcoming feature. No live data is displayed.
+          </p>
+        </div>
+      </FadeIn>
 
       <FadeIn>
         <div

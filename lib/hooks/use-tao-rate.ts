@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 interface TaoRateResult {
   /** Current TAO/USD price, or null while loading */
@@ -21,7 +22,7 @@ export function useTaoRate(): TaoRateResult {
 
     async function fetchRate() {
       try {
-        const res = await fetch("/api/tao-rate");
+        const res = await fetchWithTimeout("/api/tao-rate", { timeoutMs: 8_000 });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as { taoUsd: number; fallback: boolean };
 

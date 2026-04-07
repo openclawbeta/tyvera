@@ -78,7 +78,7 @@ export default function BacktestPage() {
   // Fetch live data on mount
   useEffect(() => {
     fetchSubnetsFromApi()
-      .then((data) => setSubnets(data))
+      .then((result) => setSubnets(result.subnets))
       .catch(() => {
         /* Backtest can fall back to snapshot data */
       });

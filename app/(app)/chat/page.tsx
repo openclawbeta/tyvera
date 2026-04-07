@@ -34,15 +34,15 @@ export default function ChatPage() {
   // Load subnets on mount
   useEffect(() => {
     fetchSubnetsFromApi()
-      .then((data) => {
-        setSubnets(data);
+      .then((result) => {
+        setSubnets(result.subnets);
         setIsLoading(false);
 
         // Show welcome message
         setMessages([
           {
             role: "assistant",
-            content: `I have live data on ${data.length} Bittensor subnets. Ask me anything — yields, risks, comparisons, or staking calculations.`,
+            content: `I have live data on ${result.subnets.length} Bittensor subnets. Ask me anything — yields, risks, comparisons, or staking calculations.`,
             timestamp: new Date(),
           },
         ]);

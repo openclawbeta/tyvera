@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { getSubnetByNetuid, fetchSubnetByNetuid } from "@/lib/api/subnets";
+import { DataSourceBadge } from "@/components/ui-custom/data-source-badge";
 import { getRecommendations } from "@/lib/api/recommendations";
 import type { SubnetDetailModel } from "@/lib/types/subnets";
 import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui-custom/fade-in";
@@ -210,6 +211,7 @@ export default function SubnetDetailPage() {
   const [subnet, setSubnet] = useState<SubnetDetailModel | null>(
     () => getSubnetByNetuid(netuid) ?? null,
   );
+  const [dataSource, setDataSource] = useState<string>("static-snapshot");
 
   useEffect(() => {
     // Re-run whenever netuid changes (user navigates directly between detail pages)
@@ -219,7 +221,10 @@ export default function SubnetDetailPage() {
     } else {
       // Subnet not in static snapshot — fetch from the live route handler
       fetchSubnetByNetuid(netuid)
-        .then((data) => setSubnet(data ?? null))
+        .then((result) => {
+          setSubnet(result.subnet ?? null);
+          setDataSource(result.dataSource);
+        })
         .catch(() => {
           /* Leave subnet as null — UI shows "not found" state */
         });
@@ -362,6 +367,7 @@ export default function SubnetDetailPage() {
                 <span className={cn("tag border", riskBg(subnet.risk))}>
                   {subnet.risk}
                 </span>
+                <DataSourceBadge source={dataSource} />
                 {subnet.age > 180 && (
                   <span className="tag-emerald">Established</span>
                 )}
@@ -792,7 +798,7 @@ export default function SubnetDetailPage() {
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-slate-700 mt-1">
                   <Clock className="w-3 h-3" />
-                  Next scoring run in ~18 minutes
+                  Live scoring coming soon
                 </div>
               </div>
             )}
