@@ -175,6 +175,7 @@ export async function GET() {
         change24h: cache.change24h,
         marketCap: cache.marketCap,
         volume24h: cache.volume24h,
+        blockHeight: chainBlock ?? cache.blockHeight ?? null,
         fetchedAt: cache.fetchedAt,
         source: "cache",
         fallback: true,

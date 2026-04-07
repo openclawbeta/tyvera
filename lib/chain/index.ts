@@ -19,5 +19,5 @@ export type {
   ChainSubnet,
   ChainNeuron,
   ChainSnapshot,
-  MeagraphCacheEntry,
+  MetagraphCacheEntry,
 } from "./types";

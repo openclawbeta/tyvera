@@ -22,7 +22,7 @@
  */
 
 import { ApiPromise, WsProvider } from "@polkadot/api";
-import type { ChainSubnet, ChainNeuron, ChainSnapshot, MeagraphCacheEntry } from "./types";
+import type { ChainSubnet, ChainNeuron, ChainSnapshot, MetagraphCacheEntry } from "./types";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Configuration                                                        */
@@ -222,7 +222,7 @@ async function queryMetagraph(api: ApiPromise, netuid: number): Promise<ChainNeu
 
   // Batch query neuron properties
   const [hotkeys, stakes, trusts, consensus, incentives, dividends, emissions, actives] = await Promise.all([
-    Promise.all(uids.map((u) => api.query.subtensorModule.keys(netuid, u).then(String).catch(() => ""))),
+    Promise.all(uids.map((u) => api.query.subtensorModule.hotkeys(netuid, u).then(String).catch(() => ""))),
     Promise.all(uids.map((u) => api.query.subtensorModule.s(netuid, u).then(toNumber).catch(() => 0))),
     Promise.all(uids.map((u) => api.query.subtensorModule.trust(netuid, u).then(toNumber).catch(() => 0))),
     Promise.all(uids.map((u) => api.query.subtensorModule.consensus(netuid, u).then(toNumber).catch(() => 0))),
@@ -232,8 +232,14 @@ async function queryMetagraph(api: ApiPromise, netuid: number): Promise<ChainNeu
     Promise.all(uids.map((u) => api.query.subtensorModule.active(netuid, u).then((v: unknown) => !!toNumber(v)).catch(() => false))),
   ]);
 
-  // U16 max = 65535, used for normalized fields
+  // U16 max = 65535, used for normalized fields.
+  // Subtensor stores trust/consensus/incentive/dividends as U16 (0–65535).
+  // Values > 1 are raw U16 and need normalization. Values <= 1 are already normalized.
   const U16_MAX = 65535;
+  function normalizeU16(val: number): number {
+    if (val > 1) return val / U16_MAX;
+    return val; // Already normalized (0.0–1.0)
+  }
 
   for (let i = 0; i < uids.length; i++) {
     let stake = stakes[i];
@@ -247,10 +253,10 @@ async function queryMetagraph(api: ApiPromise, netuid: number): Promise<ChainNeu
       hotkey: hotkeys[i],
       coldkey: "", // Not queried for performance — add if needed
       stake: Math.round(stake * 100) / 100,
-      trust: trusts[i] / U16_MAX,
-      consensus: consensus[i] / U16_MAX,
-      incentive: incentives[i] / U16_MAX,
-      dividends: dividends[i] / U16_MAX,
+      trust: normalizeU16(trusts[i]),
+      consensus: normalizeU16(consensus[i]),
+      incentive: normalizeU16(incentives[i]),
+      dividends: normalizeU16(dividends[i]),
       emission: emissionRaw * BLOCKS_PER_DAY,
       active: actives[i],
     });
@@ -306,7 +312,7 @@ export async function fetchSubnetsFromChain(): Promise<ChainSnapshot | null> {
 /**
  * Fetch metagraph for a single subnet from Subtensor.
  */
-export async function fetchMetagraphFromChain(netuid: number): Promise<MeagraphCacheEntry | null> {
+export async function fetchMetagraphFromChain(netuid: number): Promise<MetagraphCacheEntry | null> {
   let api: ApiPromise | null = null;
 
   try {

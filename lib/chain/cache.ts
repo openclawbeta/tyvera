@@ -11,7 +11,7 @@
  * to serve stale data or fall through to TaoStats.
  */
 
-import type { ChainSnapshot, MeagraphCacheEntry } from "./types";
+import type { ChainSnapshot, MetagraphCacheEntry } from "./types";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Subnet cache                                                         */
@@ -32,35 +32,41 @@ export function getSubnetCache(): ChainSnapshot | null {
 
 export function isSubnetCacheFresh(): boolean {
   if (!subnetCache) return false;
-  return Date.now() - new Date(subnetCache.fetchedAt).getTime() < SUBNET_MAX_AGE_MS;
+  const ts = Date.parse(subnetCache.fetchedAt);
+  if (isNaN(ts)) return false;
+  return Date.now() - ts < SUBNET_MAX_AGE_MS;
 }
 
 export function getSubnetCacheAgeMs(): number {
   if (!subnetCache) return Infinity;
-  return Date.now() - new Date(subnetCache.fetchedAt).getTime();
+  const ts = Date.parse(subnetCache.fetchedAt);
+  if (isNaN(ts)) return Infinity;
+  return Date.now() - ts;
 }
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Metagraph cache (per-subnet)                                         */
 /* ─────────────────────────────────────────────────────────────────── */
 
-const metagraphCache = new Map<number, MeagraphCacheEntry>();
+const metagraphCache = new Map<number, MetagraphCacheEntry>();
 
 /** Max age for metagraph entries (5 minutes). */
 const METAGRAPH_MAX_AGE_MS = 5 * 60 * 1000;
 
-export function setMetagraphCache(entry: MeagraphCacheEntry): void {
+export function setMetagraphCache(entry: MetagraphCacheEntry): void {
   metagraphCache.set(entry.netuid, entry);
 }
 
-export function getMetagraphCache(netuid: number): MeagraphCacheEntry | null {
+export function getMetagraphCache(netuid: number): MetagraphCacheEntry | null {
   return metagraphCache.get(netuid) ?? null;
 }
 
 export function isMetagraphCacheFresh(netuid: number): boolean {
   const entry = metagraphCache.get(netuid);
   if (!entry) return false;
-  return Date.now() - new Date(entry.fetchedAt).getTime() < METAGRAPH_MAX_AGE_MS;
+  const ts = Date.parse(entry.fetchedAt);
+  if (isNaN(ts)) return false;
+  return Date.now() - ts < METAGRAPH_MAX_AGE_MS;
 }
 
 /* ─────────────────────────────────────────────────────────────────── */

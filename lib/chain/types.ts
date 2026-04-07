@@ -39,7 +39,7 @@ export interface ChainSnapshot {
 }
 
 /** Per-subnet metagraph cache entry. */
-export interface MeagraphCacheEntry {
+export interface MetagraphCacheEntry {
   netuid: number;
   neurons: ChainNeuron[];
   blockHeight: number;
