@@ -602,9 +602,9 @@ export default function BillingPage() {
   const plans = getPlans() as unknown as BillingPlanModel[];
   const { rate: taoRate, loading: rateLoading, fallback: rateFallback } = useTaoRate();
 
-  const handleInitiatePayment = useCallback(() => {
+  const handleInitiatePayment = useCallback(async () => {
     if (!selectedPlan || !address) return;
-    const intent = createPaymentIntent(selectedPlan, address);
+    const intent = await createPaymentIntent(selectedPlan, address);
     setPaymentIntent(intent);
   }, [selectedPlan, address]);
 

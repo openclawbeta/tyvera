@@ -23,6 +23,9 @@ export default function SubnetsPage() {
   const [totalSubnets, setTotalSubnets] = useState<number>(seedSubnets.length);
   const [liveLoaded, setLiveLoaded] = useState(false);
 
+  const { walletState, address } = useWallet();
+  const { tier } = useEntitlement(walletState === "disconnected" ? null : address);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -42,9 +45,6 @@ export default function SubnetsPage() {
       cancelled = true;
     };
   }, []);
-
-  const { walletState, address } = useWallet();
-  const { tier } = useEntitlement(walletState === "disconnected" ? null : address);
 
   const [search, setSearch]     = useState("");
   const [category, setCategory] = useState("All");

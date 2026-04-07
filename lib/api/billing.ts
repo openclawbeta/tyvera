@@ -1,7 +1,11 @@
 import { mapBillingStatusDto, mapBillingHistoryDto } from "@/lib/adapters/billing";
 import { PLANS, BILLING_STATE } from "@/lib/mock-data/billing";
+import { storePaymentIntent } from "@/lib/db/subscriptions";
 import type { WalletBillingState } from "@/lib/types/billing-state";
 import type { PaymentIntent } from "@/lib/types/payment";
+
+// Tyvera payment deposit address (Talisman coldkey)
+const DEPOSIT_ADDRESS = "5EkH7oV4EvT2otiH1teYu9gM2bkhuQTZbZrrPuqxHQMVTjRZ";
 
 /**
  * Returns billing state based on the connected wallet address.
@@ -56,33 +60,46 @@ export function getBillingHistory() {
 }
 
 /**
- * Phase 2D — Create a payment intent for a selected plan.
- * Generates a unique deposit address and memo for the user.
- *
- * TODO: Replace with real backend call that derives a unique
- * deposit address from the user's wallet + plan selection.
+ * Create a payment intent for a selected plan.
+ * Generates a unique memo and stores the intent in SQLite
+ * so the payment verifier can match incoming transfers.
  */
-export function createPaymentIntent(
+export async function createPaymentIntent(
   planId: string,
   walletAddress: string,
-): PaymentIntent {
+): Promise<PaymentIntent> {
   const plan = PLANS.find((p) => p.id === planId);
   const now = new Date();
   const expires = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24h window
 
-  // Generate a deterministic-looking mock deposit address and memo
   const shortAddr = walletAddress.slice(-8);
-  const mockDepositAddress = `5Tyvera${shortAddr}${planId.slice(0, 4)}PaymentDeposit00`;
-  const mockMemo = `TYV-${planId.slice(0, 4)}-${shortAddr}-${now.getTime().toString(36).toUpperCase()}`;
+  const intentId = `pi_${now.getTime().toString(36)}`;
+  const memo = `TYV-${planId.slice(0, 4)}-${shortAddr}-${now.getTime().toString(36).toUpperCase()}`;
+  const amountTao = plan?.priceTao ?? 0;
+
+  // Store in database so the verifier can match it
+  try {
+    await storePaymentIntent({
+      id: intentId,
+      walletAddress,
+      planId,
+      amountTao,
+      memo,
+      expiresAt: expires.toISOString(),
+    });
+  } catch (err) {
+    console.error("[Billing] Failed to store payment intent:", err);
+    // Continue anyway — the UI still shows the payment details
+  }
 
   return {
-    id: `pi_${now.getTime().toString(36)}`,
+    id: intentId,
     planId,
     planName: plan?.displayName ?? planId,
-    amountTao: plan?.priceTao ?? 0,
+    amountTao,
     amountUsd: plan?.priceUsd ?? 0,
-    depositAddress: mockDepositAddress,
-    memo: mockMemo,
+    depositAddress: DEPOSIT_ADDRESS,
+    memo,
     status: "awaiting_payment",
     createdAt: now.toISOString(),
     expiresAt: expires.toISOString(),
