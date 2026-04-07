@@ -1,6 +1,7 @@
 export interface BillingPlanModel {
   id: string;
   displayName: string;
+  durationDays: number;
   priceTao: number;
   priceUsd: number;
   badge?: string;

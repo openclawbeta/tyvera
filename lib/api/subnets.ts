@@ -53,10 +53,10 @@ function deriveTableFields(subnet: SubnetDetailModel): Partial<SubnetDetailModel
   // marketCap: alphaPrice * liquidity * multiplier (50k-500k τ range)
   const marketCap = alphaPrice * subnet.liquidity * (0.8 + seededRandom(netuid, 1) * 0.4);
 
-  // volume24h: 1k-400k τ based on liquidity
-  const volume24h = (1000 + seededRandom(netuid, 2) * 399000) * (0.5 + liqFactor);
+  // volume24h: 1-50% of marketCap (realistic trading volume)
+  const volume24h = marketCap * (0.01 + seededRandom(netuid, 2) * 0.5);
 
-  // volumeCapRatio: volume / marketCap as percentage
+  // volumeCapRatio: volume / marketCap as percentage (capped at ~50%)
   const volumeCapRatio = marketCap > 0 ? (volume24h / marketCap) * 100 : 0;
 
   // 1h, 24h, 1w, 1m changes: small % changes, mix of positive/negative

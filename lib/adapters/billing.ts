@@ -7,7 +7,7 @@ interface BillingStatusDto {
   daysRemaining?: number;
   walletAddress: string;
   paymentHistory?: Array<PaymentRecord | BillingHistoryItem>;
-  plans?: Array<Plan | BillingPlanModel>;
+  plans?: Array<(Plan & { durationDays?: number }) | BillingPlanModel>;
 }
 
 interface BillingHistoryDto {

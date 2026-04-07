@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Wallet, Shield, CheckCircle, AlertCircle, Copy, ExternalLink,
   LogOut, Bell, Lock, Eye, ChevronRight, Loader2,
@@ -12,9 +12,9 @@ import { useWallet } from "@/lib/wallet-context";
 import { truncateAddress } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* -------------------------------------------------------------------------------------------------------------------------------------- */
 /* Primitives                                                           */
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* -------------------------------------------------------------------------------------------------------------------------------------- */
 
 function Panel({ children }: { children: React.ReactNode }) {
   return (
@@ -99,9 +99,9 @@ function SystemEnforced() {
   );
 }
 
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* -------------------------------------------------------------------------------------------------------------------------------------- */
 /* Section nav                                                          */
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* -------------------------------------------------------------------------------------------------------------------------------------- */
 
 const SECTIONS = [
   { id: "account",         label: "Account",          icon: User },
@@ -111,9 +111,9 @@ const SECTIONS = [
   { id: "security",        label: "Security",         icon: Shield },
 ];
 
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* -------------------------------------------------------------------------------------------------------------------------------------- */
 /* Wallet section (full)                                               */
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* -------------------------------------------------------------------------------------------------------------------------------------- */
 
 function WalletSection() {
   const { walletState, address, openModal, disconnect, verify } = useWallet();
@@ -133,7 +133,7 @@ function WalletSection() {
     <Panel>
       <PanelHeader title="Wallet" subtitle="Connect and manage your Polkadot-compatible wallet." />
 
-      {/* ââ Disconnected ââ */}
+      {/* ---- Disconnected ---- */}
       {walletState === "disconnected" && (
         <>
           <div
@@ -164,7 +164,7 @@ function WalletSection() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
             {[
               { icon: Shield,      text: "Wallet stays fully in your control" },
-              { icon: Lock,        text: "No seed phrase stored â ever" },
+              { icon: Lock,        text: "No seed phrase stored -- ever" },
               { icon: CheckCircle, text: "You approve every on-chain action" },
             ].map(({ icon: Icon, text }) => (
               <div
@@ -196,15 +196,15 @@ function WalletSection() {
         </>
       )}
 
-      {/* ââ Connecting ââ */}
+      {/* ---- Connecting ---- */}
       {walletState === "connecting" && (
         <div className="flex items-center gap-3 py-6">
           <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#22d3ee" }} />
-          <p className="text-[13px] text-slate-400">Connecting to wallet extensionâ¦</p>
+          <p className="text-[13px] text-slate-400">Connecting to wallet extension--</p>
         </div>
       )}
 
-      {/* ââ Connected or Verified ââ */}
+      {/* ---- Connected or Verified ---- */}
       {isConnected && address && (
         <>
           {/* Status hero */}
@@ -232,7 +232,7 @@ function WalletSection() {
                   className="text-[12px] font-bold"
                   style={{ color: isVerified ? "#22d3ee" : "#fbbf24", letterSpacing: "-0.01em" }}
                 >
-                  {isVerified ? "Verified" : "Unverified"} Â· Polkadot.js
+                  {isVerified ? "Verified" : "Unverified"}  .  Polkadot.js
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -262,7 +262,7 @@ function WalletSection() {
               <div className="flex-1">
                 <p className="text-[12px] font-semibold text-amber-200 mb-0.5">Verification required to execute moves</p>
                 <p className="text-[11px] text-slate-500 leading-relaxed">
-                  Sign a one-time verification message to confirm wallet ownership. Gasless â no TAO is spent.
+                  Sign a one-time verification message to confirm wallet ownership. Gasless -- no TAO is spent.
                 </p>
               </div>
               <button
@@ -345,9 +345,9 @@ function WalletSection() {
   );
 }
 
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* -------------------------------------------------------------------------------------------------------------------------------------- */
 /* Account section                                                      */
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* -------------------------------------------------------------------------------------------------------------------------------------- */
 
 function AccountSection() {
   return (
@@ -383,7 +383,7 @@ function AccountSection() {
                 color: "#fbbf24",
               }}
             >
-              â¡ PREMIUM
+              PREMIUM
             </span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-700" />
           </div>
@@ -393,38 +393,18 @@ function AccountSection() {
   );
 }
 
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* -------------------------------------------------------------------------------------------------------------------------------------- */
 /* Notifications section                                               */
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* -------------------------------------------------------------------------------------------------------------------------------------- */
 
 function NotificationsSection() {
-  const defaultPrefs = {
+  const [prefs, setPrefs] = useState({
     newRecs: true, yieldAlerts: true, txConfirmed: true,
     premiumExpiry: true, weeklyDigest: false, systemUpdates: true,
-  };
-
-  const [prefs, setPrefs] = useState(defaultPrefs);
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("tyvera_notifications");
-    if (stored) {
-      try {
-        setPrefs(JSON.parse(stored));
-      } catch {
-        setPrefs(defaultPrefs);
-      }
-    }
-  }, []);
+  });
 
   function toggle(key: keyof typeof prefs) {
-    setPrefs((p) => {
-      const updated = { ...p, [key]: !p[key] };
-      localStorage.setItem("tyvera_notifications", JSON.stringify(updated));
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-      return updated;
-    });
+    setPrefs((p) => ({ ...p, [key]: !p[key] }));
   }
 
   const rows = [
@@ -442,12 +422,7 @@ function NotificationsSection() {
       <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.055)" }}>
         {rows.map(({ key, label, desc }, i) => (
           <SettingRow key={key} label={label} description={desc} last={i === rows.length - 1}>
-            <div className="flex items-center gap-3">
-              {saved && (
-                <span className="text-[10px] text-emerald-400 font-semibold">Saved</span>
-              )}
-              <Toggle enabled={prefs[key as keyof typeof prefs]} onChange={() => toggle(key as keyof typeof prefs)} />
-            </div>
+            <Toggle enabled={prefs[key as keyof typeof prefs]} onChange={() => toggle(key as keyof typeof prefs)} />
           </SettingRow>
         ))}
       </div>
@@ -455,61 +430,24 @@ function NotificationsSection() {
   );
 }
 
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* -------------------------------------------------------------------------------------------------------------------------------------- */
 /* Guardrails section                                                   */
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* -------------------------------------------------------------------------------------------------------------------------------------- */
 
 function GuardrailsSection() {
-  const defaultGuardrails = {
-    enableRecs: true,
-    scoreThreshold: 0.15,
-    maxMoveSize: "25%",
-    blockSpeculative: false,
-    cooldown: "24 hours",
-  };
-
-  const [guardrails, setGuardrails] = useState(defaultGuardrails);
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("tyvera_guardrails");
-    if (stored) {
-      try {
-        setGuardrails(JSON.parse(stored));
-      } catch {
-        setGuardrails(defaultGuardrails);
-      }
-    }
-  }, []);
-
-  function updateGuardrails(updates: Partial<typeof guardrails>) {
-    const updated = { ...guardrails, ...updates };
-    setGuardrails(updated);
-    localStorage.setItem("tyvera_guardrails", JSON.stringify(updated));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }
+  const [blockSpeculative, setBlockSpeculative] = useState(false);
+  const [enableRecs, setEnableRecs] = useState(true);
 
   return (
     <Panel>
       <PanelHeader title="Recommendation Guardrails" subtitle="Control when and how the engine surfaces suggestions." />
       <div className="rounded-xl overflow-hidden mb-4" style={{ border: "1px solid rgba(255,255,255,0.055)" }}>
         <SettingRow label="Enable recommendations" description="Turn off to suppress all recommendation generation.">
-          <div className="flex items-center gap-3">
-            {saved && (
-              <span className="text-[10px] text-emerald-400 font-semibold">Saved</span>
-            )}
-            <Toggle enabled={guardrails.enableRecs} onChange={(v) => updateGuardrails({ enableRecs: v })} />
-          </div>
+          <Toggle enabled={enableRecs} onChange={setEnableRecs} />
         </SettingRow>
         <SettingRow label="Minimum score threshold" description="Only show recommendations above this score.">
           <input
-            type="number"
-            value={guardrails.scoreThreshold}
-            onChange={(e) => updateGuardrails({ scoreThreshold: parseFloat(e.target.value) })}
-            step="0.01"
-            min="0.1"
-            max="0.5"
+            type="number" defaultValue="0.15" step="0.01" min="0.1" max="0.5"
             className="w-20 px-2.5 py-1.5 rounded-lg text-xs text-white text-center focus:outline-none transition-colors"
             style={{
               background: "rgba(255,255,255,0.04)",
@@ -519,8 +457,6 @@ function GuardrailsSection() {
         </SettingRow>
         <SettingRow label="Maximum single move size" description="Cap any recommended move as % of source stake.">
           <select
-            value={guardrails.maxMoveSize}
-            onChange={(e) => updateGuardrails({ maxMoveSize: e.target.value })}
             className="px-3 py-1.5 rounded-lg text-xs text-slate-300 focus:outline-none"
             style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
           >
@@ -531,12 +467,10 @@ function GuardrailsSection() {
           </select>
         </SettingRow>
         <SettingRow label="Block SPECULATIVE-risk moves" description="Never show recommendations rated as Speculative.">
-          <Toggle enabled={guardrails.blockSpeculative} onChange={(v) => updateGuardrails({ blockSpeculative: v })} />
+          <Toggle enabled={blockSpeculative} onChange={setBlockSpeculative} />
         </SettingRow>
         <SettingRow label="Cooldown period" description="Minimum hours between moves on the same subnet pair." last>
           <select
-            value={guardrails.cooldown}
-            onChange={(e) => updateGuardrails({ cooldown: e.target.value })}
             className="px-3 py-1.5 rounded-lg text-xs text-slate-300 focus:outline-none"
             style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
           >
@@ -546,65 +480,41 @@ function GuardrailsSection() {
           </select>
         </SettingRow>
       </div>
-      {saved && (
-        <div className="text-[11px] text-emerald-400 font-semibold mb-4">All changes saved to localStorage</div>
-      )}
+      <button
+        className="flex items-center gap-2 font-semibold text-[12px] px-4 py-2.5 rounded-xl transition-all duration-200"
+        style={{
+          background: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
+          color: "#04060d",
+          boxShadow: "0 0 0 1px rgba(34,211,238,0.4), 0 4px 12px rgba(34,211,238,0.18), inset 0 1px 0 rgba(255,255,255,0.2)",
+        }}
+      >
+        <Save className="w-3.5 h-3.5" />
+        Save Guardrails
+      </button>
     </Panel>
   );
 }
 
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* -------------------------------------------------------------------------------------------------------------------------------------- */
 /* Security section                                                     */
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* -------------------------------------------------------------------------------------------------------------------------------------- */
 
 function SecuritySection() {
-  const defaultSecurity = {
-    showAddress: true,
-    activityLog: true,
-    sessionTimeout: "30 min",
-  };
-
-  const [security, setSecurity] = useState(defaultSecurity);
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("tyvera_security");
-    if (stored) {
-      try {
-        setSecurity(JSON.parse(stored));
-      } catch {
-        setSecurity(defaultSecurity);
-      }
-    }
-  }, []);
-
-  function updateSecurity(updates: Partial<typeof security>) {
-    const updated = { ...security, ...updates };
-    setSecurity(updated);
-    localStorage.setItem("tyvera_security", JSON.stringify(updated));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }
+  const [showAddress, setShowAddress] = useState(true);
+  const [activityLog, setActivityLog] = useState(true);
 
   return (
     <Panel>
       <PanelHeader title="Security & Privacy" subtitle="Session and display preferences." />
       <div className="rounded-xl overflow-hidden mb-5" style={{ border: "1px solid rgba(255,255,255,0.055)" }}>
         <SettingRow label="Show wallet address in topbar" description="Display truncated address in the navigation bar.">
-          <div className="flex items-center gap-3">
-            {saved && (
-              <span className="text-[10px] text-emerald-400 font-semibold">Saved</span>
-            )}
-            <Toggle enabled={security.showAddress} onChange={(v) => updateSecurity({ showAddress: v })} />
-          </div>
+          <Toggle enabled={showAddress} onChange={setShowAddress} />
         </SettingRow>
         <SettingRow label="Activity log" description="Log all platform actions. No keys are stored.">
-          <Toggle enabled={security.activityLog} onChange={(v) => updateSecurity({ activityLog: v })} />
+          <Toggle enabled={activityLog} onChange={setActivityLog} />
         </SettingRow>
         <SettingRow label="Session timeout" description="Auto-disconnect wallet after inactivity.">
           <select
-            value={security.sessionTimeout}
-            onChange={(e) => updateSecurity({ sessionTimeout: e.target.value })}
             className="px-3 py-1.5 rounded-lg text-xs text-slate-300 focus:outline-none"
             style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
           >
@@ -634,7 +544,7 @@ function SecuritySection() {
               className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
               style={{ background: "rgba(244,63,94,0.1)", border: "1px solid rgba(244,63,94,0.18)" }}
             >
-              <span style={{ color: "#f43f5e", fontSize: "8px", fontWeight: 800 }}>â</span>
+              <span style={{ color: "#f43f5e", fontSize: "8px", fontWeight: 800 }}>--</span>
             </div>
             <span className="text-[11px] text-slate-500">{item}</span>
           </div>
@@ -644,9 +554,9 @@ function SecuritySection() {
   );
 }
 
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* -------------------------------------------------------------------------------------------------------------------------------------- */
 /* Page                                                                 */
-/* âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+/* -------------------------------------------------------------------------------------------------------------------------------------- */
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState("account");
@@ -661,7 +571,7 @@ export default function SettingsPage() {
       </FadeIn>
 
       <div className="flex flex-col lg:flex-row gap-6 mt-2">
-        {/* ââ Section nav ââ */}
+        {/* ---- Section nav ---- */}
         <div className="w-full lg:w-44 flex-shrink-0 pt-0 lg:pt-1">
           <nav className="flex gap-1 overflow-x-auto pb-2 lg:pb-0 lg:flex-col lg:space-y-0.5 lg:sticky lg:top-20">
             {SECTIONS.map((s) => {
@@ -705,7 +615,7 @@ export default function SettingsPage() {
           </nav>
         </div>
 
-        {/* ââ Content ââ */}
+        {/* ---- Content ---- */}
         <div className="flex-1 min-w-0">
           <FadeIn key={activeSection}>
             {activeSection === "account"       && <AccountSection />}

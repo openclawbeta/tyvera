@@ -3,18 +3,18 @@
 import { cn } from "@/lib/utils";
 
 const TICKER_ITEMS = [
-  { label: "SN1 · Text Prompting",    yield: "24.3%", delta: +1.2 },
-  { label: "SN49 · Protein Folding",  yield: "26.7%", delta: +0.4 },
-  { label: "SN18 · Image Gen",        yield: "23.0%", delta: +1.8 },
-  { label: "SN25 · Code Execution",   yield: "22.1%", delta: +1.5 },
-  { label: "SN4 · Multi-Modality",    yield: "21.7%", delta: +0.8 },
-  { label: "SN8 · Time Series",       yield: "19.4%", delta: +2.6 },
-  { label: "SN21 · Embedding",        yield: "18.6%", delta: +0.3 },
-  { label: "SN32 · Audio Synth",      yield: "17.8%", delta: -1.0 },
-  { label: "SN3 · Data Scraping",     yield: "15.0%", delta: -2.1 },
-  { label: "SN19 · Video Gen",        yield: "28.4%", delta: -3.2 },
-  { label: "SN40 · Prediction",       yield: "32.1%", delta: -8.4 },
-  { label: "SN11 · Storage",          yield: "13.2%", delta: -0.4 },
+  { label: "SN1 · Apex",              yield: "18.4%", delta: +0.6 },
+  { label: "SN49 · Hivetrain",        yield: "24.2%", delta: +1.3 },
+  { label: "SN18 · Cortex.t",         yield: "21.8%", delta: +1.2 },
+  { label: "SN25 · Mainframe",        yield: "19.7%", delta: +0.9 },
+  { label: "SN4 · Targon",            yield: "20.1%", delta: +0.4 },
+  { label: "SN8 · Taoshi",            yield: "17.6%", delta: +2.1 },
+  { label: "SN21 · OMEGA",            yield: "16.9%", delta: +0.8 },
+  { label: "SN32 · ItsAI",            yield: "15.3%", delta: -0.5 },
+  { label: "SN3 · Templar",           yield: "14.2%", delta: +1.8 },
+  { label: "SN19 · Nineteen",         yield: "22.4%", delta: -1.2 },
+  { label: "SN40 · Chunking",         yield: "18.7%", delta: -2.3 },
+  { label: "SN11 · Transcription",    yield: "12.9%", delta: +0.5 },
 ];
 
 function TickerItem({ label, yieldRate, delta }: { label: string; yieldRate: string; delta: number }) {
@@ -44,17 +44,17 @@ export function LiveTicker() {
 
   return (
     <div className="flex items-center gap-3 min-w-0 w-full">
-      {/* Market indicator — static dot, no live/realtime claim */}
+      {/* Live indicator */}
       <div className="flex items-center gap-1.5 flex-shrink-0 pr-3" style={{ borderRight: "1px solid rgba(255,255,255,0.07)" }}>
         <span
-          className="w-1.5 h-1.5 rounded-full"
-          style={{ background: "#475569" }}
+          className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-dot"
+          style={{ boxShadow: "0 0 5px rgba(52,211,153,0.6)" }}
         />
         <span
           className="font-semibold text-slate-600 uppercase"
           style={{ fontSize: "9px", letterSpacing: "0.1em" }}
         >
-          Market
+          Live
         </span>
       </div>
 

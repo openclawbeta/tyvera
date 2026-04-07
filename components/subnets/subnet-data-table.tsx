@@ -121,7 +121,7 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
     { key: "name", label: "#", align: "center" },
     { key: "name", label: "Star", align: "center" },
     { key: "name", label: "Subnet", align: "left" },
-    { key: "emissions", label: "Emission", align: "right" },
+    { key: "emissions", label: "Emission/Day", align: "right" },
     { key: "alphaPrice", label: "Price τ", align: "right" },
     { key: "change1h", label: "1H", align: "right" },
     { key: "change24h", label: "24H", align: "right" },
@@ -312,9 +312,9 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
                       </div>
                     </td>
 
-                    {/* Emission % */}
+                    {/* Emission / Day */}
                     <td className="px-3 py-2 text-right font-mono text-slate-300">
-                      {(subnet.emissions * 100).toFixed(1)}%
+                      {subnet.emissions.toFixed(1)} τ
                     </td>
 
                     {/* Price τ */}

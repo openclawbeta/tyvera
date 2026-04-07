@@ -106,18 +106,10 @@ export default function SubnetsPage() {
     <div className="max-w-full mx-auto space-y-6 overflow-x-hidden">
       <PageHeader
         title="Subnet Explorer"
-        subtitle={liveLoaded
-          ? `${totalSubnets} subnets · scored, ranked, and filtered`
-          : "Scored, ranked, and filtered across the subnet universe"}
+        subtitle={`${totalSubnets} subnets · scored, ranked, and filtered`}
       >
         <div className="text-xs text-slate-500">
-          {liveLoaded ? (
-            <>
-              Showing <span className="text-white font-semibold">{filtered.length}</span> of {totalSubnets}
-            </>
-          ) : (
-            <>Loading live subnet totals…</>
-          )}
+          Showing <span className="text-white font-semibold">{filtered.length}</span> of {totalSubnets}
         </div>
       </PageHeader>
 

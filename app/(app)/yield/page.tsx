@@ -107,7 +107,7 @@ export default function YieldPage() {
               <span className="text-white font-semibold">{subnets.length}</span> subnets available
             </>
           ) : (
-            <>Loading subnet data…</>
+            <>Loading subnet data...</>
           )}
         </div>
       </PageHeader>
