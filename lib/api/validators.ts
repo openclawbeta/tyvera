@@ -36,14 +36,36 @@ function generateAddress(seed: number): string {
  */
 export function getValidators(): ValidatorInfo[] {
   const knownValidators = [
-    "tao.bot",
-    "Taostats",
-    "Yuma, a DCG Company",
     "Opentensor Foundation",
+    "Taostats",
+    "Datura",
+    "Foundry",
+    "RoundTable21",
+    "Polychain",
+    "tao.bot",
+    "Yuma, a DCG Company",
     "TAO.com",
-    "Kraken",
+    "Neural Internet",
+    "Macrocosmos",
+    "Tensorplex",
+    "Manifold Labs",
+    "FirstTensor",
+    "Corcel",
+    "Taostation",
+    "tao5",
+    "MyShell",
+    "Kaizen",
+    "BitAPAI",
+    "Owl Ventures",
+    "Nakamoto",
     "Crucible Labs",
-    "BitDAO",
+    "IBS Validator",
+    "Subnet Alpha",
+    "Wombo",
+    "Bittensor Guru",
+    "Kraken",
+    "Rizzo",
+    "τao Validator",
   ];
 
   const validators: ValidatorInfo[] = [];
@@ -78,8 +100,8 @@ export function getValidators(): ValidatorInfo[] {
     const rootStake = 100000 + rng() * 800000;
     const alphaStake = rng() * 500000;
 
-    // Top 8 are verified
-    const verified = i < 8;
+    // Known validators are verified
+    const verified = isKnown;
 
     validators.push({
       rank: i + 1,
