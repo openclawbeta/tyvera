@@ -44,7 +44,7 @@ import {
   CURATED_METADATA,
   buildFallbackMeta,
 } from "@/lib/data/subnets-curated-metadata";
-import { getSubnetCache, isSubnetCacheFresh, getSubnetCacheAgeMs } from "@/lib/chain";
+import { getSubnetCache, isSubnetCacheFresh, getSubnetCacheAgeMs, setSubnetCache, fetchSubnetsFromChain } from "@/lib/chain";
 import type { ChainSubnet } from "@/lib/chain";
 
 // ── Configuration ─────────────────────────────────────────────────────────────
@@ -257,6 +257,36 @@ export async function GET(request: NextRequest) {
         },
       });
     }
+  }
+
+  // ── Priority 0b: On-demand chain fetch (self-heals cold instances) ─────
+  // The cron populates cache in its own serverless instance, which may
+  // differ from this one. If cache is cold, fetch directly from chain
+  // and warm this instance's cache for subsequent requests.
+  try {
+    console.log("[/api/subnets] Chain cache cold — attempting on-demand fetch...");
+    const freshSnapshot = await fetchSubnetsFromChain();
+    if (freshSnapshot && freshSnapshot.subnets.length > 0) {
+      setSubnetCache(freshSnapshot);
+      const chainSubnets = (netuidFilter != null
+        ? freshSnapshot.subnets.filter((s) => s.netuid === netuidFilter)
+        : freshSnapshot.subnets
+      ).map(mapChainSubnet).sort((a, b) => a.netuid - b.netuid);
+
+      if (chainSubnets.length > 0) {
+        return NextResponse.json(chainSubnets, {
+          headers: {
+            "X-Data-Source":  "chain-on-demand",
+            "X-Subnet-Count": String(chainSubnets.length),
+            "X-Block-Height": String(freshSnapshot.blockHeight),
+            "Cache-Control":  "public, s-maxage=120",
+          },
+        });
+      }
+    }
+  } catch (err) {
+    console.error("[/api/subnets] On-demand chain fetch failed:", err);
+    // Fall through to snapshot/TaoStats
   }
 
   // ── Priority 1: Subtensor snapshot (Python script output) ──────────────
