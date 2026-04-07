@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getBlockHeight } from "@/lib/chain";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* In-memory cache (5-minute TTL)                                       */
@@ -113,6 +114,9 @@ async function fetchFromTaoStats(): Promise<CachedRate | null> {
 export async function GET() {
   const now = Date.now();
 
+  // Block height: prefer chain cache (always fresh from cron)
+  const chainBlock = getBlockHeight();
+
   // Return cached value if fresh
   if (cache && now - cacheTimestamp < TTL_MS) {
     return NextResponse.json(
@@ -121,7 +125,7 @@ export async function GET() {
         change24h: cache.change24h,
         marketCap: cache.marketCap,
         volume24h: cache.volume24h,
-        blockHeight: cache.blockHeight,
+        blockHeight: chainBlock ?? cache.blockHeight,
         fetchedAt: cache.fetchedAt,
         source: cache.source,
         fallback: false,
@@ -150,7 +154,7 @@ export async function GET() {
         change24h: result.change24h,
         marketCap: result.marketCap,
         volume24h: result.volume24h,
-        blockHeight: result.blockHeight,
+        blockHeight: chainBlock ?? result.blockHeight,
         fetchedAt: result.fetchedAt,
         source: result.source,
         fallback: false,

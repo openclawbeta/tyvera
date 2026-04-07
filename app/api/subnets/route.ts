@@ -5,30 +5,26 @@
  *
  * Data source priority (highest → lowest):
  *
- *   1. public/data/subnets.json  (Subtensor snapshot — Phase 3 canonical source)
+ *   0. Chain cache (live Subtensor data synced by /api/cron/sync-chain)
+ *      Refreshed every 5 min by Vercel cron. Zero external dependencies.
+ *
+ *   1. public/data/subnets.json  (Subtensor snapshot — Python script)
  *      Written by: python scripts/fetch_subnets_subtensor.py
  *      Served when: file exists and is ≤ SNAPSHOT_MAX_AGE_HOURS old
  *
- *   2. TaoStats REST API  (Phase 2 live path — fallback when Subtensor snapshot absent)
- *      Requires: TAOSTATS_API_KEY env var (server-side only; never NEXT_PUBLIC_*)
+ *   2. TaoStats REST API  (fallback when chain sources unavailable)
+ *      Requires: TAOSTATS_API_KEY env var (server-side only)
  *      Endpoint: api.taostats.io/api/dtao/subnet/latest/v1
  *
- *   3. lib/data/subnets-real.ts  (Phase 1 static TypeScript snapshot — always available)
+ *   3. lib/data/subnets-real.ts  (static TypeScript snapshot — always available)
  *      12 curated subnets with estimated metrics.
- *      Used when both sources above are unavailable.
  *
  * Query params:
  *   ?netuid=N  → return only that subnet (single-element array)
  *
  * Response headers:
- *   X-Data-Source    subtensor-snapshot | taostats-live | static-snapshot[-fallback]
+ *   X-Data-Source    chain-live | subtensor-snapshot | taostats-live | static-snapshot
  *   X-Subnet-Count   number of subnets returned
- *   X-Snapshot-Age   seconds since Subtensor snapshot was written (source 1 only)
- *
- * ── Why a route handler (not direct client fetch)? ────────────────────────────
- *   • TaoStats requires a Bearer token → must stay server-side
- *   • fs.readFileSync for the Subtensor snapshot → server-side only
- *   • Client pages stay simple: one fetch("/api/subnets"), regardless of source
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -48,6 +44,8 @@ import {
   CURATED_METADATA,
   buildFallbackMeta,
 } from "@/lib/data/subnets-curated-metadata";
+import { getSubnetCache, isSubnetCacheFresh, getSubnetCacheAgeMs } from "@/lib/chain";
+import type { ChainSubnet } from "@/lib/chain";
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -193,13 +191,75 @@ function mapTaoStatsRow(s: Record<string, unknown>): SubnetDetailModel {
   };
 }
 
+// ── Source 0: Chain cache → SubnetDetailModel mapper ─────────────────────────
+
+function mapChainSubnet(s: ChainSubnet): SubnetDetailModel {
+  const meta = CURATED_METADATA[s.netuid] ?? buildFallbackMeta(s.netuid, s.name, s.symbol);
+
+  const yieldPct   = deriveYield(s.emissionPerDay, s.taoIn);
+  const momentum   = buildMomentum(yieldPct, 0);
+  const risk       = deriveRisk(s.taoIn, s.stakers, 0);
+  const score      = deriveScore(s.taoIn, yieldPct, s.stakers, 0, s.ageDays);
+  const confidence = deriveConfidence(s.taoIn, s.stakers, 0, s.ageDays);
+
+  return {
+    id:            `sn${s.netuid}`,
+    netuid:        s.netuid,
+    name:          (s.name && !s.name.includes("{")) ? s.name : meta.name,
+    symbol:        (s.symbol && !s.symbol.includes("{")) ? s.symbol : meta.symbol,
+    score,
+    yield:         yieldPct,
+    yieldDelta7d:  0,
+    inflow:        0,
+    inflowPct:     0,
+    risk,
+    liquidity:     s.taoIn,
+    stakers:       s.stakers,
+    emissions:     s.emissionPerDay,
+    validatorTake: 18,
+    description:   meta.description,
+    summary:       meta.summary,
+    thesis:        meta.thesis,
+    useCases:      meta.useCases,
+    links:         meta.links,
+    category:      meta.category,
+    confidence,
+    momentum,
+    isWatched:     false,
+    breakeven:     deriveBreakeven(yieldPct),
+    age:           s.ageDays,
+  };
+}
+
 // ── Route handler ─────────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
   const netuidParam   = request.nextUrl.searchParams.get("netuid");
   const netuidFilter  = netuidParam != null ? Number(netuidParam) : undefined;
 
-  // ── Priority 1: Subtensor snapshot (canonical Phase 3 source) ───────────
+  // ── Priority 0: Chain cache (live Subtensor data from cron) ────────────
+  const chainCache = getSubnetCache();
+  if (chainCache && isSubnetCacheFresh()) {
+    const chainSubnets = (netuidFilter != null
+      ? chainCache.subnets.filter((s) => s.netuid === netuidFilter)
+      : chainCache.subnets
+    ).map(mapChainSubnet).sort((a, b) => a.netuid - b.netuid);
+
+    if (chainSubnets.length > 0) {
+      const ageMs = getSubnetCacheAgeMs();
+      return NextResponse.json(chainSubnets, {
+        headers: {
+          "X-Data-Source":  "chain-live",
+          "X-Subnet-Count": String(chainSubnets.length),
+          "X-Block-Height": String(chainCache.blockHeight),
+          "X-Cache-Age":    String(Math.round(ageMs / 1000)),
+          "Cache-Control":  "public, s-maxage=120",
+        },
+      });
+    }
+  }
+
+  // ── Priority 1: Subtensor snapshot (Python script output) ──────────────
   const snapshot = readSubtensorSnapshot(netuidFilter);
   if (snapshot) {
     return NextResponse.json(snapshot.subnets, {

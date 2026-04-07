@@ -19,6 +19,12 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import {
+  fetchMetagraphFromChain,
+  getMetagraphCache,
+  isMetagraphCacheFresh,
+  setMetagraphCache,
+} from "@/lib/chain";
 
 interface MetagraphNeuron {
   uid: number;
@@ -158,19 +164,81 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const netuIdNum = Number(netuid);
+  const netuidNum = Number(netuid);
 
-  // Try TaoStats first
-  let neurons = await fetchFromTaoStats(netuIdNum);
+  // ── Priority 0: Chain cache (from cron or previous on-demand fetch) ────
+  if (isMetagraphCacheFresh(netuidNum)) {
+    const cached = getMetagraphCache(netuidNum);
+    if (cached && cached.neurons.length > 0) {
+      const neurons: MetagraphNeuron[] = cached.neurons.map((n) => ({
+        uid: n.uid,
+        hotkey: n.hotkey,
+        type: n.dividends > 0.01 ? "validator" : "miner",
+        stake: n.stake,
+        trust: n.trust,
+        consensus: n.consensus,
+        incentive: n.incentive,
+        dividends: n.dividends,
+        emissionPerDay: n.emission,
+      }));
 
-  // Fall back to synthetic data
-  if (!neurons) {
-    neurons = generateSyntheticMetagraph(netuIdNum);
+      return NextResponse.json(neurons, {
+        headers: {
+          "X-Data-Source": "chain-live",
+          "X-Block-Height": String(cached.blockHeight),
+          "Cache-Control": "public, s-maxage=120",
+        },
+      });
+    }
   }
 
-  return NextResponse.json(neurons, {
+  // ── Priority 0b: Try live chain query (on-demand, cached for next request) ──
+  try {
+    const chainResult = await fetchMetagraphFromChain(netuidNum);
+    if (chainResult && chainResult.neurons.length > 0) {
+      setMetagraphCache(chainResult);
+
+      const neurons: MetagraphNeuron[] = chainResult.neurons.map((n) => ({
+        uid: n.uid,
+        hotkey: n.hotkey,
+        type: n.dividends > 0.01 ? "validator" : "miner",
+        stake: n.stake,
+        trust: n.trust,
+        consensus: n.consensus,
+        incentive: n.incentive,
+        dividends: n.dividends,
+        emissionPerDay: n.emission,
+      }));
+
+      return NextResponse.json(neurons, {
+        headers: {
+          "X-Data-Source": "chain-live",
+          "X-Block-Height": String(chainResult.blockHeight),
+          "Cache-Control": "public, s-maxage=120",
+        },
+      });
+    }
+  } catch (err) {
+    console.error(`[metagraph] Chain query failed for SN${netuidNum}:`, err);
+  }
+
+  // ── Priority 1: TaoStats API ───────────────────────────────────────────
+  const taoStatsNeurons = await fetchFromTaoStats(netuidNum);
+  if (taoStatsNeurons) {
+    return NextResponse.json(taoStatsNeurons, {
+      headers: {
+        "X-Data-Source": "taostats-live",
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      },
+    });
+  }
+
+  // ── Priority 2: Synthetic fallback ─────────────────────────────────────
+  const synthetic = generateSyntheticMetagraph(netuidNum);
+  return NextResponse.json(synthetic, {
     headers: {
-      "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      "X-Data-Source": "synthetic",
+      "Cache-Control": "public, s-maxage=300",
     },
   });
 }
