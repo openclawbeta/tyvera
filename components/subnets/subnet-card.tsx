@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Bookmark, BookmarkCheck, GitCompare } from "lucide-react";
@@ -72,7 +73,7 @@ function subnet_id(color: string) {
   return color.replace("#", "").slice(0, 6);
 }
 
-export function SubnetCard({
+export const SubnetCard = memo(function SubnetCard({
   subnet,
   selected,
   onSelect,
@@ -226,4 +227,4 @@ export function SubnetCard({
       </div>
     </motion.div>
   );
-}
+});

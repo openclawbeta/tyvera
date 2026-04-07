@@ -154,10 +154,14 @@ async function querySubnetBatch(api: ApiPromise, netuids: number[]): Promise<Cha
     const netuid = netuids[i];
 
     let taoIn = toNumber(taoInResults[i]);
-    if (taoIn > 1e12) taoIn /= RAO_PER_TAO; // Convert RAO → TAO if needed
+    // SubnetAlphaIn is stored in RAO. Even small subnets have millions of RAO,
+    // so any value > 1e6 is almost certainly RAO, not TAO.
+    if (taoIn > 1e6) taoIn /= RAO_PER_TAO;
 
     let emissionRaw = toNumber(emissionResults[i]);
-    if (emissionRaw > 1e12) emissionRaw /= RAO_PER_TAO;
+    // Emission per block is always in RAO (e.g. 6,212,418 RAO = 0.006 TAO).
+    // Convert to TAO if the value looks like RAO (> 1, since TAO values would be < 1).
+    if (emissionRaw > 1) emissionRaw /= RAO_PER_TAO;
     const emissionPerDay = emissionRaw * BLOCKS_PER_DAY;
 
     const regAt = toNumber(regAtResults[i]);

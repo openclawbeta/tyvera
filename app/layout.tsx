@@ -20,12 +20,21 @@ export const metadata: Metadata = {
     siteName: "Tyvera",
     locale: "en_US",
     type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Tyvera — Bittensor Subnet Intelligence",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Tyvera — Bittensor Subnet Intelligence",
     description:
       "Real-time analytics for 100+ Bittensor subnets. Track yields, emissions, risk scores, and metagraph data.",
+    images: ["/og-image.png"],
   },
   robots: {
     index: true,

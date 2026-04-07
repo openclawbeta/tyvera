@@ -162,6 +162,19 @@ function mapTaoStatsRow(s: Record<string, unknown>): SubnetDetailModel {
   const score    = deriveScore(taoIn, yieldPct, stakers, 0, age);
   const confidence = deriveConfidence(taoIn, stakers, 0, age);
 
+  // ── Market data fields from TaoStats ──────────────────────────────────
+  const alphaPrice = Number(s.alpha_price ?? s.price ?? 0) || undefined;
+  const marketCap  = Number(s.market_cap ?? s.alpha_market_cap ?? 0) || undefined;
+  const volume24h  = Number(s.volume_24h ?? s.alpha_volume_24h ?? 0) || undefined;
+  const change1h   = Number(s.percent_change_1h ?? s.price_change_1h ?? 0) || undefined;
+  const change24h  = Number(s.percent_change_24h ?? s.price_change_24h ?? 0) || undefined;
+  const change1w   = Number(s.percent_change_7d ?? s.price_change_7d ?? 0) || undefined;
+  const change1m   = Number(s.percent_change_30d ?? s.price_change_30d ?? 0) || undefined;
+  const flow24h    = Number(s.net_flow_24h ?? 0) || undefined;
+  const flow1w     = Number(s.net_flow_7d ?? 0) || undefined;
+  const flow1m     = Number(s.net_flow_30d ?? 0) || undefined;
+  const incentivePct = Number(s.incentive ?? 0) || undefined;
+
   return {
     id:            `sn${netuid}`,
     netuid,
@@ -188,6 +201,19 @@ function mapTaoStatsRow(s: Record<string, unknown>): SubnetDetailModel {
     isWatched:     false,
     breakeven:     deriveBreakeven(yieldPct),
     age,
+    // Market fields — only present when TaoStats provides them
+    alphaPrice,
+    marketCap,
+    volume24h,
+    volumeCapRatio: (marketCap && volume24h) ? +((volume24h / marketCap) * 100).toFixed(1) : undefined,
+    change1h,
+    change24h,
+    change1w,
+    change1m,
+    flow24h,
+    flow1w,
+    flow1m,
+    incentivePct,
   };
 }
 

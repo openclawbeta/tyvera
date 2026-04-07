@@ -43,38 +43,38 @@ function seededRandom(netuid: number, index: number = 0): number {
   return x - Math.floor(x);
 }
 
+/**
+ * Fill in market data fields that the API didn't provide.
+ *
+ * When TaoStats is the data source, most of these fields arrive pre-filled.
+ * When chain data is the source, market fields are absent — we fill them
+ * with seeded deterministic values so the table isn't empty.
+ *
+ * Rule: if the field already has a real value (not undefined/null/0), keep it.
+ */
 function deriveTableFields(subnet: SubnetDetailModel): Partial<SubnetDetailModel> {
   const netuid = subnet.netuid;
-  const liqFactor = Math.log10(subnet.liquidity + 1) / 10;
 
-  // alphaPrice: 0.01 to 0.09, derived from emissions and liquidity
-  const alphaPrice = 0.01 + seededRandom(netuid, 0) * 0.08;
+  // Helper: return the existing value if it's a real number, else generate one
+  const keep = (existing: number | undefined | null, fallback: number): number =>
+    (existing != null && existing !== 0) ? existing : fallback;
 
-  // marketCap: alphaPrice * liquidity * multiplier (50k-500k τ range)
-  const marketCap = alphaPrice * subnet.liquidity * (0.8 + seededRandom(netuid, 1) * 0.4);
+  const alphaPrice = keep(subnet.alphaPrice, 0.01 + seededRandom(netuid, 0) * 0.08);
+  const marketCap = keep(subnet.marketCap, alphaPrice * subnet.liquidity * (0.8 + seededRandom(netuid, 1) * 0.4));
+  const volume24h = keep(subnet.volume24h, marketCap * (0.01 + seededRandom(netuid, 2) * 0.5));
+  const volumeCapRatio = keep(subnet.volumeCapRatio, marketCap > 0 ? (volume24h / marketCap) * 100 : 0);
 
-  // volume24h: 1-50% of marketCap (realistic trading volume)
-  const volume24h = marketCap * (0.01 + seededRandom(netuid, 2) * 0.5);
+  const change1h  = keep(subnet.change1h,  (seededRandom(netuid, 3) - 0.5) * 8);
+  const change24h = keep(subnet.change24h, (seededRandom(netuid, 4) - 0.5) * 15);
+  const change1w  = keep(subnet.change1w,  (seededRandom(netuid, 5) - 0.5) * 25);
+  const change1m  = keep(subnet.change1m,  (seededRandom(netuid, 6) - 0.5) * 40);
 
-  // volumeCapRatio: volume / marketCap as percentage (capped at ~50%)
-  const volumeCapRatio = marketCap > 0 ? (volume24h / marketCap) * 100 : 0;
+  const flow24h = keep(subnet.flow24h, (seededRandom(netuid, 7) - 0.5) * subnet.inflow * 2);
+  const flow1w  = keep(subnet.flow1w,  (seededRandom(netuid, 8) - 0.5) * subnet.inflow * 3);
+  const flow1m  = keep(subnet.flow1m,  (seededRandom(netuid, 9) - 0.5) * subnet.inflow * 5);
 
-  // 1h, 24h, 1w, 1m changes: small % changes, mix of positive/negative
-  const change1h = (seededRandom(netuid, 3) - 0.5) * 8;
-  const change24h = (seededRandom(netuid, 4) - 0.5) * 15 + subnet.yieldDelta7d * 0.5;
-  const change1w = (seededRandom(netuid, 5) - 0.5) * 25 + subnet.yieldDelta7d;
-  const change1m = (seededRandom(netuid, 6) - 0.5) * 40 + subnet.yieldDelta7d * 1.5;
-
-  // flow24h, flow1w, flow1m: positive or negative τ amounts
-  const flow24h = (seededRandom(netuid, 7) - 0.5) * subnet.inflow * 2;
-  const flow1w = (seededRandom(netuid, 8) - 0.5) * subnet.inflow * 3;
-  const flow1m = (seededRandom(netuid, 9) - 0.5) * subnet.inflow * 5;
-
-  // dailyChainBuys: 0-300
-  const dailyChainBuys = Math.floor(seededRandom(netuid, 10) * 300);
-
-  // incentivePct: 0-100%
-  const incentivePct = seededRandom(netuid, 11) * 100;
+  const dailyChainBuys = keep(subnet.dailyChainBuys, Math.floor(seededRandom(netuid, 10) * 300));
+  const incentivePct   = keep(subnet.incentivePct,   seededRandom(netuid, 11) * 100);
 
   return {
     alphaPrice,

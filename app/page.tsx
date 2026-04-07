@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -9,7 +10,8 @@ import {
 import { FadeIn } from "@/components/ui-custom/fade-in";
 import { cn } from "@/lib/utils";
 
-const TICKER = [
+/* ── Static fallback for SSR / initial render ─────────────────────── */
+const TICKER_FALLBACK = [
   { name: "SN49 Protein Folding",  yield: "26.7%", up: true  },
   { name: "SN1 Text Prompting",    yield: "24.3%", up: true  },
   { name: "SN18 Image Generation", yield: "23.0%", up: true  },
@@ -18,6 +20,15 @@ const TICKER = [
   { name: "SN19 Video Gen",        yield: "28.4%", up: false },
   { name: "SN3 Data Scraping",     yield: "15.0%", up: false },
 ];
+
+interface LiveSubnet {
+  netuid: number;
+  name: string;
+  yield: number;
+  risk: string;
+  liquidity: number;
+  yieldDelta7d: number;
+}
 
 const FEATURES = [
   {
@@ -68,7 +79,42 @@ const TRUST = [
   { icon: CheckCircle,  text: "Wallet remains under your control.", sub: "Non-custodial, end-to-end." },
 ];
 
+const ACCENT_COLORS = ["#22d3ee", "#8b5cf6", "#34d399"];
+const GRADIENT_CLASSES = ["from-cyan-500 to-blue-600", "from-violet-500 to-purple-700", "from-emerald-500 to-teal-700"];
+
+function formatLiquidity(val: number): string {
+  if (val >= 1_000_000) return `${(val / 1_000_000).toFixed(1)}M τ`;
+  if (val >= 1_000) return `${(val / 1_000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")} τ`;
+  return `${val.toFixed(0)} τ`;
+}
+
 export default function HomePage() {
+  const [ticker, setTicker] = useState(TICKER_FALLBACK);
+  const [featured, setFeatured] = useState<LiveSubnet[]>([]);
+
+  useEffect(() => {
+    fetch("/api/subnets")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!Array.isArray(data) || data.length === 0) return;
+
+        // Ticker: top 10 by yield, positive = up
+        const sorted = [...data]
+          .filter((s: LiveSubnet) => s.netuid > 0 && s.yield > 0 && s.yield < 1000)
+          .sort((a: LiveSubnet, b: LiveSubnet) => b.yield - a.yield);
+        const tickerItems = sorted.slice(0, 10).map((s: LiveSubnet) => ({
+          name: `SN${s.netuid} ${s.name}`,
+          yield: `${s.yield.toFixed(1)}%`,
+          up: s.yieldDelta7d >= 0,
+        }));
+        if (tickerItems.length > 0) setTicker(tickerItems);
+
+        // Featured: top 3 by yield
+        setFeatured(sorted.slice(0, 3));
+      })
+      .catch(() => {}); // Keep fallback on error
+  }, []);
+
   return (
     <div className="min-h-screen text-slate-100" style={{ background: "#06070f" }}>
 
@@ -275,7 +321,7 @@ export default function HomePage() {
       {/* ── MARKET STRIP ────────────────────────────────────────────── */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.012)", overflow: "hidden" }}>
         <div className="flex py-2.5">
-          {[...TICKER, ...TICKER].map((item, i) => (
+          {[...ticker, ...ticker].map((item, i) => (
             <div
               key={i}
               className="flex items-center gap-3 px-6 flex-shrink-0"
@@ -309,11 +355,23 @@ export default function HomePage() {
           </FadeIn>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[
-              { netuid: 49, name: "Protein Folding", yield: "26.7%", score: 88, risk: "LOW",  delta: "+0.4%", liquidity: "13,800 τ", grad: "from-cyan-500 to-blue-600",    accent: "#22d3ee" },
-              { netuid: 1,  name: "Text Prompting",  yield: "24.3%", score: 84, risk: "LOW",  delta: "+1.2%", liquidity: "12,400 τ", grad: "from-violet-500 to-purple-700", accent: "#8b5cf6" },
-              { netuid: 25, name: "Code Execution",  yield: "22.1%", score: 80, risk: "LOW",  delta: "+1.5%", liquidity: "9,700 τ",  grad: "from-emerald-500 to-teal-700",  accent: "#34d399" },
-            ].map((s, i) => (
+            {(featured.length > 0
+              ? featured.map((s, i) => ({
+                  netuid: s.netuid,
+                  name: s.name,
+                  yield: `${s.yield.toFixed(1)}%`,
+                  risk: s.risk,
+                  delta: `${s.yieldDelta7d >= 0 ? "+" : ""}${s.yieldDelta7d.toFixed(1)}%`,
+                  liquidity: formatLiquidity(s.liquidity),
+                  grad: GRADIENT_CLASSES[i % 3],
+                  accent: ACCENT_COLORS[i % 3],
+                }))
+              : [
+                  { netuid: 49, name: "Protein Folding", yield: "26.7%", risk: "LOW", delta: "+0.4%", liquidity: "13,800 τ", grad: "from-cyan-500 to-blue-600", accent: "#22d3ee" },
+                  { netuid: 1,  name: "Text Prompting",  yield: "24.3%", risk: "LOW", delta: "+1.2%", liquidity: "12,400 τ", grad: "from-violet-500 to-purple-700", accent: "#8b5cf6" },
+                  { netuid: 25, name: "Code Execution",  yield: "22.1%", risk: "LOW", delta: "+1.5%", liquidity: "9,700 τ", grad: "from-emerald-500 to-teal-700", accent: "#34d399" },
+                ]
+            ).map((s, i) => (
               <FadeIn key={s.netuid} delay={i * 0.1}>
                 <div
                   className="rounded-2xl p-5 transition-all duration-250 relative overflow-hidden"
