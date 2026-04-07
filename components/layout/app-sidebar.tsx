@@ -35,7 +35,7 @@ const NAV_ITEMS = [
   { label: "Recommendations", href: "/recommendations", icon: Lightbulb, badge: "3" },
   { label: "Alerts",          href: "/alerts",          icon: Bell },
   { label: "Backtest",        href: "/backtest",        icon: FlaskConical },
-  { label: "Billing",         href: "/billing",         icon: CreditCard },
+  { label: "Pricing",         href: "/pricing",         icon: CreditCard },
   { label: "Tax Report",      href: "/tax",             icon: FileText },
   { label: "Settings",        href: "/settings",        icon: Settings },
 ];
