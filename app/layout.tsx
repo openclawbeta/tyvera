@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   description:
     "Live subnet analytics and user-approved staking reallocation for Bittensor. You approve every move.",
   keywords: ["Bittensor", "TAO", "staking", "subnet analytics", "crypto"],
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export const viewport: Viewport = {
