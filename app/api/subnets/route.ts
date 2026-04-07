@@ -289,30 +289,39 @@ export async function GET(request: NextRequest) {
   // The cron populates cache in its own serverless instance, which may
   // differ from this one. If cache is cold, fetch directly from chain
   // and warm this instance's cache for subsequent requests.
-  try {
-    console.log("[/api/subnets] Chain cache cold — attempting on-demand fetch...");
-    const freshSnapshot = await fetchSubnetsFromChain();
-    if (freshSnapshot && freshSnapshot.subnets.length > 0) {
-      setSubnetCache(freshSnapshot);
-      const chainSubnets = (netuidFilter != null
-        ? freshSnapshot.subnets.filter((s) => s.netuid === netuidFilter)
-        : freshSnapshot.subnets
-      ).map(mapChainSubnet).sort((a, b) => a.netuid - b.netuid);
+  //
+  // IMPORTANT: Only attempt on-demand fetch for single-subnet queries.
+  // Full-list fetches connect to Subtensor for ~128 subnets which takes
+  // 30-60s and exceeds the serverless function timeout. For the full
+  // list, fall through to the snapshot file (always deployed on disk).
+  if (netuidFilter != null) {
+    try {
+      console.log(`[/api/subnets] Chain cache cold — on-demand fetch for netuid ${netuidFilter}...`);
+      const fetchPromise = fetchSubnetsFromChain();
+      const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 12_000));
+      const freshSnapshot = await Promise.race([fetchPromise, timeoutPromise]);
+      if (freshSnapshot && freshSnapshot.subnets.length > 0) {
+        setSubnetCache(freshSnapshot);
+        const chainSubnets = freshSnapshot.subnets
+          .filter((s) => s.netuid === netuidFilter)
+          .map(mapChainSubnet);
 
-      if (chainSubnets.length > 0) {
-        return NextResponse.json(chainSubnets, {
-          headers: {
-            "X-Data-Source":  "chain-on-demand",
-            "X-Subnet-Count": String(chainSubnets.length),
-            "X-Block-Height": String(freshSnapshot.blockHeight),
-            "Cache-Control":  "public, s-maxage=120",
-          },
-        });
+        if (chainSubnets.length > 0) {
+          return NextResponse.json(chainSubnets, {
+            headers: {
+              "X-Data-Source":  "chain-on-demand",
+              "X-Subnet-Count": String(chainSubnets.length),
+              "X-Block-Height": String(freshSnapshot.blockHeight),
+              "Cache-Control":  "public, s-maxage=120",
+            },
+          });
+        }
       }
+    } catch (err) {
+      console.error("[/api/subnets] On-demand chain fetch failed:", err);
     }
-  } catch (err) {
-    console.error("[/api/subnets] On-demand chain fetch failed:", err);
-    // Fall through to snapshot/TaoStats
+  } else {
+    console.log("[/api/subnets] Chain cache cold, full-list request — skipping on-demand (too slow), falling through to snapshot");
   }
 
   // ── Priority 1: Subtensor snapshot (Python script output) ──────────────
