@@ -532,19 +532,19 @@ export function WalletConnectModal() {
             onClick={walletState === "connecting" || walletState === "verifying" ? undefined : closeModal}
           />
 
-          {/* Modal */}
+          {/* Modal — use flexbox centering so content never overflows viewport */}
           <motion.div
             key="modal"
-            initial={{ opacity: 0, scale: 0.95, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 6 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed z-50 left-1/2 top-1/2 max-h-[90vh] overflow-y-auto"
-            style={{ transform: "translate(-50%, -50%)", width: "min(400px, calc(100vw - 32px))" }}
+            className="fixed z-50 inset-0 flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className="relative rounded-2xl overflow-hidden"
+              className="relative rounded-2xl overflow-hidden pointer-events-auto max-h-[90vh] flex flex-col"
               style={{
+                width: "min(400px, 100%)",
                 background: "linear-gradient(145deg, rgba(10,14,26,0.98) 0%, rgba(7,10,18,1) 100%)",
                 border: "1px solid rgba(255,255,255,0.1)",
                 boxShadow: "0 0 0 1px rgba(255,255,255,0.04), 0 24px 80px rgba(0,0,0,0.7), 0 0 60px rgba(34,211,238,0.05)",
@@ -592,8 +592,8 @@ export function WalletConnectModal() {
                 )}
               </div>
 
-              {/* Body */}
-              <div className="px-6 py-6">
+              {/* Body — scrollable when modal exceeds viewport */}
+              <div className="px-6 py-6 overflow-y-auto flex-1">
                 <AnimatePresence mode="wait">
                   {walletState === "disconnected" && <ScreenSelect key="select" />}
                   {walletState === "connecting"   && <ScreenConnecting key="connecting" extension={extension ?? "polkadotjs"} />}
