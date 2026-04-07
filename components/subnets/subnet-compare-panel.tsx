@@ -1,41 +1,61 @@
 "use client";
 
-import { ArrowRightLeft, CheckCircle2, GitCompare, Shield, TrendingUp, Users, Zap } from "lucide-react";
+import { ArrowRightLeft, CheckCircle2, Crown, GitCompare, Shield, TrendingUp, Users, Zap } from "lucide-react";
 import { cn, riskBg, scoreBg, subnetGradient } from "@/lib/utils";
 import type { SubnetDetailModel } from "@/lib/types/subnets";
 
 const TAO_BASELINE_YIELD = 14.5;
 
+/* ─────────────────────────────────────────────────────────────────── */
+/* Types                                                                 */
+/* ─────────────────────────────────────────────────────────────────── */
+
 interface SubnetComparePanelProps {
-  subnets: [SubnetDetailModel, SubnetDetailModel];
+  subnets: SubnetDetailModel[]; // 2-4 subnets
   onClear: () => void;
 }
 
-function CompareMetric({
-  label,
-  left,
-  right,
-  leftWins,
-  rightWins,
-}: {
+type MetricDef = {
   label: string;
-  left: string;
-  right: string;
-  leftWins: boolean;
-  rightWins: boolean;
-}) {
-  return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-3 border-b border-white/[0.05] last:border-0">
-      <div className={cn("text-sm font-semibold", leftWins ? "text-emerald-300" : "text-slate-300")}>{left}</div>
-      <div className="text-[10px] uppercase tracking-wider text-slate-600 text-center">{label}</div>
-      <div className={cn("text-sm font-semibold text-right", rightWins ? "text-emerald-300" : "text-slate-300")}>{right}</div>
-    </div>
-  );
-}
+  getValue: (s: SubnetDetailModel) => number;
+  format: (v: number) => string;
+  higherIsBetter: boolean;
+};
 
-function CompareHeader({ subnet }: { subnet: SubnetDetailModel }) {
+/* ─────────────────────────────────────────────────────────────────── */
+/* Metric definitions                                                    */
+/* ─────────────────────────────────────────────────────────────────── */
+
+const METRICS: MetricDef[] = [
+  { label: "Yield", getValue: (s) => s.yield, format: (v) => `${v}%`, higherIsBetter: true },
+  { label: "Score", getValue: (s) => s.score, format: (v) => String(v), higherIsBetter: true },
+  { label: "Confidence", getValue: (s) => s.confidence ?? 0, format: (v) => String(v), higherIsBetter: true },
+  { label: "Liquidity", getValue: (s) => s.liquidity, format: (v) => `${v.toLocaleString()} τ`, higherIsBetter: true },
+  { label: "Stakers", getValue: (s) => s.stakers, format: (v) => v.toLocaleString(), higherIsBetter: true },
+  { label: "Emissions", getValue: (s) => s.emissions, format: (v) => `${v} τ`, higherIsBetter: true },
+  { label: "Validator take", getValue: (s) => s.validatorTake, format: (v) => `${v}%`, higherIsBetter: false },
+  { label: "Breakeven", getValue: (s) => s.breakeven, format: (v) => `${v}d`, higherIsBetter: false },
+  { label: "Age", getValue: (s) => s.age, format: (v) => `${v}d`, higherIsBetter: true },
+];
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* Sub-components                                                        */
+/* ─────────────────────────────────────────────────────────────────── */
+
+function CompareHeader({ subnet, winCount, isOverallBest }: { subnet: SubnetDetailModel; winCount: number; isOverallBest: boolean }) {
   return (
-    <div className="rounded-2xl p-4 border border-white/[0.07] bg-white/[0.03]">
+    <div className={cn(
+      "rounded-2xl p-4 border bg-white/[0.03] relative",
+      isOverallBest ? "border-emerald-400/25" : "border-white/[0.07]",
+    )}>
+      {isOverallBest && (
+        <div className="absolute -top-2.5 right-3 flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider"
+          style={{ background: "rgba(52,211,153,0.15)", border: "1px solid rgba(52,211,153,0.3)", color: "#34d399" }}
+        >
+          <Crown className="w-2.5 h-2.5" />
+          Best overall
+        </div>
+      )}
       <div className="flex items-center gap-3 mb-3">
         <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold text-white", `bg-gradient-to-br ${subnetGradient(subnet.netuid)}`)}>
           {subnet.netuid}
@@ -48,6 +68,9 @@ function CompareHeader({ subnet }: { subnet: SubnetDetailModel }) {
       <div className="flex flex-wrap gap-2">
         <span className={cn("tag border", scoreBg(subnet.score))}>Score {subnet.score}</span>
         <span className={cn("tag border", riskBg(subnet.risk))}>{subnet.risk}</span>
+        <span className="text-[10px] text-slate-500 self-center ml-1">
+          {winCount} win{winCount !== 1 ? "s" : ""}
+        </span>
       </div>
     </div>
   );
@@ -59,31 +82,50 @@ function BaselineCard({ subnet }: { subnet: SubnetDetailModel }) {
 
   return (
     <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
-      <div className="text-[11px] uppercase tracking-[0.1em] text-slate-500 mb-3">Vs staking TAO</div>
-      <div className="space-y-2.5">
-        <div className="flex items-start gap-2.5">
-          <TrendingUp className={cn("w-3.5 h-3.5 mt-0.5 flex-shrink-0", beatsTao ? "text-emerald-300" : "text-amber-300")} />
-          <p className="text-[12px] text-slate-400">
-            {subnet.name} is {edgeVsTao >= 0 ? `${edgeVsTao.toFixed(2)}% above` : `${Math.abs(edgeVsTao).toFixed(2)}% below`} the simple TAO staking baseline of ~{TAO_BASELINE_YIELD}%.
-          </p>
-        </div>
-        <div className="flex items-start gap-2.5">
-          <Shield className="w-3.5 h-3.5 text-cyan-300 mt-0.5 flex-shrink-0" />
-          <p className="text-[12px] text-slate-400">If the subnet premium is small, the extra complexity and subnet-specific risk may not be worth it versus just staking TAO.</p>
-        </div>
-        <div className="flex items-start gap-2.5">
-          <Zap className="w-3.5 h-3.5 text-violet-300 mt-0.5 flex-shrink-0" />
-          <p className="text-[12px] text-slate-400">Use this baseline to decide whether to stake into the subnet, buy exposure, or simply keep capital in vanilla TAO staking.</p>
-        </div>
+      <div className="text-[11px] uppercase tracking-[0.1em] text-slate-500 mb-2">
+        Vs TAO staking baseline (~{TAO_BASELINE_YIELD}%)
+      </div>
+      <div className="flex items-center gap-2">
+        <TrendingUp className={cn("w-3.5 h-3.5 flex-shrink-0", beatsTao ? "text-emerald-300" : "text-amber-300")} />
+        <p className="text-[12px] text-slate-400">
+          {beatsTao ? `+${edgeVsTao}% above` : `${edgeVsTao}% below`} baseline
+        </p>
       </div>
     </div>
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────── */
+/* Main panel                                                            */
+/* ─────────────────────────────────────────────────────────────────── */
+
 export function SubnetComparePanel({ subnets, onClear }: SubnetComparePanelProps) {
-  const [left, right] = subnets;
-  const leftConfidence = left.confidence ?? 0;
-  const rightConfidence = right.confidence ?? 0;
+  const count = subnets.length;
+
+  // Calculate wins per subnet per metric
+  const winCounts = subnets.map(() => 0);
+  const metricWinners: number[][] = METRICS.map((metric) => {
+    const values = subnets.map((s) => metric.getValue(s));
+    const best = metric.higherIsBetter ? Math.max(...values) : Math.min(...values);
+    const winners: number[] = [];
+    values.forEach((v, i) => {
+      if (v === best) {
+        winners.push(i);
+        winCounts[i]++;
+      }
+    });
+    return winners;
+  });
+
+  const maxWins = Math.max(...winCounts);
+  const overallBestIdx = winCounts.indexOf(maxWins);
+
+  // Grid template for N subnets
+  const colTemplate = count === 2
+    ? "grid-cols-[1fr_auto_1fr]"
+    : count === 3
+    ? "grid-cols-3"
+    : "grid-cols-2 lg:grid-cols-4";
 
   return (
     <div
@@ -94,130 +136,111 @@ export function SubnetComparePanel({ subnets, onClear }: SubnetComparePanelProps
         boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 28px rgba(0,0,0,0.28)",
       }}
     >
+      {/* Header */}
       <div className="flex flex-col gap-3 mb-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <GitCompare className="w-4 h-4 text-cyan-300" />
-            <span className="text-[11px] uppercase tracking-[0.12em] text-cyan-300 font-semibold">Compare mode</span>
+            <span className="text-[11px] uppercase tracking-[0.12em] text-cyan-300 font-semibold">
+              Compare {count} subnets
+            </span>
           </div>
-          <p className="text-sm text-slate-400">Side-by-side subnet readout plus a simple TAO staking baseline.</p>
+          <p className="text-sm text-slate-400">
+            Side-by-side metrics with winner highlights and TAO staking baseline.
+          </p>
         </div>
         <button className="btn-ghost text-xs self-start sm:self-auto" onClick={onClear}>Clear compare</button>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_auto_1fr] items-start">
-        <CompareHeader subnet={left} />
-        <div className="hidden lg:flex items-center justify-center h-full text-slate-600">
-          <ArrowRightLeft className="w-5 h-5" />
-        </div>
-        <CompareHeader subnet={right} />
+      {/* Subnet headers */}
+      <div className={cn("grid gap-4 items-start", colTemplate)}>
+        {subnets.map((subnet, i) => (
+          <CompareHeader
+            key={subnet.netuid}
+            subnet={subnet}
+            winCount={winCounts[i]}
+            isOverallBest={i === overallBestIdx && maxWins > 0}
+          />
+        ))}
+        {/* Divider for 2-subnet layout */}
+        {count === 2 && (
+          <div className="hidden lg:flex items-center justify-center h-full text-slate-600 order-2 col-start-2">
+            <ArrowRightLeft className="w-5 h-5" />
+          </div>
+        )}
       </div>
 
+      {/* Metrics table */}
       <div className="mt-5 rounded-2xl border border-white/[0.06] bg-black/10 px-4 overflow-x-auto">
-        <CompareMetric
-          label="Yield"
-          left={`${left.yield}%`}
-          right={`${right.yield}%`}
-          leftWins={left.yield > right.yield}
-          rightWins={right.yield > left.yield}
-        />
-        <CompareMetric
-          label="Score"
-          left={String(left.score)}
-          right={String(right.score)}
-          leftWins={left.score > right.score}
-          rightWins={right.score > left.score}
-        />
-        <CompareMetric
-          label="Confidence"
-          left={`${leftConfidence}`}
-          right={`${rightConfidence}`}
-          leftWins={leftConfidence > rightConfidence}
-          rightWins={rightConfidence > leftConfidence}
-        />
-        <CompareMetric
-          label="Liquidity"
-          left={`${left.liquidity.toLocaleString()} τ`}
-          right={`${right.liquidity.toLocaleString()} τ`}
-          leftWins={left.liquidity > right.liquidity}
-          rightWins={right.liquidity > left.liquidity}
-        />
-        <CompareMetric
-          label="Stakers"
-          left={left.stakers.toLocaleString()}
-          right={right.stakers.toLocaleString()}
-          leftWins={left.stakers > right.stakers}
-          rightWins={right.stakers > left.stakers}
-        />
-        <CompareMetric
-          label="Emissions"
-          left={`${left.emissions} τ`}
-          right={`${right.emissions} τ`}
-          leftWins={left.emissions > right.emissions}
-          rightWins={right.emissions > left.emissions}
-        />
-        <CompareMetric
-          label="Validator take"
-          left={`${left.validatorTake}%`}
-          right={`${right.validatorTake}%`}
-          leftWins={left.validatorTake < right.validatorTake}
-          rightWins={right.validatorTake < left.validatorTake}
-        />
-        <CompareMetric
-          label="Breakeven"
-          left={`${left.breakeven}d`}
-          right={`${right.breakeven}d`}
-          leftWins={left.breakeven < right.breakeven}
-          rightWins={right.breakeven < left.breakeven}
-        />
-        <CompareMetric
-          label="Age"
-          left={`${left.age}d`}
-          right={`${right.age}d`}
-          leftWins={left.age > right.age}
-          rightWins={right.age > left.age}
-        />
-        <CompareMetric
-          label="Category"
-          left={left.category}
-          right={right.category}
-          leftWins={false}
-          rightWins={false}
-        />
-      </div>
-
-      <div className="grid gap-4 mt-5 lg:grid-cols-2">
-        {[left, right].map((subnet) => (
-          <div key={subnet.netuid} className="space-y-4">
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
-              <div className="text-[11px] uppercase tracking-[0.1em] text-slate-500 mb-3">Quick read</div>
-              <div className="space-y-2.5">
-                <div className="flex items-start gap-2.5">
-                  <TrendingUp className="w-3.5 h-3.5 text-cyan-300 mt-0.5 flex-shrink-0" />
-                  <p className="text-[12px] text-slate-400">{subnet.summary ?? subnet.description}</p>
-                </div>
-                <div className="flex items-start gap-2.5">
-                  <Users className="w-3.5 h-3.5 text-emerald-300 mt-0.5 flex-shrink-0" />
-                  <p className="text-[12px] text-slate-400">{subnet.stakers} stakers and {subnet.liquidity.toLocaleString()} τ of liquidity currently support this subnet.</p>
-                </div>
-                <div className="flex items-start gap-2.5">
-                  <Shield className="w-3.5 h-3.5 text-amber-300 mt-0.5 flex-shrink-0" />
-                  <p className="text-[12px] text-slate-400">Risk band is <span className="text-white font-medium">{subnet.risk}</span> with score <span className="text-white font-medium">{subnet.score}</span>.</p>
-                </div>
-                <div className="flex items-start gap-2.5">
-                  <Zap className="w-3.5 h-3.5 text-violet-300 mt-0.5 flex-shrink-0" />
-                  <p className="text-[12px] text-slate-400">Use this compare view as a shortlist tool before deeper allocator or portfolio decisions.</p>
-                </div>
-              </div>
+        {/* Table header */}
+        <div
+          className="grid items-center py-2.5 border-b border-white/[0.06]"
+          style={{ gridTemplateColumns: `120px repeat(${count}, 1fr)` }}
+        >
+          <div className="text-[10px] uppercase tracking-wider text-slate-600">Metric</div>
+          {subnets.map((s) => (
+            <div key={s.netuid} className="text-[10px] uppercase tracking-wider text-slate-500 text-center font-semibold">
+              SN{s.netuid}
             </div>
-            <BaselineCard subnet={subnet} />
+          ))}
+        </div>
+
+        {/* Metric rows */}
+        {METRICS.map((metric, mi) => (
+          <div
+            key={metric.label}
+            className="grid items-center py-3 border-b border-white/[0.05] last:border-0"
+            style={{ gridTemplateColumns: `120px repeat(${count}, 1fr)` }}
+          >
+            <div className="text-[10px] uppercase tracking-wider text-slate-600">{metric.label}</div>
+            {subnets.map((s, si) => {
+              const isWinner = metricWinners[mi].includes(si);
+              return (
+                <div
+                  key={s.netuid}
+                  className={cn(
+                    "text-sm font-semibold text-center tabular-nums",
+                    isWinner ? "text-emerald-300" : "text-slate-400",
+                  )}
+                >
+                  {metric.format(metric.getValue(s))}
+                  {isWinner && metricWinners[mi].length === 1 && (
+                    <span className="ml-1 text-[8px] text-emerald-500">●</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ))}
       </div>
 
+      {/* Category row (non-competitive) */}
+      <div className="mt-3 rounded-xl border border-white/[0.05] bg-black/5 px-4 py-3">
+        <div
+          className="grid items-center"
+          style={{ gridTemplateColumns: `120px repeat(${count}, 1fr)` }}
+        >
+          <div className="text-[10px] uppercase tracking-wider text-slate-600">Category</div>
+          {subnets.map((s) => (
+            <div key={s.netuid} className="text-xs text-slate-400 text-center">{s.category}</div>
+          ))}
+        </div>
+      </div>
+
+      {/* Baseline cards */}
+      <div className={cn("grid gap-4 mt-5", colTemplate)}>
+        {subnets.map((subnet) => (
+          <BaselineCard key={subnet.netuid} subnet={subnet} />
+        ))}
+      </div>
+
+      {/* Summary */}
       <div className="flex items-center gap-2 mt-5 text-[11px] text-slate-500">
-        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-        Compare now includes a simple TAO staking baseline (~14–15%) so subnet decisions are measured against doing nothing more complex than staking TAO.
+        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+        <span>
+          {subnets[overallBestIdx]?.name ?? "—"} leads with {maxWins} metric win{maxWins !== 1 ? "s" : ""}.
+          All yields compared against TAO staking baseline (~{TAO_BASELINE_YIELD}%).
+        </span>
       </div>
     </div>
   );

@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
   }
 
   // TODO: Replace with real database lookup
-  // For now, all addresses get explorer tier with no active subscription
+  // For now, all addresses get basic tier with no active subscription
   const plan: string | null = null;
   const tier = getTierForPlan(plan);
 

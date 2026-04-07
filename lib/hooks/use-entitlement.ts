@@ -24,13 +24,13 @@ interface EntitlementState {
 }
 
 const DEFAULT_STATE: EntitlementState = {
-  tier: "explorer",
+  tier: "basic",
   plan: null,
   status: "none",
   expiresAt: null,
   daysRemaining: null,
   loading: false,
-  hasFeature: (feature: GatedFeature) => tierHasFeature("explorer", feature),
+  hasFeature: (feature: GatedFeature) => tierHasFeature("basic", feature),
 };
 
 export function useEntitlement(address: string | null): EntitlementState {

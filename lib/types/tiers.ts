@@ -2,7 +2,7 @@
 /* Phase 3 — Tier definitions & feature flags                          */
 /* ─────────────────────────────────────────────────────────────────── */
 
-export type Tier = "explorer" | "pro" | "operator";
+export type Tier = "basic" | "silver" | "gold" | "platinum";
 
 /** Features that can be gated behind a tier */
 export type GatedFeature =
@@ -14,10 +14,16 @@ export type GatedFeature =
   | "portfolio_analytics"
   | "reallocation"
   | "yield_chart"
+  | "history_30d"
+  | "history_90d"
+  | "history_365d"
   | "data_export"
+  | "alerts"
+  | "watchlists"
   | "api_access"
   | "priority_support"
-  | "backtesting";
+  | "backtesting"
+  | "tax_export";
 
 export interface TierDefinition {
   id: Tier;
@@ -30,9 +36,9 @@ export interface TierDefinition {
 /** Tier config — single source of truth for what each tier unlocks */
 export const TIER_DEFINITIONS: TierDefinition[] = [
   {
-    id: "explorer",
-    displayName: "Explorer",
-    description: "Discovery layer — free for all connected wallets",
+    id: "basic",
+    displayName: "Basic",
+    description: "Free for all users — browse subnets and basic portfolio",
     features: [
       "subnet_list",
       "subnet_detail",
@@ -41,9 +47,9 @@ export const TIER_DEFINITIONS: TierDefinition[] = [
     planIds: ["FREE"],
   },
   {
-    id: "pro",
-    displayName: "Pro",
-    description: "Decision-support layer — requires active Premium subscription",
+    id: "silver",
+    displayName: "Pro Silver",
+    description: "Decision-support — compare, recommendations, 30-day history",
     features: [
       "subnet_list",
       "subnet_detail",
@@ -52,15 +58,15 @@ export const TIER_DEFINITIONS: TierDefinition[] = [
       "portfolio_basic",
       "portfolio_analytics",
       "yield_chart",
+      "history_30d",
       "data_export",
-      "priority_support",
     ],
-    planIds: ["PREMIUM_MONTHLY", "PREMIUM_QUARTERLY", "PREMIUM_ANNUAL"],
+    planIds: ["PRO_SILVER"],
   },
   {
-    id: "operator",
-    displayName: "Operator",
-    description: "Execution layer — advanced workflow for power users",
+    id: "gold",
+    displayName: "Pro Gold",
+    description: "Active management — alerts, reallocation, 90-day history",
     features: [
       "subnet_list",
       "subnet_detail",
@@ -70,25 +76,53 @@ export const TIER_DEFINITIONS: TierDefinition[] = [
       "portfolio_analytics",
       "reallocation",
       "yield_chart",
+      "history_30d",
+      "history_90d",
       "data_export",
+      "alerts",
+      "watchlists",
+      "priority_support",
+    ],
+    planIds: ["PRO_GOLD"],
+  },
+  {
+    id: "platinum",
+    displayName: "Pro Platinum",
+    description: "Power user — API, backtesting, full history, tax export",
+    features: [
+      "subnet_list",
+      "subnet_detail",
+      "subnet_compare",
+      "recommendations",
+      "portfolio_basic",
+      "portfolio_analytics",
+      "reallocation",
+      "yield_chart",
+      "history_30d",
+      "history_90d",
+      "history_365d",
+      "data_export",
+      "alerts",
+      "watchlists",
       "api_access",
       "priority_support",
       "backtesting",
+      "tax_export",
     ],
-    planIds: [], // not yet available for purchase
+    planIds: ["PRO_PLATINUM"],
   },
 ];
 
 /**
  * Resolve which tier a plan ID maps to.
- * Returns "explorer" as the default for unknown/free plans.
+ * Returns "basic" as the default for unknown/free plans.
  */
 export function getTierForPlan(planId: string | null): Tier {
-  if (!planId) return "explorer";
+  if (!planId) return "basic";
   for (const def of TIER_DEFINITIONS) {
     if (def.planIds.includes(planId)) return def.id;
   }
-  return "explorer";
+  return "basic";
 }
 
 /**
@@ -101,10 +135,10 @@ export function tierHasFeature(tier: Tier, feature: GatedFeature): boolean {
 
 /**
  * Get the minimum tier required for a feature.
- * Returns null if no tier grants this feature (shouldn't happen).
+ * Returns null if no tier grants this feature.
  */
 export function getMinTierForFeature(feature: GatedFeature): Tier | null {
-  const order: Tier[] = ["explorer", "pro", "operator"];
+  const order: Tier[] = ["basic", "silver", "gold", "platinum"];
   for (const tier of order) {
     if (tierHasFeature(tier, feature)) return tier;
   }

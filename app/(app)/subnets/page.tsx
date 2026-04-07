@@ -49,7 +49,7 @@ export default function SubnetsPage() {
   function toggleCompare(subnet: SubnetDetailModel) {
     setCompareNetuids((prev) => {
       if (prev.includes(subnet.netuid)) return prev.filter((id) => id !== subnet.netuid);
-      if (prev.length >= 2) return [prev[1], subnet.netuid];
+      if (prev.length >= 4) return [...prev.slice(1), subnet.netuid];
       return [...prev, subnet.netuid];
     });
   }
@@ -109,30 +109,28 @@ export default function SubnetsPage() {
         </div>
       </PageHeader>
 
-      {compareSubnets.length > 0 && (
+      {compareSubnets.length > 0 && compareSubnets.length < 2 && (
         <div className="mb-5 rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.03] p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-sm text-slate-300">
               <GitCompare className="w-4 h-4 text-cyan-300" />
-              {compareSubnets.length === 1
-                ? `1 subnet selected — choose one more to compare`
-                : `${compareSubnets[0].name} vs ${compareSubnets[1].name}`}
+              1 subnet selected — choose 1–3 more to compare (up to 4)
             </div>
             <button
               className="btn-ghost text-xs gap-1.5"
               onClick={() => setCompareNetuids([])}
             >
               <X className="w-3.5 h-3.5" />
-              Clear compare
+              Clear
             </button>
           </div>
         </div>
       )}
 
-      {compareSubnets.length === 2 && (
+      {compareSubnets.length >= 2 && (
         <div className="mb-5">
           <SubnetComparePanel
-            subnets={[compareSubnets[0], compareSubnets[1]]}
+            subnets={compareSubnets}
             onClear={() => setCompareNetuids([])}
           />
         </div>
