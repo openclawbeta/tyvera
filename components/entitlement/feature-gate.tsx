@@ -4,7 +4,7 @@ import React, { ReactNode } from "react";
 import { useEntitlement } from "@/components/entitlement/entitlement-context";
 import Link from "next/link";
 
-export type TierLevel = "basic" | "silver" | "gold" | "platinum";
+export type TierLevel = "explorer" | "analyst" | "strategist" | "institutional";
 
 interface FeatureGateProps {
   feature: string;
@@ -16,7 +16,7 @@ interface FeatureGateProps {
  * FeatureGate component that conditionally renders content based on user's tier.
  * When user's tier is below the required tier, renders content blurred with a lock overlay.
  */
-export function FeatureGate({ feature, requiredTier = "silver", children }: FeatureGateProps): React.JSX.Element {
+export function FeatureGate({ feature, requiredTier = "analyst", children }: FeatureGateProps): React.JSX.Element {
   const { tier, isEntitled } = useEntitlement();
   const hasAccess = isEntitled(feature);
 
@@ -63,7 +63,7 @@ export function FeatureGate({ feature, requiredTier = "silver", children }: Feat
           </p>
 
           <Link
-            href="/billing"
+            href="/pricing"
             className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
           >
             View Plans

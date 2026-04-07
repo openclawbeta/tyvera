@@ -8,8 +8,9 @@ import { cn } from "@/lib/utils";
 
 type BillingCycle = "monthly" | "annual";
 
-interface Tier {
+interface PricingTier {
   name: string;
+  planId: string;
   tagline: string;
   monthlyPrice: number;
   annualPrice: number;
@@ -25,9 +26,10 @@ interface Tier {
   limits: Record<string, string>;
 }
 
-const TIERS: Tier[] = [
+const TIERS: PricingTier[] = [
   {
     name: "Explorer",
+    planId: "FREE",
     tagline: "Browse the network for free",
     monthlyPrice: 0,
     annualPrice: 0,
@@ -59,6 +61,7 @@ const TIERS: Tier[] = [
   },
   {
     name: "Analyst",
+    planId: "ANALYST",
     tagline: "Full data access for active stakers",
     monthlyPrice: 9,
     annualPrice: 86,
@@ -94,6 +97,7 @@ const TIERS: Tier[] = [
   },
   {
     name: "Strategist",
+    planId: "STRATEGIST",
     tagline: "AI-powered edge for power users",
     monthlyPrice: 29,
     annualPrice: 278,
@@ -130,6 +134,7 @@ const TIERS: Tier[] = [
   },
   {
     name: "Institutional",
+    planId: "INSTITUTIONAL",
     tagline: "For funds, DAOs, and subnet teams",
     monthlyPrice: 99,
     annualPrice: 950,
@@ -206,8 +211,45 @@ function TierValue({ value }: { value: boolean | string }) {
   return <span className="text-xs text-slate-300 font-medium">{value}</span>;
 }
 
+interface PaymentInstructions {
+  plan: string;
+  display_name: string;
+  amount_tao: number;
+  deposit_address: string;
+  memo: string;
+  billing: string;
+  expires_at: string;
+}
+
 export default function PricingPage() {
   const [billing, setBilling] = useState<BillingCycle>("monthly");
+  const [subscribing, setSubscribing] = useState<string | null>(null);
+  const [paymentInfo, setPaymentInfo] = useState<PaymentInstructions | null>(null);
+
+  const handleSubscribe = async (planId: string) => {
+    if (planId === "FREE") return;
+    setSubscribing(planId);
+
+    try {
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          address: "CONNECT_WALLET", // In production, comes from wallet context
+          plan: planId,
+          billing,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPaymentInfo(data);
+      }
+    } catch {
+      // Handle error
+    } finally {
+      setSubscribing(null);
+    }
+  };
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-10">
@@ -342,15 +384,18 @@ export default function PricingPage() {
 
                   {/* CTA */}
                   <button
+                    onClick={() => handleSubscribe(tier.planId)}
+                    disabled={subscribing === tier.planId}
                     className={cn(
                       "w-full py-2.5 rounded-xl text-sm font-semibold transition-all mb-6",
                       "flex items-center justify-center gap-2",
                       tier.popular
                         ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30"
-                        : "bg-white/[0.06] text-slate-300 border border-white/[0.08] hover:bg-white/[0.1]"
+                        : "bg-white/[0.06] text-slate-300 border border-white/[0.08] hover:bg-white/[0.1]",
+                      subscribing === tier.planId && "opacity-50 cursor-wait"
                     )}
                   >
-                    {tier.cta}
+                    {subscribing === tier.planId ? "Processing..." : tier.cta}
                     <ArrowRight className="w-4 h-4" />
                   </button>
 
@@ -501,6 +546,63 @@ export default function PricingPage() {
           </div>
         </div>
       </FadeIn>
+
+      {/* Payment Instructions Modal */}
+      {paymentInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div
+            className="rounded-2xl p-6 max-w-md w-full mx-4 space-y-4"
+            style={{
+              background: "linear-gradient(170deg, rgba(52,211,153,0.04) 0%, rgba(15,23,42,0.98) 30%)",
+              border: "1px solid rgba(52,211,153,0.2)",
+              boxShadow: "0 0 60px rgba(0,0,0,0.5)",
+            }}
+          >
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-white mb-1">
+                Subscribe to {paymentInfo.display_name}
+              </h3>
+              <p className="text-xs text-slate-500">
+                {paymentInfo.billing === "annual" ? "Annual" : "Monthly"} billing
+              </p>
+            </div>
+
+            <div
+              className="rounded-xl p-4 space-y-3"
+              style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.06)" }}
+            >
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-400">Amount</span>
+                <span className="text-white font-semibold">{paymentInfo.amount_tao} τ</span>
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs text-slate-500">Send to:</span>
+                <div className="font-mono text-xs text-cyan-300 break-all bg-slate-900/50 p-2 rounded">
+                  {paymentInfo.deposit_address}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs text-slate-500">Include memo:</span>
+                <div className="font-mono text-sm text-amber-300 bg-slate-900/50 p-2 rounded font-bold">
+                  {paymentInfo.memo}
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-500 text-center">
+              Payment auto-verifies within 10 minutes. Expires{" "}
+              {new Date(paymentInfo.expires_at).toLocaleString()}.
+            </p>
+
+            <button
+              onClick={() => setPaymentInfo(null)}
+              className="w-full py-2 rounded-xl text-sm font-medium bg-white/[0.06] text-slate-300 border border-white/[0.08] hover:bg-white/[0.1] transition-all"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

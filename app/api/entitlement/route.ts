@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEntitlement } from "@/lib/db/subscriptions";
-import { getTierForPlan } from "@/lib/types/tiers";
+import { getTierForPlan, normalizeTier } from "@/lib/types/tiers";
 import type { Tier } from "@/lib/types/tiers";
 
 /* ─────────────────────────────────────────────────────────────────── */
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     if (entitlement) {
       const response: EntitlementResponse = {
         address,
-        tier: entitlement.tier,
+        tier: normalizeTier(entitlement.tier),
         plan: entitlement.plan_id,
         status: entitlement.status,
         expiresAt: entitlement.expires_at,
@@ -57,10 +57,10 @@ export async function GET(request: NextRequest) {
     console.error("[Entitlement] DB error, falling back to basic:", err);
   }
 
-  // No active subscription — return basic tier
+  // No active subscription — return explorer tier
   const response: EntitlementResponse = {
     address,
-    tier: "basic",
+    tier: "explorer",
     plan: null,
     status: "none",
     expiresAt: null,

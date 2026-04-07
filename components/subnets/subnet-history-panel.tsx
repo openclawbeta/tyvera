@@ -111,9 +111,9 @@ function ChartTooltip({ active, payload }: any) {
 /* ─────────────────────────────────────────────────────────────────── */
 
 const RANGE_TIER_REQUIREMENTS: Record<RangeKey, Tier[]> = {
-  "30d":  ["silver", "gold", "platinum"],
-  "90d":  ["gold", "platinum"],
-  "365d": ["platinum"],
+  "30d":  ["analyst", "strategist", "institutional"],
+  "90d":  ["strategist", "institutional"],
+  "365d": ["institutional"],
 };
 
 function rangeAllowed(range: RangeKey, tier: Tier): boolean {
@@ -121,9 +121,9 @@ function rangeAllowed(range: RangeKey, tier: Tier): boolean {
 }
 
 function minTierForRange(range: RangeKey): string {
-  if (range === "30d") return "Pro Silver";
-  if (range === "90d") return "Pro Gold";
-  return "Pro Platinum";
+  if (range === "30d") return "Analyst";
+  if (range === "90d") return "Strategist";
+  return "Institutional";
 }
 
 /* ─────────────────────────────────────────────────────────────────── */

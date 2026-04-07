@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
     const entitlement = await getEntitlement(address);
     return NextResponse.json({
       address,
-      entitlement: entitlement ?? { tier: "basic", plan_id: null, status: "none" },
+      entitlement: entitlement ?? { tier: "explorer", plan_id: null, status: "none" },
     });
   } catch (err) {
     console.error("[Admin] Error checking entitlement:", err);

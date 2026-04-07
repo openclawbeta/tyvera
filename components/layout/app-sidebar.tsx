@@ -20,6 +20,7 @@ import {
   MessageSquare,
   FlaskConical,
   Users,
+  Code2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/lib/sidebar-context";
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
   { label: "Alerts",          href: "/alerts",          icon: Bell },
   { label: "Backtest",        href: "/backtest",        icon: FlaskConical },
   { label: "Pricing",         href: "/pricing",         icon: CreditCard },
+  { label: "Developers",      href: "/developers",      icon: Code2 },
   { label: "Tax Report",      href: "/tax",             icon: FileText },
   { label: "Settings",        href: "/settings",        icon: Settings },
 ];

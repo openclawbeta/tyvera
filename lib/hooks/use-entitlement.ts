@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Tier } from "@/lib/types/tiers";
-import { tierHasFeature } from "@/lib/types/tiers";
-import type { GatedFeature } from "@/lib/types/tiers";
+import type { Tier, GatedFeature } from "@/lib/types/tiers";
+import { tierHasFeature, normalizeTier } from "@/lib/types/tiers";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Phase 2E — useEntitlement hook                                      */
@@ -24,13 +23,13 @@ interface EntitlementState {
 }
 
 const DEFAULT_STATE: EntitlementState = {
-  tier: "basic",
+  tier: "explorer",
   plan: null,
   status: "none",
   expiresAt: null,
   daysRemaining: null,
   loading: false,
-  hasFeature: (feature: GatedFeature) => tierHasFeature("basic", feature),
+  hasFeature: (feature: GatedFeature) => tierHasFeature("explorer", feature),
 };
 
 export function useEntitlement(address: string | null): EntitlementState {
@@ -53,7 +52,7 @@ export function useEntitlement(address: string | null): EntitlementState {
       })
       .then((data) => {
         if (cancelled) return;
-        const tier: Tier = data.tier ?? "explorer";
+        const tier: Tier = normalizeTier(data.tier ?? "explorer");
         setState({
           tier,
           plan: data.plan ?? null,

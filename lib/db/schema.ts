@@ -58,4 +58,23 @@ export const SCHEMA_SQL = `
   );
 
   CREATE INDEX IF NOT EXISTS idx_ao_wallet ON admin_overrides(wallet_address);
+
+  -- API keys: developer access keys tied to wallet subscriptions
+  CREATE TABLE IF NOT EXISTS api_keys (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    key_hash        TEXT    NOT NULL UNIQUE,     -- SHA-256 hash of the key (never store plaintext)
+    key_prefix      TEXT    NOT NULL,            -- first 8 chars for display (tyv_xxxxxxxx)
+    wallet_address  TEXT    NOT NULL,
+    label           TEXT    NOT NULL DEFAULT 'default',
+    tier            TEXT    NOT NULL,            -- tier at time of creation
+    status          TEXT    NOT NULL DEFAULT 'active',  -- active, revoked
+    requests_today  INTEGER NOT NULL DEFAULT 0,
+    last_used_at    TEXT,
+    created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+    revoked_at      TEXT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_ak_hash ON api_keys(key_hash);
+  CREATE INDEX IF NOT EXISTS idx_ak_wallet ON api_keys(wallet_address);
+  CREATE INDEX IF NOT EXISTS idx_ak_status ON api_keys(status);
 `;
