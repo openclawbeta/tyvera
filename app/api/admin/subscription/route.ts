@@ -7,13 +7,18 @@ import { adminGrantSubscription, getEntitlement } from "@/lib/db/subscriptions";
 /* POST /api/admin/subscription — grant a subscription manually        */
 /* GET  /api/admin/subscription?address=... — check entitlement        */
 /*                                                                     */
-/* TODO: Add authentication (API key or admin session) before launch.  */
-/* Currently open for development/testing.                             */
 /* ─────────────────────────────────────────────────────────────────── */
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "tyvera-dev-admin";
+const ADMIN_SECRET = process.env.ADMIN_SECRET;
+
+if (!ADMIN_SECRET) {
+  console.error(
+    "[Admin] ADMIN_SECRET env var is not set — admin endpoints will reject all requests.",
+  );
+}
 
 function checkAuth(request: NextRequest): boolean {
+  if (!ADMIN_SECRET) return false;
   const authHeader = request.headers.get("Authorization");
   return authHeader === `Bearer ${ADMIN_SECRET}`;
 }

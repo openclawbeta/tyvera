@@ -92,7 +92,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       setAvailableExtensions(detected);
 
       if (detected.length > 0) {
-        console.log(`Real wallet extension(s) detected: ${detected.join(", ")}`);
+        /* wallet extension(s) detected */
       }
     }
   }, []);
@@ -107,7 +107,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
     // Check if real extension is available
     if (availableExtensions.includes(ext)) {
-      console.log(`Real extension detected: ${ext}`);
+      /* real extension detected */
       // For now, use mock flow as fallback until real integration is complete
       setTimeout(() => {
         setAddress(MOCK_ADDRESS);

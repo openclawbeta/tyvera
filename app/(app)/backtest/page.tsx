@@ -79,7 +79,9 @@ export default function BacktestPage() {
   useEffect(() => {
     fetchSubnetsFromApi()
       .then((data) => setSubnets(data))
-      .catch(() => {});
+      .catch(() => {
+        /* Backtest can fall back to snapshot data */
+      });
   }, []);
 
   const handleRunBacktest = () => {
@@ -88,7 +90,7 @@ export default function BacktestPage() {
       const backtest = runBacktest(config, subnets);
       setResult(backtest);
     } catch (error) {
-      console.error("Backtest error:", error);
+      /* backtest computation failed */
     } finally {
       setIsLoading(false);
     }

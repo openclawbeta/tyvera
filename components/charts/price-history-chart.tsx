@@ -63,7 +63,7 @@ export function PriceHistoryChart() {
         setCurrentPrice(result.prices[result.prices.length - 1].price);
       }
     } catch (error) {
-      console.error("Failed to fetch price history:", error);
+      /* price history fetch failed — component shows empty state */
       // Set fallback data
       setData({
         prices: [],

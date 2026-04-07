@@ -27,24 +27,30 @@ export default function ChatPage() {
   const [subnets, setSubnets] = useState<SubnetDetailModel[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Load subnets on mount
   useEffect(() => {
-    fetchSubnetsFromApi().then((data) => {
-      setSubnets(data);
-      setIsLoading(false);
+    fetchSubnetsFromApi()
+      .then((data) => {
+        setSubnets(data);
+        setIsLoading(false);
 
-      // Show welcome message
-      setMessages([
-        {
-          role: "assistant",
-          content: `I have live data on ${data.length} Bittensor subnets. Ask me anything — yields, risks, comparisons, or staking calculations.`,
-          timestamp: new Date(),
-        },
-      ]);
-    });
+        // Show welcome message
+        setMessages([
+          {
+            role: "assistant",
+            content: `I have live data on ${data.length} Bittensor subnets. Ask me anything — yields, risks, comparisons, or staking calculations.`,
+            timestamp: new Date(),
+          },
+        ]);
+      })
+      .catch(() => {
+        setIsLoading(false);
+        setLoadError("Failed to load subnet data. Please refresh the page.");
+      });
   }, []);
 
   // Auto-scroll to bottom
@@ -106,6 +112,14 @@ export default function ChatPage() {
           {isLoading && (
             <div className="flex items-center justify-center py-12">
               <div className="text-slate-500 text-sm">Loading subnet data...</div>
+            </div>
+          )}
+
+          {loadError && (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3">
+                {loadError}
+              </div>
             </div>
           )}
 

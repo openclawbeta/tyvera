@@ -74,7 +74,7 @@ export default function ValidatorsPage() {
         setValidators(data);
         setSummary(getValidatorSummary(data));
       } catch (error) {
-        console.error("Error loading validators:", error);
+        /* validator data load failed */
         setValidators([]);
       } finally {
         setLoading(false);

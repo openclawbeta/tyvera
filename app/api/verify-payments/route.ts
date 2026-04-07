@@ -14,10 +14,18 @@ import { runVerificationCycle } from "@/lib/db/payment-verifier";
 /*   - External cron service (every 60s)                               */
 /*   - Manual trigger during development                               */
 /*                                                                     */
-/* TODO: Add cron secret header validation for production.             */
 /* ─────────────────────────────────────────────────────────────────── */
 
-export async function GET(_request: NextRequest) {
+const CRON_SECRET = process.env.CRON_SECRET;
+
+export async function GET(request: NextRequest) {
+  /* Require CRON_SECRET in production to prevent public triggering */
+  if (CRON_SECRET) {
+    const authHeader = request.headers.get("Authorization");
+    if (authHeader !== `Bearer ${CRON_SECRET}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
   try {
     const result = await runVerificationCycle();
 

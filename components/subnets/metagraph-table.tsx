@@ -63,7 +63,6 @@ export function MetagraphTable({ netuid }: MetagraphTableProps) {
         const data = await response.json();
         setNeurons(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error("Error fetching metagraph:", error);
         setNeurons([]);
       } finally {
         setLoading(false);
@@ -278,7 +277,7 @@ export function MetagraphTable({ netuid }: MetagraphTableProps) {
                       {(neuron.dividends * 100).toFixed(2)}%
                     </td>
                     <td className="px-4 py-3 text-sm text-white tabular-nums">
-                      {neuron.emissionPerDay.toFixed(4)}
+                      {neuron.emissionPerDay.toFixed(4)} τ
                     </td>
                   </tr>
                 ))

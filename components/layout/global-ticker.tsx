@@ -33,7 +33,6 @@ export function GlobalTicker() {
         setTicker(data);
         setIsLoading(false);
       } catch (err) {
-        console.error("Error fetching ticker:", err);
         setIsLoading(false);
       }
     };
@@ -54,7 +53,7 @@ export function GlobalTicker() {
         const data: SubnetData[] = await res.json();
         setSubnetCount(data.length);
       } catch (err) {
-        console.error("Error fetching subnets:", err);
+        /* subnet count fetch failed — ticker renders without it */
       }
     };
 

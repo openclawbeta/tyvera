@@ -73,7 +73,9 @@ export default function AlertsPage() {
           setHistory(getAlertHistory());
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        /* Alerts page can still function with initial snapshot data */
+      });
   }, []);
 
   // Polling: re-evaluate every 5 minutes

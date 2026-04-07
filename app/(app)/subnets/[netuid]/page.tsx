@@ -218,7 +218,9 @@ export default function SubnetDetailPage() {
       // Subnet not in static snapshot — fetch from the live route handler
       fetchSubnetByNetuid(netuid)
         .then((data) => setSubnet(data ?? null))
-        .catch(() => {});
+        .catch(() => {
+          /* Leave subnet as null — UI shows "not found" state */
+        });
     }
   }, [netuid]);
 
