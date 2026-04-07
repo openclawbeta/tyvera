@@ -1,9 +1,10 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
-import { web3Enable, web3Accounts, web3FromAddress } from "@polkadot/extension-dapp";
-import { signatureVerify } from "@polkadot/util-crypto";
-import { u8aToHex, stringToU8a } from "@polkadot/util";
+/* Polkadot libs access `window` at import time — lazy-import to avoid SSR crash */
+const getPolkadotDapp = () => import("@polkadot/extension-dapp");
+const getPolkadotCrypto = () => import("@polkadot/util-crypto");
+const getPolkadotUtil = () => import("@polkadot/util");
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Window type extension                                                */
@@ -105,20 +106,13 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const prevStateRef = useRef<WalletState>("disconnected");
 
-  /* ── Extension detection on mount ── */
+  /* ── Extension detection ── */
+  // Show all extensions as available — detection via window.injectedWeb3
+  // is unreliable (newer extensions may not inject until web3Enable is called).
+  // Connection errors are handled gracefully at connect time instead.
   useEffect(() => {
-    function detect() {
-      const injected = window.injectedWeb3 ?? {};
-      setAvailableExtensions({
-        polkadotjs: !!injected[EXTENSION_KEYS.polkadotjs],
-        subwallet: !!injected[EXTENSION_KEYS.subwallet],
-        talisman: !!injected[EXTENSION_KEYS.talisman],
-      });
-    }
-    // Extensions inject async — check immediately and again after a short delay
-    detect();
-    const timer = setTimeout(detect, 500);
-    return () => clearTimeout(timer);
+    if (typeof window === "undefined") return;
+    setAvailableExtensions({ polkadotjs: true, subwallet: true, talisman: true });
   }, []);
 
   const openModal  = useCallback(() => setIsModalOpen(true), []);
@@ -126,19 +120,21 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   /* ── Real connect: web3Enable → web3Accounts → select first account ── */
   const connect = useCallback((ext: WalletExtension) => {
-    // Check extension availability BEFORE changing state
-    if (!availableExtensions[ext]) {
-      setConnectionError(`Extension not found. Install ${EXTENSION_NAMES[ext]} to continue.`);
-      return;
-    }
-
     setConnectionError(null);
     setExtension(ext);
     setWalletState("connecting");
 
     (async () => {
       try {
-        await web3Enable(APP_NAME);
+        const { web3Enable, web3Accounts } = await getPolkadotDapp();
+        const injected = await web3Enable(APP_NAME);
+
+        if (injected.length === 0) {
+          setConnectionError(`No wallet extensions found. Install ${EXTENSION_NAMES[ext]} to continue.`);
+          setWalletState("disconnected");
+          return;
+        }
+
         const accounts = await web3Accounts();
 
         if (accounts.length === 0) {
@@ -180,6 +176,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       try {
         const challenge = `tyvera-verify-${address}-${Date.now()}`;
+        const { web3FromAddress } = await getPolkadotDapp();
+        const { signatureVerify } = await getPolkadotCrypto();
+        const { u8aToHex, stringToU8a } = await getPolkadotUtil();
         const injector = await web3FromAddress(address);
 
         if (!injector.signer?.signRaw) {
