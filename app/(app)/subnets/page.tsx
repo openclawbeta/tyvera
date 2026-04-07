@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { GitCompare, X, Layout, Grid3x3 } from "lucide-react";
+import { GitCompare, X, Layout, Grid3x3, Activity, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/layout/page-header";
 import { SubnetFilterPanel } from "@/components/subnets/subnet-filter-panel";
@@ -10,6 +10,8 @@ import { SubnetDetailPreview } from "@/components/subnets/subnet-detail-preview"
 import { SubnetComparePanel } from "@/components/subnets/subnet-compare-panel";
 import { SubnetDataTable } from "@/components/subnets/subnet-data-table";
 import { SubnetSummaryCards } from "@/components/subnets/subnet-summary-cards";
+import { SubnetHeatmap } from "@/components/subnets/subnet-heatmap";
+import { SubnetNetworkAlerts } from "@/components/subnets/subnet-network-alerts";
 import { getSubnets, fetchSubnetsFromApi } from "@/lib/api/subnets";
 import type { SubnetDetailModel, RiskLevel } from "@/lib/types/subnets";
 
@@ -48,8 +50,9 @@ export default function SubnetsPage() {
   const [sortBy, setSortBy]     = useState("score");
   const [selected, setSelected] = useState<SubnetDetailModel | null>(null);
   const [compareNetuids, setCompareNetuids] = useState<number[]>([]);
-  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
+  const [viewMode, setViewMode] = useState<"table" | "cards" | "heatmap">("table");
   const [filterCollapsed, setFilterCollapsed] = useState(false);
+  const [showAlerts, setShowAlerts] = useState(false);
 
   function toggleCompare(subnet: SubnetDetailModel) {
     setCompareNetuids((prev) => {
@@ -145,6 +148,29 @@ export default function SubnetsPage() {
       {/* Summary cards */}
       {viewMode === "table" && <SubnetSummaryCards subnets={filtered} />}
 
+      {/* Category quick-filter pills */}
+      <div className="flex flex-wrap items-center gap-2">
+        {["All", "Language", "Multi-Modal", "Finance", "Data", "Developer Tools", "Creative", "Infrastructure", "Science"].map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setCategory(cat)}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-xs font-medium transition-all border",
+              category === cat
+                ? "bg-cyan-400/15 text-cyan-300 border-cyan-400/25"
+                : "bg-white/[0.03] text-slate-500 border-white/[0.07] hover:text-slate-300 hover:bg-white/[0.05]",
+            )}
+          >
+            {cat}
+            {cat !== "All" && (
+              <span className="ml-1.5 text-[10px] text-slate-600">
+                {subnets.filter((s) => s.category === cat).length}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
       {/* View toggle */}
       <div className="flex items-center gap-2">
         <button
@@ -171,63 +197,102 @@ export default function SubnetsPage() {
           <Grid3x3 className="w-3.5 h-3.5" />
           Cards
         </button>
+        <button
+          onClick={() => setViewMode("heatmap")}
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all",
+            viewMode === "heatmap"
+              ? "bg-cyan-400/15 text-cyan-300 border border-cyan-400/25"
+              : "bg-white/[0.03] text-slate-500 border border-white/[0.07] hover:text-slate-300 hover:bg-white/[0.05]",
+          )}
+        >
+          <Activity className="w-3.5 h-3.5" />
+          Heatmap
+        </button>
+
+        {/* Alerts toggle */}
+        <button
+          onClick={() => setShowAlerts(!showAlerts)}
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ml-auto",
+            showAlerts
+              ? "bg-orange-400/15 text-orange-300 border border-orange-400/25"
+              : "bg-white/[0.03] text-slate-500 border border-white/[0.07] hover:text-slate-300 hover:bg-white/[0.05]",
+          )}
+        >
+          <Bell className="w-3.5 h-3.5" />
+          Alerts
+        </button>
 
         {/* Filter toggle on mobile — only in cards view */}
         {viewMode === "cards" && (
           <button
             onClick={() => setFilterCollapsed(!filterCollapsed)}
-            className="ml-auto md:hidden px-3 py-2 rounded-lg text-xs font-medium bg-white/[0.03] text-slate-500 border border-white/[0.07] hover:text-slate-300 hover:bg-white/[0.05] transition-all"
+            className="md:hidden px-3 py-2 rounded-lg text-xs font-medium bg-white/[0.03] text-slate-500 border border-white/[0.07] hover:text-slate-300 hover:bg-white/[0.05] transition-all"
           >
             {filterCollapsed ? "Show" : "Hide"} Filters
           </button>
         )}
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-5">
-        {/* Left filter rail — only shown in cards view */}
-        {viewMode === "cards" && !filterCollapsed && (
-          <div className="w-full lg:w-52 flex-shrink-0">
-            <SubnetFilterPanel
-              search={search}     onSearch={setSearch}
-              category={category} onCategory={setCategory}
-              risk={risk}         onRisk={setRisk}
-              sortBy={sortBy}     onSort={setSortBy}
-            />
-          </div>
-        )}
+      {/* Network Alerts Panel */}
+      {showAlerts && (
+        <SubnetNetworkAlerts subnets={subnets} />
+      )}
 
-        {/* Center content */}
-        <div className="flex-1 min-w-0">
-          {viewMode === "table" ? (
-            <SubnetDataTable subnets={subnets} onSelect={handleSelectSubnet} />
-          ) : filtered.length === 0 ? (
-            <div className="glass flex items-center justify-center h-48 text-slate-500 text-sm rounded-xl">
-              No subnets match your filters.
+      {/* Heatmap view — full width, no sidebars */}
+      {viewMode === "heatmap" && (
+        <SubnetHeatmap subnets={filtered} />
+      )}
+
+      {/* Table & Cards views */}
+      {viewMode !== "heatmap" && (
+        <div className="flex flex-col lg:flex-row gap-5">
+          {/* Left filter rail — only shown in cards view */}
+          {viewMode === "cards" && !filterCollapsed && (
+            <div className="w-full lg:w-52 flex-shrink-0">
+              <SubnetFilterPanel
+                search={search}     onSearch={setSearch}
+                category={category} onCategory={setCategory}
+                risk={risk}         onRisk={setRisk}
+                sortBy={sortBy}     onSort={setSortBy}
+              />
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              {filtered.map((subnet, i) => (
-                <SubnetCard
-                  key={subnet.id}
-                  subnet={subnet}
-                  selected={selected?.id === subnet.id}
-                  onSelect={() => setSelected(subnet)}
-                  onCompareToggle={toggleCompare}
-                  compareActive={compareNetuids.includes(subnet.netuid)}
-                  index={i}
-                />
-              ))}
+          )}
+
+          {/* Center content */}
+          <div className="flex-1 min-w-0">
+            {viewMode === "table" ? (
+              <SubnetDataTable subnets={subnets} onSelect={handleSelectSubnet} />
+            ) : filtered.length === 0 ? (
+              <div className="glass flex items-center justify-center h-48 text-slate-500 text-sm rounded-xl">
+                No subnets match your filters.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                {filtered.map((subnet, i) => (
+                  <SubnetCard
+                    key={subnet.id}
+                    subnet={subnet}
+                    selected={selected?.id === subnet.id}
+                    onSelect={() => setSelected(subnet)}
+                    onCompareToggle={toggleCompare}
+                    compareActive={compareNetuids.includes(subnet.netuid)}
+                    index={i}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Right detail preview — only in cards view */}
+          {viewMode === "cards" && (
+            <div className="w-full lg:w-72 flex-shrink-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+              <SubnetDetailPreview subnet={selected} />
             </div>
           )}
         </div>
-
-        {/* Right detail preview — only in cards view */}
-        {viewMode === "cards" && (
-          <div className="w-full lg:w-72 flex-shrink-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
-            <SubnetDetailPreview subnet={selected} />
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
