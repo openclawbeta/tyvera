@@ -104,6 +104,21 @@ export default function TaxReportPage() {
         </div>
       </PageHeader>
 
+      {/* Example data disclaimer */}
+      <div
+        className="flex items-start gap-3 rounded-xl px-4 py-3 text-sm"
+        style={{
+          background: "rgba(251, 191, 36, 0.06)",
+          border: "1px solid rgba(251, 191, 36, 0.18)",
+        }}
+      >
+        <FileText className="w-4 h-4 mt-0.5 shrink-0 text-amber-400" />
+        <p className="text-amber-200/90 leading-relaxed">
+          <span className="font-semibold text-amber-300">Example Data.</span>{" "}
+          The figures shown on this page are simulated for demonstration purposes only and do not represent real staking activity or tax obligations. Connect your wallet to generate an actual tax report based on your on-chain transactions.
+        </p>
+      </div>
+
       {/* Summary cards */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard
