@@ -612,7 +612,7 @@ export default function BillingPage() {
     setPaymentIntent(null);
   }, []);
 
-  /* ── Disconnected: no wallet ── */
+  /* ── Disconnected: no wallet — still show plans ── */
   if (billingState.status === "disconnected") {
     return (
       <div className="max-w-5xl mx-auto space-y-7">
@@ -620,29 +620,46 @@ export default function BillingPage() {
           title="Billing"
           subtitle="Manage your premium subscription \u2014 paid in TAO, activated on-chain"
         />
-        <div
-          className="flex flex-col items-center justify-center py-24 rounded-2xl"
-          style={{
-            background: "rgba(255,255,255,0.018)",
-            border: "1px solid rgba(255,255,255,0.06)",
-          }}
-        >
+
+        {/* Wallet prompt */}
+        <FadeIn>
           <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5"
+            className="flex flex-col items-center justify-center py-12 rounded-2xl"
             style={{
-              background: "rgba(251,191,36,0.08)",
-              border: "1px solid rgba(251,191,36,0.2)",
+              background: "rgba(255,255,255,0.018)",
+              border: "1px solid rgba(255,255,255,0.06)",
             }}
           >
-            <Wallet className="w-5 h-5" style={{ color: "#fbbf24" }} />
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5"
+              style={{
+                background: "rgba(251,191,36,0.08)",
+                border: "1px solid rgba(251,191,36,0.2)",
+              }}
+            >
+              <Wallet className="w-5 h-5" style={{ color: "#fbbf24" }} />
+            </div>
+            <p className="text-[15px] font-semibold text-white mb-2" style={{ letterSpacing: "-0.01em" }}>
+              No wallet connected
+            </p>
+            <p className="text-[13px] text-slate-500 text-center max-w-xs leading-relaxed">
+              Connect your wallet to purchase a plan and check your subscription status.
+            </p>
           </div>
-          <p className="text-[15px] font-semibold text-white mb-2" style={{ letterSpacing: "-0.01em" }}>
-            No wallet connected
-          </p>
-          <p className="text-[13px] text-slate-500 text-center max-w-xs leading-relaxed">
-            Connect your wallet to check your subscription status and payment history.
-          </p>
-        </div>
+        </FadeIn>
+
+        {/* Show plans even when disconnected */}
+        <PlanSelectionSection
+          plans={plans}
+          selectedPlan={selectedPlan}
+          setSelectedPlan={setSelectedPlan}
+          taoRate={taoRate}
+          rateLoading={rateLoading}
+          rateFallback={rateFallback}
+          walletConnected={false}
+        />
+
+        <TrustStrip />
       </div>
     );
   }

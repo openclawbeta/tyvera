@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Bell, Settings, Menu } from "lucide-react";
 import { LiveTicker } from "@/components/ui-custom/live-ticker";
 import { WalletStatusChip } from "@/components/wallet/wallet-status-chip";
@@ -10,6 +11,7 @@ import Link from "next/link";
 
 export function Topbar() {
   const { toggle } = useSidebar();
+  const [bellTooltip, setBellTooltip] = useState(false);
 
   return (
     <>
@@ -48,28 +50,37 @@ export function Topbar() {
         {/* Right controls */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
 
-          {/* Bell */}
-          <button
-            className="relative w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200"
-            style={{ color: "#64748b" }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)";
-              (e.currentTarget as HTMLElement).style.color = "#94a3b8";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "transparent";
-              (e.currentTarget as HTMLElement).style.color = "#64748b";
-            }}
-          >
-            <Bell className="w-3.5 h-3.5" />
-            <span
-              className="absolute top-[7px] right-[7px] w-[7px] h-[7px] rounded-full"
-              style={{
-                background: "#22d3ee",
-                boxShadow: "0 0 0 2px rgba(7,10,18,1), 0 0 6px rgba(34,211,238,0.5)",
+          {/* Bell — notifications coming soon */}
+          <div className="relative">
+            <button
+              onClick={() => setBellTooltip((v) => !v)}
+              className="relative w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200"
+              style={{ color: "#64748b" }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.05)";
+                (e.currentTarget as HTMLElement).style.color = "#94a3b8";
               }}
-            />
-          </button>
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = "transparent";
+                (e.currentTarget as HTMLElement).style.color = "#64748b";
+              }}
+              aria-label="Notifications"
+            >
+              <Bell className="w-3.5 h-3.5" />
+            </button>
+            {bellTooltip && (
+              <div
+                className="absolute right-0 top-full mt-2 px-3 py-2 rounded-lg text-[11px] text-slate-400 whitespace-nowrap z-50"
+                style={{
+                  background: "rgba(15,20,35,0.95)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+                }}
+              >
+                Notifications coming soon
+              </div>
+            )}
+          </div>
 
           {/* Settings link — hidden on mobile (accessible via sidebar) */}
           <Link href="/settings" className="hidden sm:block">

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { ArrowRight, RefreshCw, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
@@ -15,6 +16,12 @@ import { useWallet } from "@/lib/wallet-context";
 
 export default function DashboardPage() {
   const { walletState, openModal } = useWallet();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    window.location.reload();
+  }, []);
 
   const isConnected = walletState !== "disconnected";
 
@@ -41,8 +48,8 @@ export default function DashboardPage() {
           subtitle="Your Bittensor portfolio at a glance"
         />
         <div className="flex flex-wrap items-center gap-3">
-          <button className="btn-ghost gap-1.5">
-            <RefreshCw className="w-3.5 h-3.5" />
+          <button onClick={handleRefresh} className="btn-ghost gap-1.5">
+            <RefreshCw className={cn("w-3.5 h-3.5", refreshing && "animate-spin")} />
             Refresh
           </button>
         </div>

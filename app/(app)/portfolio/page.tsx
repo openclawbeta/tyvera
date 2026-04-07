@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { Wallet, TrendingUp, BarChart2, Zap, Download, RefreshCw, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
@@ -17,6 +18,12 @@ import { cn, subnetGradient, formatDate } from "@/lib/utils";
 
 export default function PortfolioPage() {
   const { walletState } = useWallet();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    window.location.reload();
+  }, []);
 
   if (walletState === "disconnected") {
     return (
@@ -75,8 +82,8 @@ export default function PortfolioPage() {
           <Download className="w-3.5 h-3.5" />
           Export
         </button>
-        <button className="btn-ghost text-xs gap-1.5">
-          <RefreshCw className="w-3.5 h-3.5" />
+        <button onClick={handleRefresh} className="btn-ghost text-xs gap-1.5">
+          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
           Refresh
         </button>
       </PageHeader>
