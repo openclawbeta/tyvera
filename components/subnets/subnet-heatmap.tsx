@@ -172,6 +172,7 @@ export function SubnetHeatmap({ subnets }: { subnets: SubnetDetailModel[] }) {
       <div
         className="grid gap-2 w-full"
         style={{
+          gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
           gridAutoFlow: "dense",
           gridAutoRows: "minmax(80px, auto)",
         }}
@@ -295,7 +296,7 @@ export function SubnetHeatmap({ subnets }: { subnets: SubnetDetailModel[] }) {
                   Liquidity
                 </div>
                 <div className="text-slate-300 font-medium">
-                  ${formatValue(tooltip.subnet.liquidity)}
+                  {formatValue(tooltip.subnet.liquidity)} τ
                 </div>
               </div>
               <div>
@@ -317,10 +318,12 @@ export function SubnetHeatmap({ subnets }: { subnets: SubnetDetailModel[] }) {
                 24h Change
               </div>
               <div
-                className="font-medium"
-                style={{
-                  color: getChangeColor(tooltip.subnet.change24h),
-                }}
+                className={cn(
+                  "font-medium",
+                  (tooltip.subnet.change24h ?? 0) >= 0
+                    ? "text-green-400"
+                    : "text-red-400"
+                )}
               >
                 {(tooltip.subnet.change24h ?? 0) >= 0 ? "+" : ""}
                 {(tooltip.subnet.change24h ?? 0).toFixed(2)}%
