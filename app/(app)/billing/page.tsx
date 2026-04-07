@@ -1,16 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Zap, Shield, CheckCircle, Clock, Copy, ExternalLink,
-  Lock, ChevronRight, Wallet, Sparkles, Info,
+  Lock, ChevronRight, Wallet, Sparkles, Info, Loader2, AlertCircle,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { SectionTitle } from "@/components/ui-custom/section-title";
 import { FadeIn } from "@/components/ui-custom/fade-in";
 import { PremiumBadge } from "@/components/ui-custom/premium-badge";
-import { getBillingStatus, getPlans, getLegacyBillingStatus, getBillingHistory } from "@/lib/api/billing";
+import { getBillingStatus, getPlans, getLegacyBillingStatus, getBillingHistory, createPaymentIntent } from "@/lib/api/billing";
 import type { BillingPlanModel, BillingHistoryItem } from "@/lib/types/billing";
+import type { PaymentIntent } from "@/lib/types/payment";
 import { useWallet } from "@/lib/wallet-context";
 import { useTaoRate } from "@/lib/hooks/use-tao-rate";
 import { cn, formatDate, truncateAddress } from "@/lib/utils";
@@ -63,6 +64,8 @@ function PlanSelectionSection({
   taoRate,
   rateLoading,
   rateFallback,
+  onInitiatePayment,
+  walletConnected,
 }: {
   plans: BillingPlanModel[];
   selectedPlan: string | null;
@@ -70,6 +73,8 @@ function PlanSelectionSection({
   taoRate: number | null;
   rateLoading: boolean;
   rateFallback: boolean;
+  onInitiatePayment?: () => void;
+  walletConnected?: boolean;
 }) {
   const nonFreePlans = plans.filter((p) => p.id !== "FREE");
   const featuredPlan = nonFreePlans.find((p) => p.badge === "Best Value") ?? nonFreePlans[0];
@@ -300,22 +305,238 @@ function PlanSelectionSection({
               </p>
             </div>
 
-            {/* CTA — not yet live */}
+            {/* CTA */}
             <div className="px-5 pb-5">
+              {walletConnected && onInitiatePayment ? (
+                <button
+                  onClick={onInitiatePayment}
+                  className="w-full flex items-center justify-center gap-2 font-semibold rounded-xl transition-all duration-150"
+                  style={{
+                    height: "44px",
+                    fontSize: "13px",
+                    background: "linear-gradient(135deg, rgba(34,211,238,0.15) 0%, rgba(34,211,238,0.08) 100%)",
+                    border: "1px solid rgba(34,211,238,0.3)",
+                    color: "#67e8f9",
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = "linear-gradient(135deg, rgba(34,211,238,0.22) 0%, rgba(34,211,238,0.12) 100%)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = "linear-gradient(135deg, rgba(34,211,238,0.15) 0%, rgba(34,211,238,0.08) 100%)";
+                  }}
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  Generate Payment Address
+                </button>
+              ) : (
+                <div
+                  className="w-full flex items-center justify-center gap-2 font-semibold rounded-xl cursor-not-allowed select-none"
+                  style={{
+                    height: "44px",
+                    fontSize: "13px",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    color: "#475569",
+                  }}
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  {walletConnected ? "Select a plan above" : "Connect wallet to purchase"}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </FadeIn>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* Phase 2D — Payment intent panel                                     */
+/* ─────────────────────────────────────────────────────────────────── */
+
+function PaymentIntentPanel({
+  intent,
+  onCancel,
+  taoRate,
+  rateFallback,
+}: {
+  intent: PaymentIntent;
+  onCancel: () => void;
+  taoRate: number | null;
+  rateFallback: boolean;
+}) {
+  const [copiedAddr, setCopiedAddr] = useState(false);
+  const [copiedMemo, setCopiedMemo] = useState(false);
+
+  const liveAmount = taoRate
+    ? (intent.amountUsd / taoRate).toFixed(2)
+    : intent.amountTao.toString();
+
+  function copyText(text: string, setter: (v: boolean) => void) {
+    navigator.clipboard.writeText(text).catch(() => {});
+    setter(true);
+    setTimeout(() => setter(false), 1800);
+  }
+
+  const isWaiting = intent.status === "awaiting_payment";
+  const isConfirming = intent.status === "confirming";
+  const isConfirmed = intent.status === "confirmed";
+  const isFailed = intent.status === "failed" || intent.status === "expired";
+
+  return (
+    <FadeIn>
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{
+          background: isConfirmed
+            ? "linear-gradient(145deg, rgba(52,211,153,0.06) 0%, rgba(255,255,255,0.018) 100%)"
+            : isFailed
+            ? "linear-gradient(145deg, rgba(244,63,94,0.06) 0%, rgba(255,255,255,0.018) 100%)"
+            : "linear-gradient(145deg, rgba(34,211,238,0.05) 0%, rgba(255,255,255,0.018) 100%)",
+          border: isConfirmed
+            ? "1px solid rgba(52,211,153,0.25)"
+            : isFailed
+            ? "1px solid rgba(244,63,94,0.25)"
+            : "1px solid rgba(34,211,238,0.2)",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.045), 0 4px 24px rgba(0,0,0,0.28)",
+        }}
+      >
+        {/* Header */}
+        <div
+          className="flex items-center justify-between px-6 py-4"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.055)" }}
+        >
+          <div className="flex items-center gap-2.5">
+            {isWaiting && <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />}
+            {isConfirming && <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />}
+            {isConfirmed && <CheckCircle className="w-4 h-4 text-emerald-400" />}
+            {isFailed && <AlertCircle className="w-4 h-4 text-rose-400" />}
+            <span className="text-sm font-semibold text-white">
+              {isWaiting && "Awaiting Payment"}
+              {isConfirming && `Confirming (${intent.confirmations}/${intent.requiredConfirmations} blocks)`}
+              {isConfirmed && "Payment Confirmed"}
+              {isFailed && (intent.status === "expired" ? "Payment Expired" : "Payment Failed")}
+            </span>
+          </div>
+          <span className="text-xs text-slate-500">
+            {intent.planName}
+          </span>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5 space-y-4">
+          {/* Amount */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-slate-500">Amount</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-lg font-black text-white tabular-nums">{liveAmount}</span>
+              <span className="text-sm font-bold text-cyan-400">τ</span>
+              {taoRate && (
+                <span className="text-[9px] text-slate-600 ml-0.5">
+                  {rateFallback ? "(est.)" : "(live)"}
+                </span>
+              )}
+              <span className="text-xs text-slate-600 ml-2">
+                ≈ ${intent.amountUsd.toLocaleString()} USD
+              </span>
+            </div>
+          </div>
+
+          {/* Deposit address */}
+          {(isWaiting || isConfirming) && (
+            <div>
+              <div className="text-[10px] text-slate-600 uppercase tracking-wider mb-1.5">
+                Deposit Address
+              </div>
               <div
-                className="w-full flex items-center justify-center gap-2 font-semibold rounded-xl cursor-not-allowed select-none"
+                className="flex items-center gap-2 px-3 py-2.5 rounded-lg"
                 style={{
-                  height: "44px",
-                  fontSize: "13px",
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  color: "#475569",
+                  background: "rgba(0,0,0,0.25)",
+                  border: "1px solid rgba(255,255,255,0.06)",
                 }}
               >
-                <Lock className="w-3.5 h-3.5" />
-                Payment activation coming soon
+                <code className="text-xs text-slate-300 font-mono flex-1 truncate">
+                  {intent.depositAddress}
+                </code>
+                <button
+                  onClick={() => copyText(intent.depositAddress, setCopiedAddr)}
+                  className="transition-colors flex-shrink-0"
+                  style={{ color: copiedAddr ? "#22d3ee" : "#475569" }}
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
+          )}
+
+          {/* Memo */}
+          {(isWaiting || isConfirming) && (
+            <div>
+              <div className="text-[10px] text-slate-600 uppercase tracking-wider mb-1.5">
+                Payment Memo (required)
+              </div>
+              <div
+                className="flex items-center gap-2 px-3 py-2.5 rounded-lg"
+                style={{
+                  background: "rgba(0,0,0,0.25)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                }}
+              >
+                <code className="text-xs text-cyan-300 font-mono font-bold flex-1">
+                  {intent.memo}
+                </code>
+                <button
+                  onClick={() => copyText(intent.memo, setCopiedMemo)}
+                  className="transition-colors flex-shrink-0"
+                  style={{ color: copiedMemo ? "#22d3ee" : "#475569" }}
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Tx hash when available */}
+          {intent.txHash && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-slate-500">Transaction</span>
+              <code className="text-[10px] font-mono text-slate-400">
+                {intent.txHash.slice(0, 20)}…
+              </code>
+            </div>
+          )}
+
+          {/* Expiration warning */}
+          {isWaiting && (
+            <div
+              className="flex items-start gap-2.5 p-3 rounded-lg"
+              style={{ background: "rgba(251,191,36,0.04)", border: "1px solid rgba(251,191,36,0.12)" }}
+            >
+              <Info className="w-3.5 h-3.5 text-amber-500 flex-shrink-0 mt-[1px]" />
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Send the exact amount with the memo above. This payment window expires in 24 hours.
+                Payment infrastructure is in development — this is a preview of the intended flow.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer actions */}
+        {(isWaiting || isFailed) && (
+          <div
+            className="px-6 pb-5"
+          >
+            <button
+              onClick={onCancel}
+              className="text-[11px] font-semibold transition-colors"
+              style={{ color: "#475569" }}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "#94a3b8")}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "#475569")}
+            >
+              {isFailed ? "Dismiss" : "Cancel payment"}
+            </button>
           </div>
         )}
       </div>
@@ -375,10 +596,21 @@ export default function BillingPage() {
   const { walletState, address } = useWallet();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [paymentIntent, setPaymentIntent] = useState<PaymentIntent | null>(null);
 
   const billingState = getBillingStatus(walletState === "disconnected" ? null : address);
   const plans = getPlans() as unknown as BillingPlanModel[];
   const { rate: taoRate, loading: rateLoading, fallback: rateFallback } = useTaoRate();
+
+  const handleInitiatePayment = useCallback(() => {
+    if (!selectedPlan || !address) return;
+    const intent = createPaymentIntent(selectedPlan, address);
+    setPaymentIntent(intent);
+  }, [selectedPlan, address]);
+
+  const handleCancelPayment = useCallback(() => {
+    setPaymentIntent(null);
+  }, []);
 
   /* ── Disconnected: no wallet ── */
   if (billingState.status === "disconnected") {
@@ -451,15 +683,29 @@ export default function BillingPage() {
           </div>
         </FadeIn>
 
+        {/* Payment intent (if active) */}
+        {paymentIntent && (
+          <PaymentIntentPanel
+            intent={paymentIntent}
+            onCancel={handleCancelPayment}
+            taoRate={taoRate}
+            rateFallback={rateFallback}
+          />
+        )}
+
         {/* Plan browser */}
-        <PlanSelectionSection
-          plans={plans}
-          selectedPlan={selectedPlan}
-          setSelectedPlan={setSelectedPlan}
-          taoRate={taoRate}
-          rateLoading={rateLoading}
-          rateFallback={rateFallback}
-        />
+        {!paymentIntent && (
+          <PlanSelectionSection
+            plans={plans}
+            selectedPlan={selectedPlan}
+            setSelectedPlan={setSelectedPlan}
+            taoRate={taoRate}
+            rateLoading={rateLoading}
+            rateFallback={rateFallback}
+            onInitiatePayment={selectedPlan ? handleInitiatePayment : undefined}
+            walletConnected
+          />
+        )}
 
         <TrustStrip />
       </div>
@@ -574,15 +820,29 @@ export default function BillingPage() {
         </div>
       </FadeIn>
 
+      {/* Payment intent (if active) */}
+      {paymentIntent && (
+        <PaymentIntentPanel
+          intent={paymentIntent}
+          onCancel={handleCancelPayment}
+          taoRate={taoRate}
+          rateFallback={rateFallback}
+        />
+      )}
+
       {/* ── Plan Selection ── */}
-      <PlanSelectionSection
-        plans={plans}
-        selectedPlan={selectedPlan}
-        setSelectedPlan={setSelectedPlan}
-        taoRate={taoRate}
-        rateLoading={rateLoading}
-        rateFallback={rateFallback}
-      />
+      {!paymentIntent && (
+        <PlanSelectionSection
+          plans={plans}
+          selectedPlan={selectedPlan}
+          setSelectedPlan={setSelectedPlan}
+          taoRate={taoRate}
+          rateLoading={rateLoading}
+          rateFallback={rateFallback}
+          onInitiatePayment={selectedPlan ? handleInitiatePayment : undefined}
+          walletConnected
+        />
+      )}
 
       <TrustStrip />
 
