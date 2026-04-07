@@ -539,8 +539,8 @@ export function WalletConnectModal() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 6 }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed z-50 left-1/2 top-1/2"
-            style={{ transform: "translate(-50%, -50%)", width: "400px" }}
+            className="fixed z-50 left-1/2 top-1/2 max-h-[90vh] overflow-y-auto"
+            style={{ transform: "translate(-50%, -50%)", width: "min(400px, calc(100vw - 32px))" }}
           >
             <div
               className="relative rounded-2xl overflow-hidden"

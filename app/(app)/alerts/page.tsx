@@ -124,7 +124,7 @@ export default function AlertsPage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
-          className="fixed top-6 left-1/2 z-50 -translate-x-1/2"
+          className="fixed top-24 left-1/2 z-50 -translate-x-1/2"
         >
           <GlassCard glow="emerald" padding="md" className="flex items-center gap-3">
             <Bell className="w-4 h-4 text-emerald-400" />
@@ -285,7 +285,7 @@ export default function AlertsPage() {
                 </div>
               </div>
 
-              <div className="space-y-2 max-h-[600px] overflow-y-auto">
+              <div className="space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto">
                 {filteredHistory.length === 0 ? (
                   <GlassCard padding="md" className="text-center py-8">
                     <p className="text-sm text-slate-500">No alerts yet</p>

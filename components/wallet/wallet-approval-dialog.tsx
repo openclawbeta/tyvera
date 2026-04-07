@@ -109,7 +109,7 @@ export function WalletApprovalDialog() {
             exit={{ opacity: 0, y: 12, scale: 0.97 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="fixed z-50"
-            style={{ bottom: "32px", right: "32px", width: "360px" }}
+            style={{ bottom: "32px", right: "16px", width: "min(360px, calc(100vw - 32px))" }}
           >
             <div
               className="rounded-2xl overflow-hidden"

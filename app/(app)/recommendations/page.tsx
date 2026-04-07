@@ -237,7 +237,7 @@ export default function RecommendationsPage() {
         </div>
 
         {/* Right: review panel */}
-        <div className="w-full lg:w-[320px] flex-shrink-0 lg:sticky lg:top-20 lg:h-[calc(100vh-7rem)]">
+        <div className="w-full lg:w-[320px] flex-shrink-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
           <ReviewPanel rec={selected} />
         </div>
       </div>
