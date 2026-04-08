@@ -5,7 +5,7 @@
 /* ─────────────────────────────────────────────────────────────────── */
 
 import { getDb } from "./index";
-import { getTierForPlan } from "@/lib/types/tiers";
+import { getTierForPlan, TIER_DEFINITIONS } from "@/lib/types/tiers";
 import type { Tier } from "@/lib/types/tiers";
 import { MONTHLY_DURATION_DAYS, GRACE_PERIOD_DAYS } from "@/lib/config";
 
@@ -50,8 +50,13 @@ function rowToObject(columns: string[], values: any[]): Record<string, unknown> 
 export async function getEntitlement(walletAddress: string): Promise<ActiveEntitlement | null> {
   const db = await getDb();
 
-  // Check for active subscription (most specific first — platinum > gold > silver)
-  const tierOrder = ["PRO_PLATINUM", "PRO_GOLD", "PRO_SILVER"];
+  // Check for active subscription — query ALL known plan IDs, highest tier first.
+  // Derives dynamically from TIER_DEFINITIONS so new tiers are automatically included.
+  const tierOrder = TIER_DEFINITIONS
+    .slice()
+    .reverse() // highest tier first (institutional → strategist → analyst)
+    .flatMap((d) => d.planIds)
+    .filter((id) => id !== "FREE");
 
   for (const planId of tierOrder) {
     const rows = await db.query(
@@ -148,6 +153,10 @@ export async function activateSubscription(params: {
     "SELECT * FROM subscriptions WHERE wallet_address = ? ORDER BY id DESC LIMIT 1",
     [walletAddress],
   );
+
+  if (!rows.length || !rows[0].rows.length) {
+    throw new Error(`Failed to retrieve subscription after INSERT for ${walletAddress}`);
+  }
 
   return rowToObject(rows[0].columns, rows[0].rows[0]) as unknown as Subscription;
 }

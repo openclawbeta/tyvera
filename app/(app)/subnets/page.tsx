@@ -53,6 +53,7 @@ export default function SubnetsPage() {
   const [category, setCategory] = useState("All");
   const [risk, setRisk]         = useState<RiskLevel | "ALL">("ALL");
   const [sortBy, setSortBy]     = useState("score");
+  const [minScore, setMinScore] = useState(0);
   const [selected, setSelected] = useState<SubnetDetailModel | null>(null);
   const [compareNetuids, setCompareNetuids] = useState<number[]>([]);
   const [viewMode, setViewMode] = useState<"table" | "cards" | "heatmap">("table");
@@ -92,6 +93,10 @@ export default function SubnetsPage() {
       list = list.filter((s) => s.risk === risk);
     }
 
+    if (minScore > 0) {
+      list = list.filter((s) => s.score >= minScore);
+    }
+
     list.sort((a, b) => {
       if (sortBy === "score")     return b.score - a.score;
       if (sortBy === "yield")     return b.yield - a.yield;
@@ -101,7 +106,7 @@ export default function SubnetsPage() {
     });
 
     return list;
-  }, [subnets, search, category, risk, sortBy]);
+  }, [subnets, search, category, risk, sortBy, minScore]);
 
   const handleSelectSubnet = (netuid: number) => {
     const subnet = subnets.find((s) => s.netuid === netuid);
@@ -264,6 +269,7 @@ export default function SubnetsPage() {
                 category={category} onCategory={setCategory}
                 risk={risk}         onRisk={setRisk}
                 sortBy={sortBy}     onSort={setSortBy}
+                minScore={minScore} onMinScore={setMinScore}
               />
             </div>
           )}

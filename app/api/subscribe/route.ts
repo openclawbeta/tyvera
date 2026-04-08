@@ -39,13 +39,20 @@ async function getTaoPrices(): Promise<Record<string, { monthly: number; annual:
     // Use fallback
   }
 
-  // USD prices from TIER_DEFINITIONS + 2% buffer for price movement
+  // Derive USD prices from TIER_DEFINITIONS (single source of truth) + 2% buffer
   const buffer = 1.02;
-  return {
-    ANALYST:        { monthly: Math.ceil((9 / taoUsd) * buffer * 10000) / 10000,   annual: Math.ceil((86 / taoUsd) * buffer * 10000) / 10000 },
-    STRATEGIST:     { monthly: Math.ceil((29 / taoUsd) * buffer * 10000) / 10000,  annual: Math.ceil((278 / taoUsd) * buffer * 10000) / 10000 },
-    INSTITUTIONAL:  { monthly: Math.ceil((99 / taoUsd) * buffer * 10000) / 10000,  annual: Math.ceil((950 / taoUsd) * buffer * 10000) / 10000 },
-  };
+  const prices: Record<string, { monthly: number; annual: number }> = {};
+  for (const tier of TIER_DEFINITIONS) {
+    if (tier.monthlyPrice > 0) {
+      for (const planId of tier.planIds) {
+        prices[planId] = {
+          monthly: Math.ceil((tier.monthlyPrice / taoUsd) * buffer * 10000) / 10000,
+          annual:  Math.ceil((tier.annualPrice / taoUsd) * buffer * 10000) / 10000,
+        };
+      }
+    }
+  }
+  return prices;
 }
 
 const VALID_PLANS = ["ANALYST", "STRATEGIST", "INSTITUTIONAL"];

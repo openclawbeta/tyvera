@@ -62,8 +62,12 @@ export async function POST(request: NextRequest) {
     const body: ChatRequestBody = await request.json();
     const { message, subnets = [], history = [] } = body;
 
-    if (!message || typeof message !== "string") {
+    if (!message || typeof message !== "string" || message.trim().length === 0) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
+    }
+
+    if (message.length > 5000) {
+      return NextResponse.json({ error: "Message too long (max 5000 characters)" }, { status: 400 });
     }
 
     // If no API key, fall back to pattern matcher

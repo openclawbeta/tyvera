@@ -95,7 +95,7 @@ export async function createPaymentIntent(planId: string, walletAddress?: string
     planId,
     planName: tierDef?.displayName ?? planId,
     amountTao,
-    amountUsd: tierDef?.monthlyPrice ?? 0,
+    amountUsd: billingCycle === "annual" ? (tierDef?.annualPrice ?? 0) : (tierDef?.monthlyPrice ?? 0),
     memo,
     depositAddress,
     status: "awaiting_payment" as const,

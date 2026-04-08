@@ -164,7 +164,7 @@ export async function GET(request: NextRequest) {
 
   const netuid = request.nextUrl.searchParams.get("netuid");
 
-  if (!netuid || isNaN(Number(netuid))) {
+  if (!netuid || !/^\d+$/.test(netuid) || parseInt(netuid, 10) < 0) {
     return NextResponse.json(
       { error: "Missing or invalid netuid query parameter" },
       { status: 400 }

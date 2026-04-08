@@ -12,6 +12,7 @@ import type { RecommendationUiModel as Recommendation } from "@/lib/types/recomm
 
 interface ReviewPanelProps {
   rec: Recommendation | null;
+  onIgnore?: () => void;
 }
 
 function SubnetPill({ netuid, name, yieldRate }: { netuid: number; name: string; yieldRate: number }) {
@@ -84,7 +85,7 @@ function DataRow({ label, value, highlight = false }: { label: string; value: st
 /* Wallet-aware footer                                                  */
 /* ─────────────────────────────────────────────────────────────────── */
 
-function ReviewFooter({ rec }: { rec: Recommendation }) {
+function ReviewFooter({ rec, onIgnore }: { rec: Recommendation; onIgnore?: () => void }) {
   const { walletState, openModal, verify, requestApproval } = useWallet();
 
   function handleSubmit() {
@@ -228,6 +229,7 @@ function ReviewFooter({ rec }: { rec: Recommendation }) {
 
       {/* Secondary: ignore */}
       <button
+        onClick={onIgnore}
         className="w-full flex items-center justify-center gap-2 rounded-xl font-medium text-xs py-2.5 transition-all duration-150"
         style={{ color: "#64748b", background: "transparent" }}
         onMouseEnter={(e) => {
@@ -253,7 +255,7 @@ const PANEL_GLASS = {
   borderRadius: "16px",
 };
 
-export function ReviewPanel({ rec }: ReviewPanelProps) {
+export function ReviewPanel({ rec, onIgnore }: ReviewPanelProps) {
   if (!rec) {
     return (
       <div
@@ -459,7 +461,7 @@ export function ReviewPanel({ rec }: ReviewPanelProps) {
         </div>
 
         {/* Footer */}
-        <ReviewFooter rec={rec} />
+        <ReviewFooter rec={rec} onIgnore={onIgnore} />
       </motion.div>
     </AnimatePresence>
   );

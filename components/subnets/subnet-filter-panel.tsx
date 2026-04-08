@@ -14,6 +14,8 @@ interface SubnetFilterPanelProps {
   onRisk: (v: RiskLevel | "ALL") => void;
   sortBy: string;
   onSort: (v: string) => void;
+  minScore: number;
+  onMinScore: (v: number) => void;
 }
 
 const RISK_OPTIONS: Array<{ value: RiskLevel | "ALL"; label: string }> = [
@@ -36,6 +38,7 @@ export function SubnetFilterPanel({
   category, onCategory,
   risk, onRisk,
   sortBy, onSort,
+  minScore, onMinScore,
 }: SubnetFilterPanelProps) {
   return (
     <div className="w-full lg:w-52 flex-shrink-0 space-y-5">
@@ -116,12 +119,15 @@ export function SubnetFilterPanel({
 
       {/* Min score */}
       <div>
-        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Minimum Score</p>
+        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
+          Minimum Score{minScore > 0 && <span className="text-cyan-400 ml-1">({minScore})</span>}
+        </p>
         <input
           type="range"
           min={0}
           max={100}
-          defaultValue={0}
+          value={minScore}
+          onChange={(e) => onMinScore(Number(e.target.value))}
           className="w-full accent-cyan-400 h-1"
         />
         <div className="flex justify-between text-[10px] text-slate-600 mt-1">

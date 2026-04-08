@@ -238,7 +238,7 @@ export default function RecommendationsPage() {
 
         {/* Right: review panel */}
         <div className="w-full lg:w-[320px] flex-shrink-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
-          <ReviewPanel rec={selected} />
+          <ReviewPanel rec={selected} onIgnore={() => setSelected(null)} />
         </div>
       </div>
     </div>
