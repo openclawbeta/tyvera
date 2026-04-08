@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Wallet,
   ArrowUpRight,
@@ -11,13 +11,14 @@ import {
   Copy,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
 import { StatCard } from "@/components/ui-custom/stat-card";
 import { SectionTitle } from "@/components/ui-custom/section-title";
 import { FadeIn } from "@/components/ui-custom/fade-in";
-import { getWalletActivity, getActivitySummary } from "@/lib/api/activity";
+import { getActivitySummary } from "@/lib/api/activity";
 import { useWallet } from "@/lib/wallet-context";
 import { cn, formatDate, truncateAddress } from "@/lib/utils";
 import { ActivityType, ActivityEvent } from "@/lib/types/activity";
@@ -106,10 +107,31 @@ export default function ActivityPage() {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
   const itemsPerPage = 20;
+  const [allEvents, setAllEvents] = useState<ActivityEvent[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Fetch all activity
-  const allEvents = useMemo(() => {
-    return getWalletActivity(address || undefined);
+  // Fetch activity from API
+  useEffect(() => {
+    if (!address) {
+      setAllEvents([]);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    fetch(`/api/activity?address=${encodeURIComponent(address)}&limit=100`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && Array.isArray(data?.events)) {
+          setAllEvents(data.events);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setAllEvents([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [address]);
 
   // Filter by type
@@ -284,7 +306,12 @@ export default function ActivityPage() {
             subtitle={`${filtered.length} transactions found`}
           />
           <div className="mt-5 space-y-0">
-            {paginatedEvents.length > 0 ? (
+            {loading ? (
+              <div className="py-12 flex flex-col items-center gap-3">
+                <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
+                <p className="text-slate-500 text-sm">Loading transactions...</p>
+              </div>
+            ) : paginatedEvents.length > 0 ? (
               paginatedEvents.map((event) => {
                 const typeColor = ACTIVITY_TYPE_COLORS[event.type];
                 const isExpanded = expandedRows[event.id];

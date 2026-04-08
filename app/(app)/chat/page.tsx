@@ -6,7 +6,6 @@ import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
 import { fetchSubnetsFromApi } from "@/lib/api/subnets";
 import {
-  analyzeQuery,
   QUICK_ASKS,
   type ChatResponse,
   type ChatResponseType,
@@ -69,24 +68,47 @@ export default function ChatPage() {
     };
     setMessages((prev) => [...prev, userMsg]);
     setInputValue("");
-
-    // Simulate processing
     setIsProcessing(true);
-    await new Promise((r) => setTimeout(r, 200));
 
-    // Analyze query
-    const response = analyzeQuery(query, subnets);
-    const assistantMsg: ChatMessage = {
-      role: "assistant",
-      content: response.summary,
-      data: response,
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, assistantMsg]);
-    setIsProcessing(false);
+    try {
+      // Build conversation history for context
+      const history = messages
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .slice(-10)
+        .map((m) => ({ role: m.role, content: m.content }));
 
-    // Focus input
-    inputRef.current?.focus();
+      const resp = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: query,
+          subnets,
+          history,
+        }),
+      });
+
+      const data = await resp.json();
+
+      const assistantMsg: ChatMessage = {
+        role: "assistant",
+        content: data.content ?? data.error ?? "Something went wrong.",
+        data: data.structured ?? undefined,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Sorry, I couldn't process your request. Please try again.",
+          timestamp: new Date(),
+        },
+      ]);
+    } finally {
+      setIsProcessing(false);
+      inputRef.current?.focus();
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
