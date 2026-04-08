@@ -53,10 +53,14 @@ interface WalletCtx {
 }
 
 /* ─────────────────────────────────────────────────────────────────── */
-/* Mock data                                                             */
+/* Extension name mapping                                                */
 /* ─────────────────────────────────────────────────────────────────── */
 
-const MOCK_ADDRESS = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
+const EXTENSION_NAMES: Record<WalletExtension, string> = {
+  polkadotjs: "polkadot-js",
+  subwallet: "subwallet-js",
+  talisman: "talisman",
+};
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Context                                                              */
@@ -75,52 +79,78 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const prevStateRef = useRef<WalletState>("disconnected");
 
   // Detect available wallet extensions on mount
+  // Polkadot extensions inject into window.injectedWeb3 asynchronously,
+  // so we check after a brief delay to ensure they've loaded.
   React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const detected: WalletExtension[] = [];
+    if (typeof window === "undefined") return;
 
-      if ((window as any).injectedWeb3?.["polkadot-js"]) {
-        detected.push("polkadotjs");
-      }
-      if ((window as any).injectedWeb3?.["subwallet-js"]) {
-        detected.push("subwallet");
-      }
-      if ((window as any).injectedWeb3?.talisman) {
-        detected.push("talisman");
-      }
+    const detect = () => {
+      const detected: WalletExtension[] = [];
+      const injected = (window as any).injectedWeb3;
+
+      if (injected?.["polkadot-js"]) detected.push("polkadotjs");
+      if (injected?.["subwallet-js"]) detected.push("subwallet");
+      if (injected?.talisman)         detected.push("talisman");
 
       setAvailableExtensions(detected);
+    };
 
-      if (detected.length > 0) {
-        /* wallet extension(s) detected */
-      }
-    }
+    // Check immediately, then again after extensions have injected
+    detect();
+    const timer = setTimeout(detect, 500);
+    return () => clearTimeout(timer);
   }, []);
 
   const openModal  = useCallback(() => setIsModalOpen(true), []);
   const closeModal = useCallback(() => setIsModalOpen(false), []);
 
-  const connect = useCallback((ext: WalletExtension) => {
+  const connect = useCallback(async (ext: WalletExtension) => {
     setExtension(ext);
     setWalletState("connecting");
     setConnectionError(null);
 
-    // Check if real extension is available
-    if (availableExtensions.includes(ext)) {
-      /* real extension detected */
-      // For now, use mock flow as fallback until real integration is complete
-      setTimeout(() => {
-        setAddress(MOCK_ADDRESS);
-        setWalletState("connected");
-      }, 1800);
-    } else {
-      // Simulate async wallet detection (1.8 s) for unavailable extensions
-      setTimeout(() => {
-        setAddress(MOCK_ADDRESS);
-        setWalletState("connected");
-      }, 1800);
+    try {
+      // Attempt real extension connection via @polkadot/extension-dapp
+      const extensionName = EXTENSION_NAMES[ext];
+      const injected = (window as any).injectedWeb3?.[extensionName];
+
+      if (!injected) {
+        throw new Error(
+          `${ext} extension not found. Please install it and refresh the page.`
+        );
+      }
+
+      // Enable the extension — this prompts the user in their extension popup
+      const enabledExtension = await injected.enable("Tyvera");
+
+      // Get accounts from the extension
+      const accounts = await enabledExtension.accounts.get();
+
+      if (!accounts || accounts.length === 0) {
+        throw new Error(
+          "No accounts found. Please create or import an account in your wallet extension."
+        );
+      }
+
+      // Use the first account's SS58 address
+      const walletAddress = accounts[0].address;
+
+      if (!walletAddress || typeof walletAddress !== "string") {
+        throw new Error("Invalid account address returned from extension.");
+      }
+
+      setAddress(walletAddress);
+      setWalletState("connected");
+      setIsModalOpen(false);
+    } catch (err: any) {
+      console.error("[wallet] Connection failed:", err);
+      const message =
+        err?.message || "Failed to connect wallet. Please try again.";
+      setConnectionError(message);
+      setWalletState("disconnected");
+      setExtension(null);
     }
-  }, [availableExtensions]);
+  }, []);
 
   const disconnect = useCallback(() => {
     setWalletState("disconnected");
@@ -131,14 +161,51 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     setConnectionError(null);
   }, []);
 
-  const verify = useCallback(() => {
+  const verify = useCallback(async () => {
+    if (!address || !extension) return;
+
     setWalletState("verifying");
 
-    // Simulate sign-message round-trip (1.2 s)
-    setTimeout(() => {
-      setWalletState("verified");
-    }, 1200);
-  }, []);
+    try {
+      const extensionName = EXTENSION_NAMES[extension];
+      const injected = (window as any).injectedWeb3?.[extensionName];
+
+      if (!injected) {
+        throw new Error("Extension no longer available.");
+      }
+
+      const enabledExtension = await injected.enable("Tyvera");
+      const signer = enabledExtension.signer;
+
+      if (!signer?.signRaw) {
+        // Extension doesn't support signRaw — accept connection as-is
+        console.warn("[wallet] signRaw not supported, skipping verification");
+        setWalletState("verified");
+        return;
+      }
+
+      // Sign a timestamped message for ownership verification
+      const timestamp = Date.now();
+      const message = `tyvera-auth:${timestamp}`;
+
+      const { signature } = await signer.signRaw({
+        address,
+        data: message,
+        type: "bytes",
+      });
+
+      if (signature) {
+        setWalletState("verified");
+      } else {
+        throw new Error("Signature was empty.");
+      }
+    } catch (err: any) {
+      console.error("[wallet] Verification failed:", err);
+      // Fall back to connected state (not verified) rather than disconnecting
+      setWalletState("connected");
+      setConnectionError(err?.message || "Verification failed. You can still browse with limited features.");
+    }
+  }, [address, extension]);
 
   const requestApproval = useCallback((req: ApprovalRequest) => {
     prevStateRef.current = walletState;

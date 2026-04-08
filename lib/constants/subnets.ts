@@ -1,5 +1,16 @@
-import { SUBNETS } from "@/lib/mock-data/subnets";
-
-const derivedCategories = Array.from(new Set(SUBNETS.map((subnet) => subnet.category))).sort();
-
-export const SUBNET_CATEGORIES = ["All", ...derivedCategories] as const;
+/**
+ * Subnet category constants.
+ * Hardcoded from the known Bittensor subnet categories
+ * rather than derived from mock data.
+ */
+export const SUBNET_CATEGORIES = [
+  "All",
+  "Creative",
+  "Data",
+  "Developer Tools",
+  "Finance",
+  "Infrastructure",
+  "Language",
+  "Multi-Modal",
+  "Science",
+] as const;

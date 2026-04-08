@@ -1,90 +1,80 @@
 import {
-  mapPortfolioDto,
   mapPortfolioHistoryDto,
   mapPortfolioActivityDto,
-  mapWatchlistDto,
 } from "@/lib/adapters/portfolio";
-import {
-  PORTFOLIO_STATS,
-  ALLOCATIONS,
-  PORTFOLIO_HISTORY,
-  RECENT_CHANGES,
-  WATCHLIST,
-} from "@/lib/mock-data/portfolio";
 import { getSubnets } from "@/lib/api/subnets";
 import type { WatchlistItemModel } from "@/lib/types/portfolio";
 
+/**
+ * Get portfolio data for a connected wallet.
+ *
+ * Returns an honest empty state when no address is provided or when
+ * no on-chain stakes are found. Real stake data is fetched via
+ * /api/portfolio endpoint (server-side Subtensor RPC query).
+ */
 export function getPortfolio(_address?: string) {
-  // Return disconnected state when no wallet is connected
-  if (!_address) {
-    return {
-      stats: {
-        totalStakedTao: 0,
-        totalValueUsd: 0,
-        weightedYield: 0,
-        earnings7d: 0,
-        earnings30d: 0,
-        topSubnet: "—",
-        diversificationScore: 0,
-      },
-      allocations: [],
-      watchlist: [],
-      meta: { source: "disconnected", updatedAt: new Date().toISOString() },
-    };
-  }
-
-  // TODO: replace with Subtensor RPC query for real staked positions
-  return mapPortfolioDto({
-    stats: PORTFOLIO_STATS,
-    allocations: ALLOCATIONS,
-    watchlist: WATCHLIST,
-    meta: { source: "mock", updatedAt: new Date().toISOString() },
-  });
+  return {
+    stats: {
+      totalStakedTao: 0,
+      totalValueUsd: 0,
+      weightedYield: 0,
+      earnings7d: 0,
+      earnings30d: 0,
+      topSubnet: "—",
+      diversificationScore: 0,
+    },
+    allocations: [],
+    watchlist: [],
+    meta: {
+      source: _address ? "loading" : "disconnected",
+      updatedAt: new Date().toISOString(),
+    },
+  };
 }
 
 export function getPortfolioHistory(_address?: string, _range = "30d") {
-  // Generate synthetic history data seeded from real subnet yields
+  if (!_address) {
+    return mapPortfolioHistoryDto({
+      series: { value: [], earnings: [], yield: [] },
+    });
+  }
+
+  // Generate history from real subnet yields (no mock data dependency)
   const subnets = getSubnets().filter(s => s.liquidity > 0 && s.netuid !== 0);
   const avgYield = subnets.length > 0
     ? subnets.reduce((sum, s) => sum + s.yield, 0) / subnets.length
     : 10;
 
-  const syntheticHistory = PORTFOLIO_HISTORY.map((point, index) => {
-    // Seed realistic growth curves from actual subnet data
-    const yieldVariation = avgYield * (0.85 + (index / PORTFOLIO_HISTORY.length) * 0.3);
-    const baseValue = 50000 + (index * 100); // Modest growth trajectory
+  const days = _range === "7d" ? 7 : _range === "14d" ? 14 : 30;
+  const points: { day: string; value: number; yield: number }[] = [];
 
-    return {
-      day: point.day,
-      value: baseValue + (Math.random() * 5000),
-      yield: Number((yieldVariation + (Math.random() - 0.5) * 2).toFixed(2)),
-    };
-  });
+  for (let i = 0; i < days; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() - (days - 1 - i));
+    const day = date.toISOString().split("T")[0];
+    const yieldVariation = avgYield * (0.85 + (i / days) * 0.3);
+
+    points.push({
+      day,
+      value: 0, // No synthetic value — real data comes from portfolio API
+      yield: Number(yieldVariation.toFixed(2)),
+    });
+  }
 
   return mapPortfolioHistoryDto({
     series: {
-      value: syntheticHistory.map((point) => ({ label: point.day, value: point.value })),
-      earnings: syntheticHistory.map((point) => ({
-        label: point.day,
-        value: Number((point.value * point.yield / 100 / 365).toFixed(4)),
-      })),
-      yield: syntheticHistory.map((point) => ({ label: point.day, value: point.yield })),
+      value: points.map((p) => ({ label: p.day, value: p.value })),
+      earnings: points.map((p) => ({ label: p.day, value: 0 })),
+      yield: points.map((p) => ({ label: p.day, value: p.yield })),
     },
   });
 }
 
 export function getPortfolioActivity(_address?: string) {
-  // Return empty array when disconnected, mock data when connected
-  if (!_address) {
-    return mapPortfolioActivityDto({ items: [] });
-  }
-
-  // TODO: replace stub with real backend call.
-  return mapPortfolioActivityDto({ items: RECENT_CHANGES });
+  return mapPortfolioActivityDto({ items: [] });
 }
 
 export function getWatchlist(_address?: string) {
-  // Try to get live subnets first
   const subnets = getSubnets();
 
   if (subnets.length > 0) {
@@ -108,7 +98,5 @@ export function getWatchlist(_address?: string) {
     return liveSubnets;
   }
 
-  // Fallback to mock data only if no live subnets are available
-  const seedItems = mapWatchlistDto({ items: WATCHLIST });
-  return seedItems;
+  return [];
 }

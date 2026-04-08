@@ -1,5 +1,3 @@
-import { mapBillingStatusDto, mapBillingHistoryDto } from "@/lib/adapters/billing";
-import { PLANS } from "@/lib/mock-data/billing";
 import { getEntitlement, storePaymentIntent } from "@/lib/db/subscriptions";
 import { TIER_DEFINITIONS } from "@/lib/types/tiers";
 import { randomUUID } from "crypto";
@@ -52,8 +50,17 @@ export async function getBillingStatus(address?: string | null): Promise<WalletB
   }
 }
 
+/**
+ * Get available plans from tier definitions (real source of truth).
+ */
 export function getPlans() {
-  return PLANS;
+  return TIER_DEFINITIONS.map((tier) => ({
+    id: tier.planIds[0] || tier.id,
+    name: tier.displayName,
+    price: tier.monthlyPrice,
+    features: tier.features || [],
+    tier: tier.id,
+  }));
 }
 
 /**

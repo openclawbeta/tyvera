@@ -15,7 +15,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
 import { StatCard } from "@/components/ui-custom/stat-card";
 import { ValidatorInfo, ValidatorSummary } from "@/lib/types/validators";
-import { getValidators, getValidatorSummary } from "@/lib/api/validators";
+import { getValidators, fetchValidators, getValidatorSummary } from "@/lib/api/validators";
 
 type SortField =
   | "rank"
@@ -65,23 +65,23 @@ export default function ValidatorsPage() {
 
   const ITEMS_PER_PAGE = 25;
 
-  // Load validators on mount
+  // Load validators on mount — start with sync fallback, then fetch real data
   useEffect(() => {
-    const loadValidators = () => {
-      try {
-        setLoading(true);
-        const data = getValidators();
+    // Show immediate fallback data
+    const fallback = getValidators();
+    setValidators(fallback);
+    setSummary(getValidatorSummary(fallback));
+
+    // Then fetch real delegate registry data
+    fetchValidators()
+      .then((data) => {
         setValidators(data);
         setSummary(getValidatorSummary(data));
-      } catch (error) {
-        /* validator data load failed */
-        setValidators([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadValidators();
+      })
+      .catch(() => {
+        /* keep fallback data */
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   // Filter and sort

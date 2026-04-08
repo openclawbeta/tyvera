@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/lib/sidebar-context";
+import { useWallet } from "@/lib/wallet-context";
 
 const NAV_ITEMS = [
   { label: "Dashboard",       href: "/dashboard",       icon: LayoutDashboard },
@@ -33,7 +34,7 @@ const NAV_ITEMS = [
   { label: "Yield",           href: "/yield",           icon: TrendingUp },
   { label: "Portfolio",       href: "/portfolio",       icon: Wallet },
   { label: "Activity",        href: "/activity",        icon: Activity },
-  { label: "Recommendations", href: "/recommendations", icon: Lightbulb, badge: "3" },
+  { label: "Recommendations", href: "/recommendations", icon: Lightbulb },
   { label: "Alerts",          href: "/alerts",          icon: Bell },
   { label: "Backtest",        href: "/backtest",        icon: FlaskConical },
   { label: "Pricing",         href: "/pricing",         icon: CreditCard },
@@ -45,36 +46,32 @@ const NAV_ITEMS = [
 export function AppSidebar() {
   const pathname = usePathname();
   const { isOpen, close } = useSidebar();
-  const [unacknowledgedCount, setUnacknowledgedCount] = useState(0);
+  const { address, walletState } = useWallet();
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  // Load unacknowledged alerts count
+  // Fetch unread alert count from server API
   useEffect(() => {
-    const updateAlertCount = () => {
+    if (!address) {
+      setUnreadCount(0);
+      return;
+    }
+
+    const fetchUnread = async () => {
       try {
-        const history = localStorage.getItem("tyvera_alert_history");
-        if (history) {
-          const events = JSON.parse(history);
-          const unacknowledged = events.filter(
-            (e: any) => !e.acknowledged
-          ).length;
-          setUnacknowledgedCount(unacknowledged);
+        const res = await fetch(`/api/alerts?address=${address}&unread_only=true&limit=1`);
+        if (res.ok) {
+          const data = await res.json();
+          setUnreadCount(data.unread ?? 0);
         }
       } catch {
-        // silently fail
+        // silently fail — badge is non-critical
       }
     };
 
-    updateAlertCount();
-    // Check for updates every 30 seconds
-    const interval = setInterval(updateAlertCount, 30000);
-    // Also listen for storage changes (from other tabs/windows)
-    window.addEventListener("storage", updateAlertCount);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("storage", updateAlertCount);
-    };
-  }, []);
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 60_000); // refresh every 60s
+    return () => clearInterval(interval);
+  }, [address]);
 
   // Close sidebar whenever the route changes (mobile nav tap)
   useEffect(() => {
@@ -153,12 +150,12 @@ export function AppSidebar() {
             const Icon = item.icon;
             const isActive =
               pathname === item.href || pathname.startsWith(item.href + "/");
-            // Show alert count for Alerts nav item if there are unacknowledged alerts
+            // Show unread alert count for Alerts nav item
             const alertBadge =
-              item.label === "Alerts" && unacknowledgedCount > 0
-                ? String(unacknowledgedCount)
-                : item.badge;
-            const isAlertBadge = item.label === "Alerts" && unacknowledgedCount > 0;
+              item.label === "Alerts" && unreadCount > 0
+                ? String(unreadCount)
+                : undefined;
+            const isAlertBadge = item.label === "Alerts" && unreadCount > 0;
 
             return (
               <Link key={item.href} href={item.href}>
@@ -203,34 +200,42 @@ export function AppSidebar() {
           className="px-3 py-3 flex-shrink-0 space-y-2"
           style={{ borderTop: "1px solid rgba(255,255,255,0.045)" }}
         >
-          {/* Premium status */}
-          <div
-            className="px-3 py-3 rounded-xl space-y-2"
-            style={{
-              background: "rgba(255,255,255,0.025)",
-              border: "1px solid rgba(255,255,255,0.06)",
-            }}
-          >
-            <div className="flex items-center justify-between">
+          {/* Connection status */}
+          {address ? (
+            <div
+              className="px-3 py-3 rounded-xl space-y-2"
+              style={{
+                background: "rgba(255,255,255,0.025)",
+                border: "1px solid rgba(255,255,255,0.06)",
+              }}
+            >
               <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-400" style={{ boxShadow: "0 0 4px rgba(251,191,36,0.6)" }} />
-                <span className="text-[10px] font-bold text-amber-300 tracking-[0.04em] uppercase">
-                  Premium
+                <div
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{
+                    background: walletState === "verified" ? "#22d3ee" : "#4ade80",
+                    boxShadow: `0 0 4px ${walletState === "verified" ? "rgba(34,211,238,0.6)" : "rgba(74,222,128,0.6)"}`,
+                  }}
+                />
+                <span className="text-[10px] font-bold tracking-[0.04em] uppercase"
+                  style={{ color: walletState === "verified" ? "#67e8f9" : "#86efac" }}>
+                  {walletState === "verified" ? "Verified" : "Connected"}
                 </span>
               </div>
-              <span className="text-[10px] text-slate-500 tabular-nums">30 days left</span>
             </div>
-            <div className="w-full h-[3px] rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
+          ) : (
+            <Link href="/login">
               <div
-                className="h-full rounded-full"
+                className="px-3 py-3 rounded-xl text-center cursor-pointer transition-all duration-200"
                 style={{
-                  width: "33%",
-                  background: "linear-gradient(90deg, #f59e0b, #fbbf24)",
-                  boxShadow: "0 0 6px rgba(251,191,36,0.4)",
+                  background: "rgba(34,211,238,0.08)",
+                  border: "1px solid rgba(34,211,238,0.15)",
                 }}
-              />
-            </div>
-          </div>
+              >
+                <span className="text-[11px] font-semibold text-cyan-400">Connect Wallet</span>
+              </div>
+            </Link>
+          )}
 
           {/* Trust note */}
           <div className="flex items-center gap-2 px-1 py-0.5">
@@ -240,40 +245,39 @@ export function AppSidebar() {
             </span>
           </div>
 
-          {/* User row */}
-          <div
-            className="flex items-center gap-2.5 px-2 py-2 rounded-xl cursor-pointer transition-all duration-200"
-            style={{
-              background: "transparent",
-              border: "1px solid transparent",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
-              (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.05)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "transparent";
-              (e.currentTarget as HTMLElement).style.borderColor = "transparent";
-            }}
-          >
+          {/* User row — only when connected */}
+          {address && (
             <div
-              className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] font-bold text-white"
+              className="flex items-center gap-2.5 px-2 py-2 rounded-xl cursor-pointer transition-all duration-200"
               style={{
-                background: "linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)",
-                boxShadow: "0 0 0 2px rgba(124,58,237,0.25)",
+                background: "transparent",
+                border: "1px solid transparent",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
+                (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.05)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = "transparent";
+                (e.currentTarget as HTMLElement).style.borderColor = "transparent";
               }}
             >
-              O
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[12px] font-semibold text-slate-300 leading-none truncate tracking-[-0.01em]">
-                openclaw.eth
+              <div
+                className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] font-bold text-white"
+                style={{
+                  background: "linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)",
+                  boxShadow: "0 0 0 2px rgba(124,58,237,0.25)",
+                }}
+              >
+                {address.charAt(0).toUpperCase()}
               </div>
-              <div className="text-[10px] text-slate-600 font-mono mt-0.5 truncate">
-                5Grwva…utQY
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] text-slate-500 font-mono mt-0.5 truncate">
+                  {address.slice(0, 6)}…{address.slice(-4)}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </aside>
     </>
