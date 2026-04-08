@@ -4,6 +4,7 @@ import { storePaymentIntent } from "@/lib/db/subscriptions";
 import { TIER_DEFINITIONS } from "@/lib/types/tiers";
 import type { Tier } from "@/lib/types/tiers";
 import { MONTHLY_DURATION_DAYS, ANNUAL_DURATION_DAYS, PAYMENT_INTENT_EXPIRY_MS } from "@/lib/config";
+import { requireEnv } from "@/lib/env";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Subscribe endpoint — creates a payment intent                       */
@@ -15,7 +16,7 @@ import { MONTHLY_DURATION_DAYS, ANNUAL_DURATION_DAYS, PAYMENT_INTENT_EXPIRY_MS }
 /* The /api/verify-payments cron matches incoming transfers by memo.    */
 /* ─────────────────────────────────────────────────────────────────── */
 
-const DEPOSIT_ADDRESS = process.env.DEPOSIT_ADDRESS || "5EkH7oV4EvT2otiH1teYu9gM2bkhuQTZbZrrPuqxHQMVTjRZ";
+const DEPOSIT_ADDRESS = requireEnv("DEPOSIT_ADDRESS");
 
 /**
  * Compute TAO prices dynamically from USD tier prices and current TAO rate.

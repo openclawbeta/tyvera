@@ -11,9 +11,10 @@
 
 import { confirmPaymentIntent, findPaymentIntentByMemo, expireSubscriptions } from "./subscriptions";
 import { PAYMENT_VERIFY_INTERVAL_MS } from "@/lib/config";
+import { requireEnv } from "@/lib/env";
 
 // Tyvera deposit address — set via DEPOSIT_ADDRESS env var
-const DEPOSIT_ADDRESS = process.env.DEPOSIT_ADDRESS ?? "5EkH7oV4EvT2otiH1teYu9gM2bkhuQTZbZrrPuqxHQMVTjRZ";
+const DEPOSIT_ADDRESS = requireEnv("DEPOSIT_ADDRESS");
 
 // Subtensor finney RPC endpoint — set via SUBTENSOR_RPC env var
 const SUBTENSOR_RPC = process.env.SUBTENSOR_RPC ?? "https://entrypoint-finney.opentensor.ai:443";

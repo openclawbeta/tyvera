@@ -3,6 +3,7 @@ import { TIER_DEFINITIONS } from "@/lib/types/tiers";
 import { randomUUID } from "crypto";
 import { PAYMENT_INTENT_EXPIRY_MS } from "@/lib/config";
 import type { WalletBillingState } from "@/lib/types/billing-state";
+import { requireEnv } from "@/lib/env";
 
 /**
  * Get billing status for a wallet — reads from the real subscription database.
@@ -68,7 +69,7 @@ export function getPlans() {
  * Create a real payment intent stored in the database.
  */
 export async function createPaymentIntent(planId: string, walletAddress?: string, billingCycle: "monthly" | "annual" = "monthly") {
-  const depositAddress = process.env.DEPOSIT_ADDRESS || "5EkH7oV4EvT2otiH1teYu9gM2bkhuQTZbZrrPuqxHQMVTjRZ";
+  const depositAddress = requireEnv("DEPOSIT_ADDRESS");
   const tierDef = TIER_DEFINITIONS.find((d) => d.planIds.includes(planId));
   const amountTao = tierDef
     ? (billingCycle === "annual" ? tierDef.annualPrice : tierDef.monthlyPrice)
