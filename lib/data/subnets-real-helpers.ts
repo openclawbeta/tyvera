@@ -154,6 +154,43 @@ export function deriveYield(emissionsPerDay: number, taoIn: number): number {
   return +((emissionsPerDay / taoIn) * 365 * 100).toFixed(2);
 }
 
+/**
+ * Normalize raw annualized emissions APR into a safer allocator-facing yield.
+ *
+ * Why this exists:
+ * - Raw APR can explode on thin-liquidity subnets.
+ * - Users should not treat a 200%+ instantaneous annualization as normal comparable yield.
+ * - This function keeps the raw number available while downweighting it using
+ *   liquidity depth, participation depth, subnet age, confidence, and outlier severity.
+ */
+export function deriveNormalizedYield(
+  rawYieldPct: number,
+  liquidity: number,
+  stakers: number,
+  age = 180,
+  confidence?: number,
+): number {
+  if (rawYieldPct <= 0) return 0;
+
+  const liquidityFactor = Math.min(1, Math.max(0.12, liquidity / 2_500_000));
+  const participationFactor = Math.min(1, Math.max(0.2, stakers / 256));
+  const maturityFactor = Math.min(1, Math.max(0.35, age / 365));
+  const confidenceFactor = Math.min(1, Math.max(0.35, (confidence ?? 65) / 100));
+
+  const outlierPenalty =
+    rawYieldPct > 250 ? 0.16 :
+    rawYieldPct > 150 ? 0.24 :
+    rawYieldPct > 100 ? 0.34 :
+    rawYieldPct > 70 ? 0.48 :
+    rawYieldPct > 50 ? 0.62 :
+    1;
+
+  const normalized = rawYieldPct * liquidityFactor * participationFactor * maturityFactor * confidenceFactor * outlierPenalty;
+
+  // Clamp to a user-safer comparable yield band while preserving relative quality.
+  return +Math.min(rawYieldPct, Math.max(0, normalized)).toFixed(2);
+}
+
 /* ─── Outlier / Risk Flag Detection ─────────────────────────────────── */
 
 /**

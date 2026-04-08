@@ -7,7 +7,8 @@ export interface SubnetCardModel {
   name: string;
   symbol: string;
   score: number;
-  yield: number;
+  yield: number; // normalized allocator-facing yield
+  rawYield?: number; // raw annualized emissions APR before normalization
   yieldDelta7d: number;
   inflow: number;
   inflowPct: number;

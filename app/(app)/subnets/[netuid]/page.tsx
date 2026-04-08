@@ -412,7 +412,7 @@ export default function SubnetDetailPage() {
                 {subnet.yield}%
               </div>
               <div className="text-[11px] text-slate-600 mt-1 uppercase tracking-wider">
-                Est. Annual Yield
+                Allocator Yield
               </div>
               <div className="flex items-center justify-end gap-2 mt-2">
                 <MetricPill value={subnet.yieldDelta7d} size="sm" />

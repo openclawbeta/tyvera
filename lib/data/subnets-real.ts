@@ -44,12 +44,14 @@ import type { SubnetDetailModel } from "@/lib/types/subnets";
 import {
   deriveRisk,
   deriveScore,
+  deriveConfidence,
+  deriveNormalizedYield,
   buildMomentum,
   deriveBreakeven,
 } from "@/lib/data/subnets-real-helpers";
 
 // Re-export helpers so the fetch script's generated file can use the same path
-export { deriveRisk, deriveScore, buildMomentum, deriveBreakeven };
+export { deriveRisk, deriveScore, deriveConfidence, deriveNormalizedYield, buildMomentum, deriveBreakeven };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Snapshot data
@@ -325,13 +327,27 @@ const SNAPSHOT_ROWS: SnapshotRow[] = [
 
 export const SUBNETS_REAL: SubnetDetailModel[] = SNAPSHOT_ROWS.map((row) => {
   const risk  = deriveRisk(row.liquidityEst, row.stakersEst, row.yieldDelta7dEst);
-  const score = deriveScore(
+  const confidence = deriveConfidence(
     row.liquidityEst,
-    row.yieldEst,
     row.stakersEst,
     row.yieldDelta7dEst,
+    row.ageApprox,
   );
-  const momentum     = buildMomentum(row.yieldEst, row.yieldDelta7dEst);
+  const normalizedYield = deriveNormalizedYield(
+    row.yieldEst,
+    row.liquidityEst,
+    row.stakersEst,
+    row.ageApprox,
+    confidence,
+  );
+  const score = deriveScore(
+    row.liquidityEst,
+    normalizedYield,
+    row.stakersEst,
+    row.yieldDelta7dEst,
+    row.ageApprox,
+  );
+  const momentum     = buildMomentum(normalizedYield, row.yieldDelta7dEst);
   const inflowPct    = row.liquidityEst > 0
     ? +((row.inflowEst / row.liquidityEst) * 100).toFixed(1)
     : 0;
@@ -342,7 +358,8 @@ export const SUBNETS_REAL: SubnetDetailModel[] = SNAPSHOT_ROWS.map((row) => {
     name:          row.name,
     symbol:        row.symbol,
     score,
-    yield:         row.yieldEst,
+    yield:         normalizedYield,
+    rawYield:      row.yieldEst,
     yieldDelta7d:  row.yieldDelta7dEst,
     inflow:        row.inflowEst,
     inflowPct,

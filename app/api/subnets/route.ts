@@ -26,6 +26,7 @@ import {
   deriveBreakeven,
   deriveYield,
   deriveConfidence,
+  deriveNormalizedYield,
 } from "@/lib/data/subnets-real-helpers";
 import {
   CURATED_METADATA,
@@ -141,11 +142,12 @@ function mapTaoStatsRow(s: Record<string, unknown>): SubnetDetailModel {
   const ageBlocks = Number(s.blocks_since_registration ?? s.created_at_block ?? 0);
   const age       = ageBlocks > 0 ? Math.round(ageBlocks / 7200) : 180;
 
-  const yieldPct = deriveYield(emissionsPerDay, taoIn);
-  const momentum = buildMomentum(yieldPct, 0);
+  const rawYield = deriveYield(emissionsPerDay, taoIn);
   const risk     = deriveRisk(taoIn, stakers, 0);
-  const score    = deriveScore(taoIn, yieldPct, stakers, 0, age);
   const confidence = deriveConfidence(taoIn, stakers, 0, age);
+  const yieldPct = deriveNormalizedYield(rawYield, taoIn, stakers, age, confidence);
+  const momentum = buildMomentum(yieldPct, 0);
+  const score    = deriveScore(taoIn, yieldPct, stakers, 0, age);
 
   return {
     id:            "sn" + netuid,
@@ -154,6 +156,7 @@ function mapTaoStatsRow(s: Record<string, unknown>): SubnetDetailModel {
     symbol:        meta.symbol,
     score,
     yield:         yieldPct,
+    rawYield:      rawYield,
     yieldDelta7d:  0,
     inflow:        0,
     inflowPct:     0,
@@ -217,10 +220,11 @@ export async function GET(request: NextRequest) {
     let chainSubnets = chainCache.subnets
       .filter((cs) => cs.netuid !== 0)
       .map((cs) => {
-        const yieldPct = deriveYield(cs.emissionPerDay, cs.taoIn);
+        const rawYield = deriveYield(cs.emissionPerDay, cs.taoIn);
         const risk = deriveRisk(cs.taoIn, cs.stakers, 0);
-        const score = deriveScore(cs.taoIn, yieldPct, cs.stakers, 0, cs.ageDays);
         const confidence = deriveConfidence(cs.taoIn, cs.stakers, 0, cs.ageDays);
+        const yieldPct = deriveNormalizedYield(rawYield, cs.taoIn, cs.stakers, cs.ageDays, confidence);
+        const score = deriveScore(cs.taoIn, yieldPct, cs.stakers, 0, cs.ageDays);
         const momentum = buildMomentum(yieldPct, 0);
         const partial: SubnetDetailModel = {
           id: "sn" + cs.netuid,
@@ -229,6 +233,7 @@ export async function GET(request: NextRequest) {
           symbol: cs.symbol,
           score,
           yield: yieldPct,
+          rawYield: rawYield,
           yieldDelta7d: 0,
           inflow: 0,
           inflowPct: 0,
