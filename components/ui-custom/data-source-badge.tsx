@@ -4,6 +4,7 @@ import { Database, Radio, Archive, AlertTriangle } from "lucide-react";
 
 export type DataSource =
   | "chain-live"
+  | "chain-cache"
   | "chain-on-demand"
   | "subtensor-snapshot"
   | "subtensor-snapshot-stale"
@@ -27,6 +28,15 @@ const SOURCE_META: Record<DataSource, SourceMeta> = {
   "chain-live": {
     label: "Live chain",
     detail: "Direct from Subtensor",
+    color: "#34d399",
+    bgColor: "rgba(52,211,153,0.08)",
+    borderColor: "rgba(52,211,153,0.2)",
+    icon: Radio,
+    pulse: true,
+  },
+  "chain-cache": {
+    label: "Live chain",
+    detail: "Synced from Subtensor via cron",
     color: "#34d399",
     bgColor: "rgba(52,211,153,0.08)",
     borderColor: "rgba(52,211,153,0.2)",

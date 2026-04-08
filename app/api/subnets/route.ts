@@ -4,7 +4,8 @@
  * Next.js Route Handler -- unified subnet data gateway.
  *
  * Data source priority (highest to lowest):
- *   1. public/data/subnets.json  (Subtensor snapshot)
+ *   0. In-memory cache from cron/sync-chain (live chain data, 5min TTL)
+ *   1. public/data/subnets.json  (Subtensor snapshot, uses _meta.fetched_at)
  *   2. TaoStats REST API  (fallback)
  *   3. lib/data/subnets-real.ts  (static TypeScript snapshot)
  *
@@ -35,6 +36,11 @@ import {
   isMarketCacheFresh,
   refreshMarketCache,
 } from "@/lib/chain/market-cache";
+import {
+  getSubnetCache,
+  isSubnetCacheFresh,
+  getSubnetCacheAgeMs,
+} from "@/lib/chain/cache";
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -77,8 +83,23 @@ function readSubtensorSnapshot(netuidFilter?: number): {
   isStale: boolean;
 } | null {
   try {
-    const stat = statSync(SUBTENSOR_SNAPSHOT_PATH);
-    const ageMs = Date.now() - stat.mtimeMs;
+    const raw = readFileSync(SUBTENSOR_SNAPSHOT_PATH, "utf-8");
+    const payload: SubtensorPayload = JSON.parse(raw);
+
+    if (!Array.isArray(payload.subnets) || payload.subnets.length === 0) {
+      return null;
+    }
+
+    // Use fetched_at from JSON metadata (reliable) instead of filesystem mtime
+    // (mtime is unreliable on Vercel serverless — often reflects build time, not data freshness)
+    let ageMs: number;
+    if (payload._meta?.fetched_at) {
+      ageMs = Date.now() - new Date(payload._meta.fetched_at).getTime();
+    } else {
+      const stat = statSync(SUBTENSOR_SNAPSHOT_PATH);
+      ageMs = Date.now() - stat.mtimeMs;
+    }
+
     const ageSeconds = Math.round(ageMs / 1000);
     const isStale = ageMs > SNAPSHOT_MAX_AGE_HOURS * 60 * 60 * 1000;
 
@@ -86,13 +107,6 @@ function readSubtensorSnapshot(netuidFilter?: number): {
       console.log(
         "[/api/subnets] Subtensor snapshot is " + Math.round(ageMs / 3600000) + "h old -- serving stale snapshot"
       );
-    }
-
-    const raw = readFileSync(SUBTENSOR_SNAPSHOT_PATH, "utf-8");
-    const payload: SubtensorPayload = JSON.parse(raw);
-
-    if (!Array.isArray(payload.subnets) || payload.subnets.length === 0) {
-      return null;
     }
 
     const subnets = (netuidFilter != null
@@ -166,6 +180,82 @@ function mapTaoStatsRow(s: Record<string, unknown>): SubnetDetailModel {
 export async function GET(request: NextRequest) {
   const netuidParam   = request.nextUrl.searchParams.get("netuid");
   const netuidFilter  = netuidParam != null ? Number(netuidParam) : undefined;
+
+  // ── Priority 0: In-memory cache from cron/sync-chain ───────────
+  const chainCache = getSubnetCache();
+  if (chainCache && isSubnetCacheFresh()) {
+    let chainSubnets = chainCache.subnets
+      .filter((cs) => cs.netuid !== 0)
+      .map((cs) => {
+        const yieldPct = deriveYield(cs.emissionPerDay, cs.taoIn);
+        const risk = deriveRisk(cs.taoIn, cs.stakers, 0);
+        const score = deriveScore(cs.taoIn, yieldPct, cs.stakers, 0, cs.ageDays);
+        const confidence = deriveConfidence(cs.taoIn, cs.stakers, 0, cs.ageDays);
+        const momentum = buildMomentum(yieldPct, 0);
+        const partial: SubnetDetailModel = {
+          id: "sn" + cs.netuid,
+          netuid: cs.netuid,
+          name: cs.name,
+          symbol: cs.symbol,
+          score,
+          yield: yieldPct,
+          yieldDelta7d: 0,
+          inflow: 0,
+          inflowPct: 0,
+          risk,
+          liquidity: +cs.taoIn.toFixed(1),
+          stakers: cs.stakers,
+          emissions: +cs.emissionPerDay.toFixed(3),
+          validatorTake: 18,
+          description: "",
+          summary: "",
+          thesis: [],
+          useCases: [],
+          links: {},
+          category: "Other",
+          confidence,
+          momentum,
+          isWatched: false,
+          breakeven: deriveBreakeven(yieldPct),
+          age: cs.ageDays,
+        };
+        return hydrateSubnetMetadata(partial);
+      });
+    if (netuidFilter != null) {
+      chainSubnets = chainSubnets.filter((s) => s.netuid === netuidFilter);
+    }
+    const cacheAgeSec = Math.round(getSubnetCacheAgeMs() / 1000);
+
+    // Market enrichment
+    const enriched = chainSubnets.map((s) => {
+      const market = isMarketCacheFresh() ? getMarketData(s.netuid) : undefined;
+      if (!market) return s;
+      return {
+        ...s,
+        alphaPrice: market.alphaPrice,
+        marketCap: market.marketCap,
+        volume24h: market.volume24h,
+        change1h: market.change1h,
+        change24h: market.change24h,
+        change1w: market.change1w,
+        change1m: market.change1m,
+        flow24h: market.flow24h,
+        flow1w: market.flow1w,
+        flow1m: market.flow1m,
+      };
+    });
+
+    return NextResponse.json(enriched, {
+      headers: {
+        "X-Data-Source":    "chain-cache",
+        "X-Subnet-Count":  String(enriched.length),
+        "X-Snapshot-Age":  String(cacheAgeSec),
+        "X-Snapshot-Stale": "false",
+        "X-Market-Enriched": String(isMarketCacheFresh()),
+        "Cache-Control":   "public, s-maxage=60",
+      },
+    });
+  }
 
   // ── Priority 1: Subtensor snapshot ───────────
   const snapshot = readSubtensorSnapshot(netuidFilter);
