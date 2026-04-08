@@ -297,12 +297,12 @@ export default function MetricsPage() {
                 <div className="text-[17px] font-bold text-white tracking-[-0.02em]">Ranked subnet metrics</div>
                 <div className="text-[12px] text-slate-500 mt-1">Sortable columns with direct navigation into full subnet detail pages.</div>
               </div>
-              <div className="text-[11px] text-slate-500">showing all {filtered.length}</div>
+              <div className="text-[11px] text-slate-500">dense table • {filtered.length} visible</div>
             </div>
 
             <div className="overflow-x-auto rounded-xl border border-white/[0.06] max-h-[760px]">
               <div className="min-w-[1280px]">
-                <div className="sticky top-0 z-10 grid grid-cols-[86px_1.6fr_.9fr_.9fr_.9fr_1fr_.85fr_.85fr_.9fr_.85fr_.8fr_.8fr] gap-3 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] bg-[#0d1220] border-b border-white/[0.05]">
+                <div className="sticky top-0 z-10 grid grid-cols-[70px_1.35fr_.8fr_.8fr_.8fr_.95fr_.8fr_.8fr_.85fr_.8fr_.75fr_.75fr] gap-2.5 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] bg-[#0d1220] border-b border-white/[0.05]">
                   <SortHeader label="Subnet" sortKey="netuid" currentKey={sortKey} currentDirection={sortDirection} onSort={handleSort} />
                   <SortHeader label="Name" sortKey="name" currentKey={sortKey} currentDirection={sortDirection} onSort={handleSort} />
                   <SortHeader label="Yield" sortKey="yield" currentKey={sortKey} currentDirection={sortDirection} onSort={handleSort} />
@@ -324,33 +324,33 @@ export default function MetricsPage() {
                       key={subnet.netuid}
                       onClick={() => router.push(`/subnets/${subnet.netuid}`)}
                       onMouseEnter={() => setSelected(subnet)}
-                      className="grid w-full text-left grid-cols-[86px_1.6fr_.9fr_.9fr_.9fr_1fr_.85fr_.85fr_.9fr_.85fr_.8fr_.8fr] gap-3 px-4 py-3 border-b border-white/[0.05] bg-white/[0.015] hover:bg-white/[0.03] transition-all"
+                      className="grid w-full text-left grid-cols-[70px_1.35fr_.8fr_.8fr_.8fr_.95fr_.8fr_.8fr_.85fr_.8fr_.75fr_.75fr] gap-2.5 px-3 py-2.5 border-b border-white/[0.05] bg-white/[0.015] hover:bg-white/[0.03] transition-all"
                     >
                       <div className="flex items-center">
-                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br", subnetGradient(subnet.netuid))}>
+                        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br", subnetGradient(subnet.netuid))}>
                           {subnet.netuid}
                         </div>
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <div className="text-[13px] font-semibold text-white">{subnet.name}</div>
-                          <span className={cn("px-2 py-1 rounded-full text-[10px] font-semibold border", riskBg(subnet.risk))}>{subnet.risk}</span>
+                          <div className="text-[12px] font-semibold text-white">{subnet.name}</div>
+                          <span className={cn("px-1.5 py-0.5 rounded-full text-[9px] font-semibold border", riskBg(subnet.risk))}>{subnet.risk}</span>
                         </div>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold border", subnet.score >= 85 ? "bg-emerald-400/10 text-emerald-300 border-emerald-400/20" : subnet.score >= 75 ? "bg-amber-400/10 text-amber-300 border-amber-400/20" : "bg-white/[0.04] text-slate-400 border-white/[0.08]")}>Score {subnet.score.toFixed(1)}</span>
+                          <span className={cn("px-1.5 py-0.5 rounded-full text-[9px] font-semibold border", subnet.score >= 85 ? "bg-emerald-400/10 text-emerald-300 border-emerald-400/20" : subnet.score >= 75 ? "bg-amber-400/10 text-amber-300 border-amber-400/20" : "bg-white/[0.04] text-slate-400 border-white/[0.08]")}>Score {subnet.score.toFixed(1)}</span>
                           <span className="text-[10px] text-slate-600">SN{subnet.netuid} • {subnet.category} • {subnet.age}d</span>
                         </div>
                       </div>
-                      <div className="font-mono text-[12px] text-slate-200">{subnet.yield.toFixed(1)}%</div>
-                      <div className={cn("font-mono text-[12px] font-semibold", scoreColor(subnet.score))}>{subnet.score.toFixed(1)}</div>
-                      <div className="font-mono text-[12px] text-slate-300">{subnet.risk}</div>
-                      <div className="font-mono text-[12px] text-slate-300">{formatLiquidity(subnet.liquidity)}</div>
-                      <div className="font-mono text-[12px] text-slate-300">{formatLargeNumber(subnet.stakers)}</div>
-                      <div className="font-mono text-[12px] text-slate-300">{subnet.emissions.toFixed(1)} τ/d</div>
-                      <div className={cn("font-mono text-[12px] font-semibold", flow24h >= 0 ? "text-emerald-400" : "text-rose-400")}>{formatFlow(flow24h)}</div>
-                      <div className={cn("font-mono text-[12px] font-semibold", flowPct >= 0 ? "text-emerald-400" : "text-rose-400")}>{flowPct >= 0 ? "+" : ""}{flowPct.toFixed(1)}%</div>
-                      <div className={cn("font-mono text-[12px] font-semibold", subnet.yieldDelta7d >= 0 ? "text-emerald-400" : "text-rose-400")}>{subnet.yieldDelta7d >= 0 ? "+" : ""}{subnet.yieldDelta7d.toFixed(1)}%</div>
-                      <div className="font-mono text-[12px] text-slate-300">{subnet.confidence ?? "—"}</div>
+                      <div className="font-mono text-[11px] text-slate-200">{subnet.yield.toFixed(1)}%</div>
+                      <div className={cn("font-mono text-[11px] font-semibold", scoreColor(subnet.score))}>{subnet.score.toFixed(1)}</div>
+                      <div className="font-mono text-[11px] text-slate-300">{subnet.risk}</div>
+                      <div className="font-mono text-[11px] text-slate-300">{formatLiquidity(subnet.liquidity)}</div>
+                      <div className="font-mono text-[11px] text-slate-300">{formatLargeNumber(subnet.stakers)}</div>
+                      <div className="font-mono text-[11px] text-slate-300">{subnet.emissions.toFixed(1)} τ/d</div>
+                      <div className={cn("font-mono text-[11px] font-semibold", flow24h >= 0 ? "text-emerald-400" : "text-rose-400")}>{formatFlow(flow24h)}</div>
+                      <div className={cn("font-mono text-[11px] font-semibold", flowPct >= 0 ? "text-emerald-400" : "text-rose-400")}>{flowPct >= 0 ? "+" : ""}{flowPct.toFixed(1)}%</div>
+                      <div className={cn("font-mono text-[11px] font-semibold", subnet.yieldDelta7d >= 0 ? "text-emerald-400" : "text-rose-400")}>{subnet.yieldDelta7d >= 0 ? "+" : ""}{subnet.yieldDelta7d.toFixed(1)}%</div>
+                      <div className="font-mono text-[11px] text-slate-300">{subnet.confidence ?? "—"}</div>
                     </button>
                   );
                 })}
@@ -430,7 +430,7 @@ export default function MetricsPage() {
               <div className="text-[12px] text-slate-500 mb-4">Shows where stake appears to be flowing in and out right now.</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-                  <div className="flex items-center gap-2 text-[13px] font-semibold text-white mb-3"><ArrowUpRight className="w-4 h-4 text-emerald-400" /> Inflows</div>
+                  <div className="flex items-center gap-2 text-[12px] font-semibold text-white mb-3"><ArrowUpRight className="w-4 h-4 text-emerald-400" /> Inflows</div>
                   <div className="space-y-3">
                     {topInflows.map((subnet) => (
                       <div key={subnet.netuid} className="text-[12px]">
@@ -441,7 +441,7 @@ export default function MetricsPage() {
                   </div>
                 </div>
                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-                  <div className="flex items-center gap-2 text-[13px] font-semibold text-white mb-3"><ArrowDownLeft className="w-4 h-4 text-rose-400" /> Outflows</div>
+                  <div className="flex items-center gap-2 text-[12px] font-semibold text-white mb-3"><ArrowDownLeft className="w-4 h-4 text-rose-400" /> Outflows</div>
                   <div className="space-y-3">
                     {topOutflows.map((subnet) => (
                       <div key={subnet.netuid} className="text-[12px]">
@@ -496,7 +496,7 @@ export default function MetricsPage() {
             {bestOpportunity && (
               <div className="space-y-4">
                 <div>
-                  <div className="text-[15px] font-semibold text-white">SN{bestOpportunity.netuid} {bestOpportunity.name}</div>
+                  <div className="text-[14px] font-semibold text-white">SN{bestOpportunity.netuid} {bestOpportunity.name}</div>
                   <div className="text-[12px] text-slate-400 leading-relaxed mt-2">Strongest composite quality right now with healthier allocator support than most alternatives.</div>
                 </div>
                 <div className="text-[12px] text-emerald-300">Score {bestOpportunity.score.toFixed(1)} • {bestOpportunity.risk} risk • confidence {bestOpportunity.confidence ?? "—"}</div>
@@ -509,7 +509,7 @@ export default function MetricsPage() {
             {warningSubnet && (
               <div className="space-y-4">
                 <div>
-                  <div className="text-[15px] font-semibold text-white">SN{warningSubnet.netuid} {warningSubnet.name}</div>
+                  <div className="text-[14px] font-semibold text-white">SN{warningSubnet.netuid} {warningSubnet.name}</div>
                   <div className="text-[12px] text-slate-400 leading-relaxed mt-2">High headline reward but weaker supporting conditions. This is the kind of subnet the metrics page should help users avoid over-allocating into.</div>
                 </div>
                 <div className="text-[12px] text-rose-300">{warningSubnet.yield.toFixed(1)}% yield • {warningSubnet.risk} risk • {warningSubnet.yieldDelta7d.toFixed(1)}% 7d</div>
@@ -522,7 +522,7 @@ export default function MetricsPage() {
             <div className="space-y-4">
               {topInflows.slice(0, 2).map((subnet) => (
                 <div key={subnet.netuid}>
-                  <div className="text-[15px] font-semibold text-white">SN{subnet.netuid} {subnet.name}</div>
+                  <div className="text-[14px] font-semibold text-white">SN{subnet.netuid} {subnet.name}</div>
                   <div className="text-[12px] text-slate-400 leading-relaxed mt-2">Gaining visible stake traction. Useful for spotting which subnets are attracting fresh allocator attention.</div>
                   <div className="mt-2 text-[12px] text-emerald-300">{formatFlow(getFlow24h(subnet))} • {getFlowPct(subnet).toFixed(1)}%</div>
                 </div>
