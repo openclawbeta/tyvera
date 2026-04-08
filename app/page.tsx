@@ -337,6 +337,26 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* ── METRICS STRIP ──────────────────────────────────────────── */}
+      <section className="py-12 px-8">
+        <div className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6">
+          {[
+            { label: "Subnets Tracked", value: "128+", sub: "live on mainnet" },
+            { label: "Data Freshness", value: "20 min", sub: "chain-synced" },
+            { label: "Risk Metrics", value: "12", sub: "per subnet" },
+            { label: "Wallet Extensions", value: "3", sub: "supported" },
+          ].map((m) => (
+            <div key={m.label} className="text-center">
+              <div className="text-[28px] font-black text-white mb-1" style={{ letterSpacing: "-0.03em" }}>
+                {m.value}
+              </div>
+              <div className="text-[12px] font-semibold text-slate-400 mb-0.5">{m.label}</div>
+              <div className="text-[10px] text-slate-600">{m.sub}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* ── FEATURED SUBNETS ────────────────────────────────────────── */}
       <section className="py-24 px-8">
         <div className="max-w-6xl mx-auto">
@@ -694,7 +714,8 @@ export default function HomePage() {
           <p className="text-[11px] text-slate-700">Not financial advice. You approve every move.</p>
           <div className="flex flex-wrap gap-5">
             {[
-              { label: "Docs", href: "/subnets" },
+              { label: "Subnets", href: "/subnets" },
+              { label: "Developers", href: "/developers" },
               { label: "Privacy", href: "/privacy" },
               { label: "Terms", href: "/terms" },
             ].map(({ label, href }) => (

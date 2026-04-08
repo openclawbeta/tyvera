@@ -12,12 +12,12 @@ export const metadata: Metadata = {
     shortcut: "/icon.svg",
     apple: "/icon.svg",
   },
-  metadataBase: new URL("https://tyvera.vercel.app"),
+  metadataBase: new URL("https://tyvera.ai"),
   openGraph: {
     title: "Tyvera — Bittensor Subnet Intelligence",
     description:
       "Real-time analytics for 100+ Bittensor subnets. Track yields, emissions, risk scores, and metagraph data — powered by direct Subtensor chain queries.",
-    url: "https://tyvera.vercel.app",
+    url: "https://tyvera.ai",
     siteName: "Tyvera",
     locale: "en_US",
     type: "website",

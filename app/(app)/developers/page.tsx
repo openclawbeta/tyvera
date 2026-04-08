@@ -42,7 +42,7 @@ const ENDPOINTS = [
     params: "?netuid=N (optional, single subnet)",
     tier: "Strategist",
     example: `curl -H "Authorization: Bearer tyv_your_key" \\
-  https://tyvera.vercel.app/api/subnets`,
+  https://tyvera.ai/api/subnets`,
   },
   {
     method: "GET",
@@ -51,7 +51,7 @@ const ENDPOINTS = [
     params: "netuid (required)",
     tier: "Strategist",
     example: `curl -H "Authorization: Bearer tyv_your_key" \\
-  https://tyvera.vercel.app/api/subnets?netuid=1`,
+  https://tyvera.ai/api/subnets?netuid=1`,
   },
   {
     method: "GET",
@@ -60,7 +60,7 @@ const ENDPOINTS = [
     params: "?netuid=N (required)",
     tier: "Strategist",
     example: `curl -H "Authorization: Bearer tyv_your_key" \\
-  https://tyvera.vercel.app/api/metagraph?netuid=1`,
+  https://tyvera.ai/api/metagraph?netuid=1`,
   },
   {
     method: "GET",
@@ -69,7 +69,7 @@ const ENDPOINTS = [
     params: "None",
     tier: "Strategist",
     example: `curl -H "Authorization: Bearer tyv_your_key" \\
-  https://tyvera.vercel.app/api/tao-rate`,
+  https://tyvera.ai/api/tao-rate`,
   },
   {
     method: "GET",
@@ -78,7 +78,7 @@ const ENDPOINTS = [
     params: "?days=30 (default 30, max 365)",
     tier: "Strategist",
     example: `curl -H "Authorization: Bearer tyv_your_key" \\
-  "https://tyvera.vercel.app/api/tao-price-history?days=90"`,
+  "https://tyvera.ai/api/tao-price-history?days=90"`,
   },
   {
     method: "GET",
@@ -87,7 +87,7 @@ const ENDPOINTS = [
     params: "?address=5Grw... (required)",
     tier: "Strategist",
     example: `curl -H "Authorization: Bearer tyv_your_key" \\
-  "https://tyvera.vercel.app/api/entitlement?address=5Grw..."`,
+  "https://tyvera.ai/api/entitlement?address=5Grw..."`,
   },
 ];
 
@@ -298,7 +298,7 @@ export default function DevelopersPage() {
 
             <CodeBlock
               code={`curl -H "Authorization: Bearer tyv_your_api_key" \\
-  https://tyvera.vercel.app/api/subnets`}
+  https://tyvera.ai/api/subnets`}
             />
 
             <p className="text-sm text-slate-400">
