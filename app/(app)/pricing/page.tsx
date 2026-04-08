@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, Zap, TrendingUp, Shield, Building2, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
@@ -15,7 +15,6 @@ interface PricingTier {
   tagline: string;
   monthlyPrice: number;
   annualPrice: number;
-  taoEstimate: string;
   icon: React.ReactNode;
   accent: string;
   accentBorder: string;
@@ -34,7 +33,7 @@ const TIERS: PricingTier[] = [
     tagline: "Browse the network for free",
     monthlyPrice: 0,
     annualPrice: 0,
-    taoEstimate: "Free",
+
     icon: <Zap className="w-5 h-5" />,
     accent: "text-slate-300",
     accentBorder: "rgba(148,163,184,0.2)",
@@ -66,7 +65,7 @@ const TIERS: PricingTier[] = [
     tagline: "Full data access for active stakers",
     monthlyPrice: 19.99,
     annualPrice: 191.90,
-    taoEstimate: "~0.055 τ/mo",
+
     icon: <TrendingUp className="w-5 h-5" />,
     accent: "text-cyan-400",
     accentBorder: "rgba(34,211,238,0.25)",
@@ -102,7 +101,7 @@ const TIERS: PricingTier[] = [
     tagline: "AI-powered edge for power users",
     monthlyPrice: 49.99,
     annualPrice: 479.90,
-    taoEstimate: "~0.14 τ/mo",
+
     icon: <Shield className="w-5 h-5" />,
     accent: "text-emerald-400",
     accentBorder: "rgba(52,211,153,0.25)",
@@ -139,7 +138,7 @@ const TIERS: PricingTier[] = [
     tagline: "For funds, DAOs, and subnet teams",
     monthlyPrice: 99.99,
     annualPrice: 959.90,
-    taoEstimate: "~0.27 τ/mo",
+
     icon: <Building2 className="w-5 h-5" />,
     accent: "text-amber-400",
     accentBorder: "rgba(251,191,36,0.25)",
@@ -227,6 +226,34 @@ export default function PricingPage() {
   const [billing, setBilling] = useState<BillingCycle>("monthly");
   const [subscribing, setSubscribing] = useState<string | null>(null);
   const [paymentInfo, setPaymentInfo] = useState<PaymentInstructions | null>(null);
+  const [taoUsd, setTaoUsd] = useState<number | null>(null);
+
+  // Fetch live TAO/USD rate
+  useEffect(() => {
+    const fetchRate = async () => {
+      try {
+        const res = await fetch("/api/tao-rate");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (typeof data.taoUsd === "number" && data.taoUsd > 0) {
+          setTaoUsd(data.taoUsd);
+        }
+      } catch {
+        // Keep null — will hide TAO estimate
+      }
+    };
+    fetchRate();
+  }, []);
+
+  /** Convert USD to TAO using live rate */
+  const usdToTao = (usd: number): string => {
+    if (!taoUsd || usd === 0) return "";
+    const tao = usd / taoUsd;
+    // Show 2-4 decimal places depending on size
+    if (tao >= 1) return `~${tao.toFixed(2)} τ/mo`;
+    if (tao >= 0.01) return `~${tao.toFixed(3)} τ/mo`;
+    return `~${tao.toFixed(4)} τ/mo`;
+  };
 
   const handleSubscribe = async (planId: string) => {
     if (planId === "FREE") {
@@ -377,12 +404,13 @@ export default function PricingPage() {
                     </div>
                     {tier.monthlyPrice > 0 && billing === "annual" && (
                       <p className="text-xs text-slate-500 mt-1">
-                        ${totalAnnual}/year &middot; {tier.taoEstimate}
+                        ${totalAnnual}/year
+                        {taoUsd && <> &middot; {usdToTao(price)}</>}
                       </p>
                     )}
-                    {tier.monthlyPrice > 0 && billing === "monthly" && (
+                    {tier.monthlyPrice > 0 && billing === "monthly" && taoUsd && (
                       <p className="text-xs text-slate-500 mt-1">
-                        {tier.taoEstimate}
+                        {usdToTao(tier.monthlyPrice)}
                       </p>
                     )}
                   </div>
@@ -436,7 +464,8 @@ export default function PricingPage() {
           <Zap className="w-4 h-4 mt-0.5 shrink-0 text-cyan-400" />
           <div className="text-sm text-slate-400 leading-relaxed">
             <span className="font-semibold text-cyan-300">Pay in TAO.</span>{" "}
-            All paid tiers can be activated on-chain with TAO. Prices in TAO are recalculated weekly based on the current TAO/USD rate. Annual plans get 20% off.
+            All paid tiers can be activated on-chain with TAO. Prices in TAO update live based on the current TAO/USD rate
+            {taoUsd && <> (1 τ = ${taoUsd.toFixed(2)})</>}. Annual plans get 20% off.
           </div>
         </div>
       </FadeIn>
