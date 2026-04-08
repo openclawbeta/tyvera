@@ -23,6 +23,9 @@ __pycache__/
 .venv/
 venv/
 
+# Build artifacts
+tsconfig.tsbuildinfo
+
 # OS
 .DS_Store
 Thumbs.db
