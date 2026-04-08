@@ -1,6 +1,8 @@
 export type BillingStatus =
   | "disconnected"        // no wallet connected
   | "connected_free"      // wallet connected, no active subscription
+  | "connected_premium"   // wallet connected, active paid subscription
+  | "connected_grace"     // wallet connected, subscription in grace period
   | "active"              // paid subscription, within period
   | "grace"               // subscription expired < 7 days ago
   | "expired"             // subscription expired > 7 days ago

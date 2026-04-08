@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createApiKey, listApiKeys, revokeApiKey } from "@/lib/db/api-keys";
 import { getEntitlement } from "@/lib/db/subscriptions";
 import { normalizeTier, getApiRateLimit } from "@/lib/types/tiers";
+import { verifyWalletAuth, getAuthenticatedAddress } from "@/lib/api/wallet-auth";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* API Key management                                                  */
@@ -9,12 +10,23 @@ import { normalizeTier, getApiRateLimit } from "@/lib/types/tiers";
 /* GET  /api/keys?address=5Grw...  — list keys for a wallet            */
 /* POST /api/keys { address, label } — generate a new key              */
 /* DELETE /api/keys { address, id } — revoke a key                     */
+/*                                                                     */
+/* All endpoints verify wallet ownership via X-Wallet-* headers.       */
 /* ─────────────────────────────────────────────────────────────────── */
 
 export async function GET(request: NextRequest) {
-  const address = request.nextUrl.searchParams.get("address");
+  const queryAddress = request.nextUrl.searchParams.get("address");
+
+  const auth = await verifyWalletAuth(request);
+  if (auth.errorResponse) return auth.errorResponse;
+
+  const address = getAuthenticatedAddress(request, auth, queryAddress);
   if (!address) {
     return NextResponse.json({ error: "Missing address" }, { status: 400 });
+  }
+
+  if (auth.verified && auth.address !== address) {
+    return NextResponse.json({ error: "Address mismatch" }, { status: 403 });
   }
 
   const keys = await listApiKeys(address);
@@ -24,10 +36,19 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { address, label } = body;
+    const { address: bodyAddress, label } = body;
+
+    const auth = await verifyWalletAuth(request);
+    if (auth.errorResponse) return auth.errorResponse;
+
+    const address = getAuthenticatedAddress(request, auth, bodyAddress);
 
     if (!address) {
       return NextResponse.json({ error: "Missing address" }, { status: 400 });
+    }
+
+    if (auth.verified && auth.address !== address) {
+      return NextResponse.json({ error: "Address mismatch" }, { status: 403 });
     }
 
     // Check entitlement — must be strategist+ for API access
@@ -68,10 +89,19 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const body = await request.json();
-    const { address, id } = body;
+    const { address: bodyAddress, id } = body;
+
+    const auth = await verifyWalletAuth(request);
+    if (auth.errorResponse) return auth.errorResponse;
+
+    const address = getAuthenticatedAddress(request, auth, bodyAddress);
 
     if (!address || !id) {
       return NextResponse.json({ error: "Missing address or key id" }, { status: 400 });
+    }
+
+    if (auth.verified && auth.address !== address) {
+      return NextResponse.json({ error: "Address mismatch" }, { status: 403 });
     }
 
     const revoked = await revokeApiKey(id, address);

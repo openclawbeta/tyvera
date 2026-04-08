@@ -9,6 +9,7 @@ import {
 import { PageHeader } from "@/components/layout/page-header";
 import { FadeIn } from "@/components/ui-custom/fade-in";
 import { useWallet } from "@/lib/wallet-context";
+import { useEntitlement } from "@/lib/hooks/use-entitlement";
 import { truncateAddress } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -350,15 +351,26 @@ function WalletSection() {
 /* -------------------------------------------------------------------------------------------------------------------------------------- */
 
 function AccountSection() {
+  const { address } = useWallet();
+  const { tier } = useEntitlement(address);
+  const displayTier = tier ? tier.toUpperCase() : "EXPLORER";
+  const truncated = address ? (address.slice(0, 6) + "..." + address.slice(-4)) : "Not connected";
+
+  // Tier badge styling
+  const tierStyles: Record<string, { bg: string; border: string; color: string }> = {
+    EXPLORER:       { bg: "rgba(148,163,184,0.1)",  border: "rgba(148,163,184,0.25)", color: "#94a3b8" },
+    ANALYST:        { bg: "rgba(34,211,238,0.1)",    border: "rgba(34,211,238,0.25)",  color: "#22d3ee" },
+    STRATEGIST:     { bg: "rgba(139,92,246,0.1)",    border: "rgba(139,92,246,0.25)",  color: "#8b5cf6" },
+    INSTITUTIONAL:  { bg: "rgba(251,191,36,0.1)",    border: "rgba(251,191,36,0.25)",  color: "#fbbf24" },
+  };
+  const style = tierStyles[displayTier] || tierStyles.EXPLORER;
+
   return (
     <Panel>
       <PanelHeader title="Account" subtitle="Profile and plan information." />
       <div className="rounded-xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.055)" }}>
-        <SettingRow label="Display name">
-          <span className="text-[12px] text-slate-300 font-medium">Openclaw</span>
-        </SettingRow>
-        <SettingRow label="Email" description="Used for billing receipts only.">
-          <span className="text-[12px] text-slate-500">openclawbeta@gmail.com</span>
+        <SettingRow label="Wallet address">
+          <span className="text-[12px] text-slate-300 font-medium font-mono">{truncated}</span>
         </SettingRow>
         <SettingRow label="Timezone">
           <select
@@ -378,12 +390,12 @@ function AccountSection() {
             <span
               className="text-[10px] font-bold px-2 py-0.5 rounded-full"
               style={{
-                background: "linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.1))",
-                border: "1px solid rgba(251,191,36,0.28)",
-                color: "#fbbf24",
+                background: `linear-gradient(135deg, ${style.bg}, ${style.bg})`,
+                border: `1px solid ${style.border}`,
+                color: style.color,
               }}
             >
-              PREMIUM
+              {displayTier}
             </span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-700" />
           </div>

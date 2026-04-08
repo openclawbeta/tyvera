@@ -14,14 +14,40 @@ import type { Tier } from "@/lib/types/tiers";
 /* The /api/verify-payments cron matches incoming transfers by memo.    */
 /* ─────────────────────────────────────────────────────────────────── */
 
-const DEPOSIT_ADDRESS = "5EkH7oV4EvT2otiH1teYu9gM2bkhuQTZbZrrPuqxHQMVTjRZ";
+const DEPOSIT_ADDRESS = process.env.DEPOSIT_ADDRESS || "5EkH7oV4EvT2otiH1teYu9gM2bkhuQTZbZrrPuqxHQMVTjRZ";
 
-// TAO amounts per plan (recalculated weekly in production)
-const TAO_PRICES: Record<string, { monthly: number; annual: number }> = {
-  ANALYST: { monthly: 0.025, annual: 0.24 },
-  STRATEGIST: { monthly: 0.08, annual: 0.77 },
-  INSTITUTIONAL: { monthly: 0.27, annual: 2.6 },
-};
+/**
+ * Compute TAO prices dynamically from USD tier prices and current TAO rate.
+ * Falls back to conservative estimates if price fetch fails.
+ */
+async function getTaoPrices(): Promise<Record<string, { monthly: number; annual: number }>> {
+  let taoUsd = 600; // conservative fallback
+
+  try {
+    const baseUrl = process.env.VERCEL_URL
+      ? "https://" + process.env.VERCEL_URL
+      : "http://localhost:3000";
+    const res = await fetch(baseUrl + "/api/tao-rate", { next: { revalidate: 300 } });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.taoUsd && data.taoUsd > 0) {
+        taoUsd = data.taoUsd;
+      }
+    }
+  } catch {
+    // Use fallback
+  }
+
+  // USD prices from TIER_DEFINITIONS + 2% buffer for price movement
+  const buffer = 1.02;
+  return {
+    ANALYST:        { monthly: Math.ceil((9 / taoUsd) * buffer * 10000) / 10000,   annual: Math.ceil((86 / taoUsd) * buffer * 10000) / 10000 },
+    STRATEGIST:     { monthly: Math.ceil((29 / taoUsd) * buffer * 10000) / 10000,  annual: Math.ceil((278 / taoUsd) * buffer * 10000) / 10000 },
+    INSTITUTIONAL:  { monthly: Math.ceil((99 / taoUsd) * buffer * 10000) / 10000,  annual: Math.ceil((950 / taoUsd) * buffer * 10000) / 10000 },
+  };
+}
+
+const VALID_PLANS = ["ANALYST", "STRATEGIST", "INSTITUTIONAL"];
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +58,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing wallet address" }, { status: 400 });
     }
 
-    if (!plan || !TAO_PRICES[plan]) {
+    if (!plan || !VALID_PLANS.includes(plan)) {
       return NextResponse.json(
         { error: "Invalid plan. Options: ANALYST, STRATEGIST, INSTITUTIONAL" },
         { status: 400 },
@@ -46,7 +72,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const priceEntry = TAO_PRICES[plan as keyof typeof TAO_PRICES];
+    const taoPrices = await getTaoPrices();
+    const priceEntry = taoPrices[plan as keyof typeof taoPrices];
     const amountTao = billing === "annual" ? priceEntry.annual : priceEntry.monthly;
     const durationDays = billing === "annual" ? 365 : 30;
     const memo = `TYV-${randomUUID().slice(0, 8).toUpperCase()}`;

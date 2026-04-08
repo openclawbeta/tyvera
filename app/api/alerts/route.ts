@@ -10,11 +10,21 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getAlerts, getUnreadCount, markAlertsRead } from "@/lib/db/alerts";
+import { verifyWalletAuth, getAuthenticatedAddress } from "@/lib/api/wallet-auth";
 
 export async function GET(req: NextRequest) {
-  const address = req.nextUrl.searchParams.get("address");
+  const queryAddress = req.nextUrl.searchParams.get("address");
+
+  const auth = await verifyWalletAuth(req);
+  if (auth.errorResponse) return auth.errorResponse;
+
+  const address = getAuthenticatedAddress(req, auth, queryAddress);
   if (!address) {
     return NextResponse.json({ error: "address required" }, { status: 400 });
+  }
+
+  if (auth.verified && auth.address !== address) {
+    return NextResponse.json({ error: "Address mismatch" }, { status: 403 });
   }
 
   // Count-only mode
@@ -46,10 +56,19 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { address, alertIds } = body;
+    const { address: bodyAddress, alertIds } = body;
+
+    const auth = await verifyWalletAuth(req);
+    if (auth.errorResponse) return auth.errorResponse;
+
+    const address = getAuthenticatedAddress(req, auth, bodyAddress);
 
     if (!address) {
       return NextResponse.json({ error: "address required" }, { status: 400 });
+    }
+
+    if (auth.verified && auth.address !== address) {
+      return NextResponse.json({ error: "Address mismatch" }, { status: 403 });
     }
 
     await markAlertsRead(address, alertIds);

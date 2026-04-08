@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -12,6 +13,7 @@ import {
   Lightbulb,
   BarChart2,
 } from "lucide-react";
+import { useWallet } from "@/lib/wallet-context";
 
 const FEATURE_LIST = [
   { icon: Network,    color: "#22d3ee", text: "Live analytics on all 64+ Bittensor subnets" },
@@ -22,9 +24,18 @@ const FEATURE_LIST = [
 
 export default function SignupPage() {
   const router = useRouter();
+  const { walletState, connect, availableExtensions } = useWallet();
+
+  // Redirect to dashboard once connected
+  useEffect(() => {
+    if (walletState === "connected" || walletState === "verified") {
+      router.push("/dashboard");
+    }
+  }, [walletState, router]);
 
   function handleConnectWallet() {
-    router.push("/dashboard");
+    const ext = availableExtensions.length > 0 ? availableExtensions[0] : "polkadotjs";
+    connect(ext);
   }
 
   return (

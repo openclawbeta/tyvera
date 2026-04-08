@@ -21,16 +21,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchSubnetsFromChain, setSubnetCache } from "@/lib/chain";
 import { refreshMarketCache } from "@/lib/chain/market-cache";
+import { timingSafeEqual } from "crypto";
 
 export const maxDuration = 60; // Vercel Pro allows up to 60s
 export const dynamic = "force-dynamic";
+
+function verifyCronAuth(authHeader: string | null, secret: string): boolean {
+  const expected = "Bearer " + secret;
+  if (!authHeader || authHeader.length !== expected.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected));
+  } catch {
+    return false;
+  }
+}
 
 export async function GET(request: NextRequest) {
   // ── Auth check ──────────────────────────────────────────────────
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret) {
     const authHeader = request.headers.get("Authorization");
-    if (authHeader !== `Bearer ${cronSecret}`) {
+    if (!verifyCronAuth(authHeader, cronSecret)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
   }

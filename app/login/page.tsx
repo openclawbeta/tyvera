@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -11,6 +11,7 @@ import {
   Wallet,
   ChevronRight,
 } from "lucide-react";
+import { useWallet } from "@/lib/wallet-context";
 
 const TRUST_ITEMS = [
   { icon: Shield,       text: "No seed phrase storage",       sub: "We never see your private keys." },
@@ -20,14 +21,22 @@ const TRUST_ITEMS = [
 
 export default function LoginPage() {
   const router = useRouter();
-  const [walletState, setWalletState] = useState<"idle" | "connecting">("idle");
+  const { walletState, connect, availableExtensions, connectionError } = useWallet();
+
+  // Redirect to dashboard once connected
+  useEffect(() => {
+    if (walletState === "connected" || walletState === "verified") {
+      router.push("/dashboard");
+    }
+  }, [walletState, router]);
 
   function handleWalletConnect() {
-    setWalletState("connecting");
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, 800);
+    const ext = availableExtensions.length > 0 ? availableExtensions[0] : "polkadotjs";
+    connect(ext);
   }
+
+  const isIdle = walletState === "disconnected";
+  const isConnecting = walletState === "connecting";
 
   return (
     <div
@@ -184,7 +193,7 @@ export default function LoginPage() {
 
             {/* Wallet connection */}
             <div className="space-y-4">
-              {walletState === "idle" && (
+              {isIdle && (
                 <>
                   <div className="mb-6 p-4 rounded-xl" style={{ background: "rgba(34,211,238,0.05)", border: "1px solid rgba(34,211,238,0.15)" }}>
                     <p className="text-[12px] text-slate-300">Connect your Polkadot.js or Talisman wallet to get started.</p>
@@ -226,7 +235,7 @@ export default function LoginPage() {
                 </>
               )}
 
-              {walletState === "connecting" && (
+              {isConnecting && (
                 <div
                   className="flex flex-col items-center justify-center py-8 rounded-xl"
                   style={{

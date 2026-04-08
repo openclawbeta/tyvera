@@ -11,15 +11,26 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { runVerificationCycle } from "@/lib/db/payment-verifier";
+import { timingSafeEqual } from "crypto";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
+
+function verifyCronAuth(authHeader: string | null, secret: string): boolean {
+  const expected = "Bearer " + secret;
+  if (!authHeader || authHeader.length !== expected.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected));
+  } catch {
+    return false;
+  }
+}
 
 export async function GET(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret) {
     const authHeader = request.headers.get("Authorization");
-    if (authHeader !== `Bearer ${cronSecret}`) {
+    if (!verifyCronAuth(authHeader, cronSecret)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
   }

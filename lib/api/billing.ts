@@ -1,8 +1,14 @@
 import { mapBillingStatusDto, mapBillingHistoryDto } from "@/lib/adapters/billing";
-import { PLANS, BILLING_STATE } from "@/lib/mock-data/billing";
+import { PLANS } from "@/lib/mock-data/billing";
+import { getEntitlement, storePaymentIntent } from "@/lib/db/subscriptions";
+import { TIER_DEFINITIONS } from "@/lib/types/tiers";
+import { randomUUID } from "crypto";
 import type { WalletBillingState } from "@/lib/types/billing-state";
 
-export function getBillingStatus(address?: string | null): WalletBillingState {
+/**
+ * Get billing status for a wallet — reads from the real subscription database.
+ */
+export async function getBillingStatus(address?: string | null): Promise<WalletBillingState> {
   if (!address) {
     return {
       status: "disconnected",
@@ -12,56 +18,76 @@ export function getBillingStatus(address?: string | null): WalletBillingState {
       walletAddress: null,
     };
   }
-  return {
-    status: "connected_free",
-    currentPlan: null,
-    expiresAt: null,
-    daysRemaining: null,
-    walletAddress: address,
-  };
-}
 
-export function getLegacyBillingStatus() {
-  return mapBillingStatusDto({
-    currentPlan: BILLING_STATE.currentPlan,
-    premiumExpiresAt: BILLING_STATE.premiumExpiresAt ?? undefined,
-    daysRemaining: BILLING_STATE.daysRemaining ?? undefined,
-    walletAddress: BILLING_STATE.walletAddress,
-    paymentHistory: BILLING_STATE.paymentHistory,
-    plans: PLANS,
-  });
+  try {
+    const entitlement = await getEntitlement(address);
+
+    if (entitlement) {
+      const tierDef = TIER_DEFINITIONS.find((d) => d.id === entitlement.tier);
+      return {
+        status: entitlement.status === "active" ? "connected_premium" : "connected_grace",
+        currentPlan: tierDef?.displayName ?? entitlement.plan_id,
+        expiresAt: entitlement.expires_at,
+        daysRemaining: entitlement.days_remaining,
+        walletAddress: address,
+      };
+    }
+
+    return {
+      status: "connected_free",
+      currentPlan: null,
+      expiresAt: null,
+      daysRemaining: null,
+      walletAddress: address,
+    };
+  } catch (err) {
+    console.error("[billing] Error fetching entitlement:", err);
+    return {
+      status: "connected_free",
+      currentPlan: null,
+      expiresAt: null,
+      daysRemaining: null,
+      walletAddress: address,
+    };
+  }
 }
 
 export function getPlans() {
   return PLANS;
 }
 
-export function getBillingHistory() {
-  return mapBillingHistoryDto({ items: BILLING_STATE.paymentHistory });
-}
+/**
+ * Create a real payment intent stored in the database.
+ */
+export async function createPaymentIntent(planId: string, walletAddress?: string) {
+  const depositAddress = process.env.DEPOSIT_ADDRESS || "5EkH7oV4EvT2otiH1teYu9gM2bkhuQTZbZrrPuqxHQMVTjRZ";
+  const tierDef = TIER_DEFINITIONS.find((d) => d.planIds.includes(planId));
+  const amountTao = tierDef ? tierDef.monthlyPrice : 0;
+  const intentId = randomUUID();
+  const memo = "TYV-" + randomUUID().slice(0, 8).toUpperCase();
+  const expiresAt = new Date(Date.now() + 86400000).toISOString();
 
-export function createPaymentRequest(planId: string) {
-  return {
-    id: `mock-payment-${planId.toLowerCase()}`,
+  await storePaymentIntent({
+    id: intentId,
+    walletAddress: walletAddress ?? "",
     planId,
-    status: "PENDING",
-    createdAt: new Date().toISOString(),
-  };
-}
+    amountTao,
+    memo,
+    expiresAt,
+  });
 
-export async function createPaymentIntent(planId: string, _walletAddress?: string) {
   return {
-    id: `pi-${Date.now()}`,
-    walletAddress: _walletAddress ?? "",
+    id: intentId,
+    walletAddress: walletAddress ?? "",
     planId,
-    planName: planId,
-    amountTao: 0,
-    amountUsd: 0,
-    memo: `tyvera-${planId}-${Date.now()}`,
-    depositAddress: "5EkH7oV4EvT2otiH1teYu9gM2bkhuQTZbZrrPuqxHQMVTjRZ",
+    planName: tierDef?.displayName ?? planId,
+    amountTao,
+    amountUsd: tierDef?.monthlyPrice ?? 0,
+    memo,
+    depositAddress,
     status: "awaiting_payment" as const,
     createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 86400000).toISOString(),
+    expiresAt,
     txHash: null,
     confirmations: 0,
     requiredConfirmations: 6,

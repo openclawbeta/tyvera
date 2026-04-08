@@ -17,11 +17,23 @@ import {
   initDefaultRules,
 } from "@/lib/db/alerts";
 import { ALERT_TYPE_META, type AlertType } from "@/lib/alerts/types";
+import { verifyWalletAuth, getAuthenticatedAddress } from "@/lib/api/wallet-auth";
 
 export async function GET(req: NextRequest) {
-  const address = req.nextUrl.searchParams.get("address");
+  const queryAddress = req.nextUrl.searchParams.get("address");
+
+  // Verify wallet ownership
+  const auth = await verifyWalletAuth(req);
+  if (auth.errorResponse) return auth.errorResponse;
+
+  const address = getAuthenticatedAddress(req, auth, queryAddress);
   if (!address) {
     return NextResponse.json({ error: "address required" }, { status: 400 });
+  }
+
+  // If auth headers provided, ensure address matches
+  if (auth.verified && auth.address !== address) {
+    return NextResponse.json({ error: "Address mismatch" }, { status: 403 });
   }
 
   try {
@@ -36,10 +48,20 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { address, type, threshold, enabled, subnetFilter } = body;
+    const { address: bodyAddress, type, threshold, enabled, subnetFilter } = body;
+
+    // Verify wallet ownership
+    const auth = await verifyWalletAuth(req);
+    if (auth.errorResponse) return auth.errorResponse;
+
+    const address = getAuthenticatedAddress(req, auth, bodyAddress);
 
     if (!address || !type) {
       return NextResponse.json({ error: "address and type required" }, { status: 400 });
+    }
+
+    if (auth.verified && auth.address !== address) {
+      return NextResponse.json({ error: "Address mismatch" }, { status: 403 });
     }
 
     if (!(type in ALERT_TYPE_META)) {
@@ -67,10 +89,19 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const body = await req.json();
-    const { address, ruleId } = body;
+    const { address: bodyAddress, ruleId } = body;
+
+    const auth = await verifyWalletAuth(req);
+    if (auth.errorResponse) return auth.errorResponse;
+
+    const address = getAuthenticatedAddress(req, auth, bodyAddress);
 
     if (!address || !ruleId) {
       return NextResponse.json({ error: "address and ruleId required" }, { status: 400 });
+    }
+
+    if (auth.verified && auth.address !== address) {
+      return NextResponse.json({ error: "Address mismatch" }, { status: 403 });
     }
 
     await deleteAlertRule(address, Number(ruleId));
@@ -84,10 +115,19 @@ export async function DELETE(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { address, action } = body;
+    const { address: bodyAddress, action } = body;
+
+    const auth = await verifyWalletAuth(req);
+    if (auth.errorResponse) return auth.errorResponse;
+
+    const address = getAuthenticatedAddress(req, auth, bodyAddress);
 
     if (!address) {
       return NextResponse.json({ error: "address required" }, { status: 400 });
+    }
+
+    if (auth.verified && auth.address !== address) {
+      return NextResponse.json({ error: "Address mismatch" }, { status: 403 });
     }
 
     if (action === "init_defaults") {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runVerificationCycle } from "@/lib/db/payment-verifier";
+import { timingSafeEqual } from "crypto";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Payment verification endpoint                                       */
@@ -34,7 +35,10 @@ export async function GET(request: NextRequest) {
   }
 
   const authHeader = request.headers.get("Authorization");
-  if (authHeader !== `Bearer ${CRON_SECRET}`) {
+  const expected = "Bearer " + CRON_SECRET;
+  const isAuthed = authHeader && authHeader.length === expected.length &&
+    timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected));
+  if (!isAuthed) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
