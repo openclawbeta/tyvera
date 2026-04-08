@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Code2,
   Key,
@@ -17,6 +17,8 @@ import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
 import { FadeIn } from "@/components/ui-custom/fade-in";
 import { cn } from "@/lib/utils";
+import { useWallet } from "@/lib/wallet-context";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Developer Portal — API docs, key management, rate limits            */
@@ -127,22 +129,136 @@ function CodeBlock({ code, language = "bash" }: { code: string; language?: strin
 }
 
 export default function DevelopersPage() {
+  const { address: walletAddress } = useWallet();
   const [keys, setKeys] = useState<ApiKeyDisplay[]>([]);
   const [newKeyRevealed, setNewKeyRevealed] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [revoking, setRevoking] = useState<number | null>(null);
+  const [loadingKeys, setLoadingKeys] = useState(false);
   const [keyLabel, setKeyLabel] = useState("");
   const [activeEndpoint, setActiveEndpoint] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // In production, this would come from wallet context
-  const walletConnected = false;
+  const walletConnected = !!walletAddress;
+
+  // Fetch existing keys when wallet connects
+  useEffect(() => {
+    if (!walletAddress) {
+      setKeys([]);
+      return;
+    }
+
+    const fetchKeys = async () => {
+      setLoadingKeys(true);
+      try {
+        const response = await fetchWithTimeout(
+          `/api/keys?address=${encodeURIComponent(walletAddress)}`,
+          { method: "GET", timeoutMs: 8000 }
+        );
+        if (!response.ok) {
+          throw new Error(`Failed to fetch keys: ${response.statusText}`);
+        }
+        const data = await response.json();
+        setKeys(data.keys || []);
+      } catch (error) {
+        console.error("Error fetching keys:", error);
+        setKeys([]);
+      } finally {
+        setLoadingKeys(false);
+      }
+    };
+
+    fetchKeys();
+  }, [walletAddress]);
 
   const handleCreateKey = async () => {
-    // Placeholder — would call POST /api/keys with wallet address
+    if (!walletAddress || !keyLabel.trim()) {
+      return;
+    }
+
     setCreating(true);
-    setTimeout(() => {
-      setNewKeyRevealed("tyv_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4");
+    setErrorMessage(null);
+    try {
+      const response = await fetchWithTimeout(
+        "/api/keys",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            address: walletAddress,
+            label: keyLabel.trim(),
+          }),
+          timeoutMs: 8000,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          setErrorMessage(data.error || "Your tier does not support API keys. Upgrade to Strategist or above.");
+        } else {
+          setErrorMessage(data.error || "Failed to create key");
+        }
+        return;
+      }
+
+      // Show the revealed key
+      setNewKeyRevealed(data.key);
+      setKeyLabel("");
+
+      // Refresh keys list
+      const keysResponse = await fetchWithTimeout(
+        `/api/keys?address=${encodeURIComponent(walletAddress)}`,
+        { method: "GET", timeoutMs: 8000 }
+      );
+      if (keysResponse.ok) {
+        const keysData = await keysResponse.json();
+        setKeys(keysData.keys || []);
+      }
+    } catch (error) {
+      console.error("Error creating key:", error);
+      setErrorMessage("Failed to create key. Please try again.");
+    } finally {
       setCreating(false);
-    }, 1000);
+    }
+  };
+
+  const handleRevokeKey = async (keyId: number) => {
+    if (!walletAddress) {
+      return;
+    }
+
+    setRevoking(keyId);
+    try {
+      const response = await fetchWithTimeout(
+        "/api/keys",
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            address: walletAddress,
+            id: keyId,
+          }),
+          timeoutMs: 8000,
+        }
+      );
+
+      if (!response.ok) {
+        const data = await response.json();
+        setErrorMessage(data.error || "Failed to revoke key");
+        return;
+      }
+
+      // Remove key from state
+      setKeys(keys.filter((k) => k.id !== keyId));
+      setErrorMessage(null);
+    } catch (error) {
+      console.error("Error revoking key:", error);
+      setErrorMessage("Failed to revoke key. Please try again.");
+    } finally {
+      setRevoking(null);
+    }
   };
 
   return (
@@ -221,6 +337,16 @@ export default function DevelopersPage() {
             </div>
           ) : (
             <div className="space-y-3">
+              {/* Error message */}
+              {errorMessage && (
+                <div
+                  className="rounded-lg p-3"
+                  style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.18)" }}
+                >
+                  <p className="text-sm text-red-400">{errorMessage}</p>
+                </div>
+              )}
+
               {/* Key creation form */}
               <div className="flex gap-2">
                 <input
@@ -232,11 +358,11 @@ export default function DevelopersPage() {
                 />
                 <button
                   onClick={handleCreateKey}
-                  disabled={creating}
-                  className="px-4 py-2 rounded-lg text-sm font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 hover:bg-emerald-500/25 transition-all flex items-center gap-2"
+                  disabled={creating || loadingKeys}
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 hover:bg-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  Generate Key
+                  {creating ? "Creating..." : "Generate Key"}
                 </button>
               </div>
 
@@ -259,9 +385,48 @@ export default function DevelopersPage() {
                 </div>
               )}
 
+              {/* Loading state */}
+              {loadingKeys && (
+                <p className="text-sm text-slate-500 py-4 text-center">Loading keys...</p>
+              )}
+
               {/* Existing keys */}
-              {keys.length === 0 && !newKeyRevealed && (
+              {!loadingKeys && keys.length === 0 && !newKeyRevealed && (
                 <p className="text-sm text-slate-500 py-4 text-center">No API keys yet</p>
+              )}
+
+              {/* Keys list */}
+              {!loadingKeys && keys.length > 0 && (
+                <div className="space-y-2 mt-4">
+                  {keys.map((key) => (
+                    <div
+                      key={key.id}
+                      className="rounded-lg p-3 flex items-center justify-between"
+                      style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <code className="text-sm font-mono text-emerald-300 truncate">{key.prefix}</code>
+                          <span className="text-xs px-2 py-0.5 rounded bg-slate-700/50 text-slate-300 whitespace-nowrap">
+                            {key.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mb-1">{key.label}</p>
+                        <p className="text-xs text-slate-600">
+                          {key.requests_today} requests today • Created {new Date(key.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleRevokeKey(key.id)}
+                        disabled={revoking === key.id}
+                        className="ml-3 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/15 text-red-400 border border-red-500/25 hover:bg-red-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        {revoking === key.id ? "Revoking..." : "Revoke"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           )}

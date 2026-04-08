@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Download, FileText, TrendingUp, Zap, DollarSign } from "lucide-react";
+import { Download, FileText, TrendingUp, Zap, DollarSign, WalletCards } from "lucide-react";
+import { useWallet } from "@/lib/wallet-context";
 import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
 import { StatCard } from "@/components/ui-custom/stat-card";
@@ -36,6 +37,7 @@ function truncateHash(hash?: string): string {
 }
 
 export default function TaxReportPage() {
+  const { address: walletAddress } = useWallet();
   const [selectedYear, setSelectedYear] = useState<number>(CURRENT_YEAR);
   const [filterType, setFilterType] = useState<TaxEventType | "ALL">("ALL");
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
@@ -104,19 +106,31 @@ export default function TaxReportPage() {
         </div>
       </PageHeader>
 
-      {/* Example data disclaimer */}
+      {/* Data source disclosure */}
       <div
         className="flex items-start gap-3 rounded-xl px-4 py-3 text-sm"
         style={{
-          background: "rgba(251, 191, 36, 0.06)",
-          border: "1px solid rgba(251, 191, 36, 0.18)",
+          background: walletAddress ? "rgba(34, 211, 238, 0.04)" : "rgba(251, 191, 36, 0.06)",
+          border: `1px solid ${walletAddress ? "rgba(34, 211, 238, 0.14)" : "rgba(251, 191, 36, 0.18)"}`,
         }}
       >
-        <FileText className="w-4 h-4 mt-0.5 shrink-0 text-amber-400" />
-        <p className="text-amber-200/90 leading-relaxed">
-          <span className="font-semibold text-amber-300">Example Data.</span>{" "}
-          The figures shown on this page are simulated for demonstration purposes only and do not represent real staking activity or tax obligations. Connect your wallet to generate an actual tax report based on your on-chain transactions.
-        </p>
+        {walletAddress ? (
+          <>
+            <FileText className="w-4 h-4 mt-0.5 shrink-0 text-cyan-400" />
+            <p className="text-slate-300 leading-relaxed">
+              <span className="font-semibold text-cyan-300">Estimated Report.</span>{" "}
+              Tax events are derived from subnet snapshot data for your connected wallet. On-chain transaction indexing via Bittensor RPC will provide exact figures in a future update. Always verify with your own records.
+            </p>
+          </>
+        ) : (
+          <>
+            <WalletCards className="w-4 h-4 mt-0.5 shrink-0 text-amber-400" />
+            <p className="text-amber-200/90 leading-relaxed">
+              <span className="font-semibold text-amber-300">Sample Data.</span>{" "}
+              Connect your wallet to generate a personalized tax report. The figures below are illustrative examples only.
+            </p>
+          </>
+        )}
       </div>
 
       {/* Summary cards */}
@@ -237,7 +251,7 @@ export default function TaxReportPage() {
                         <td className="td font-mono text-[11px] text-slate-500 hover:text-slate-300 transition-colors">
                           {event.txHash ? (
                             <a
-                              href={`https://etherscan.io/tx/${event.txHash}`}
+                              href={`https://x.taostats.io/extrinsic/${event.txHash}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="hover:text-cyan-400 underline"

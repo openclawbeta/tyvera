@@ -470,13 +470,15 @@ export default function ActivityPage() {
                           </div>
                         </div>
 
-                        {/* Block Explorer Link (placeholder) */}
+                        {/* Block Explorer Link */}
                         <div className="pt-3 border-t border-white/[0.04]">
                           <a
-                            href={`#`}
+                            href={`https://x.taostats.io/extrinsic/${event.txHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
                           >
-                            View on Block Explorer →
+                            View on TaoStats Explorer →
                           </a>
                         </div>
                       </div>

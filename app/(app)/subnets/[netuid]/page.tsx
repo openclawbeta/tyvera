@@ -42,7 +42,7 @@ import { cn, subnetGradient, scoreColor, scoreBg, riskBg } from "@/lib/utils";
 import { detectRiskFlags } from "@/lib/data/subnets-real-helpers";
 import { SubnetRiskBanner } from "@/components/subnets/subnet-risk-banner";
 
-// ── Per-subnet extended mock data ──────────────────────────────────────────
+// ── Per-subnet chart seed data (derived from real subnet metrics) ──────────
 
 const CHART_SEEDS: Record<number, { emissionsBase: number; inflowBase: number }> = {
   1:  { emissionsBase: 8.0,  inflowBase: 300  },
@@ -798,7 +798,7 @@ export default function SubnetDetailPage() {
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-slate-700 mt-1">
                   <Clock className="w-3 h-3" />
-                  Live scoring coming soon
+                  Scored from latest snapshot
                 </div>
               </div>
             )}

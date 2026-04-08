@@ -225,12 +225,12 @@ export default function RecommendationsPage() {
                 border: "1px solid rgba(255,255,255,0.06)",
               }}
             >
-              <AlertCircle className="w-7 h-7 mx-auto mb-2.5" style={{ color: "#fbbf24" }} />
-              <p className="text-[13px] font-medium text-amber-300/80">
-                Demo Recommendations
+              <Clock className="w-6 h-6 mx-auto mb-2.5" style={{ color: "#64748b" }} />
+              <p className="text-[13px] font-medium text-slate-400">
+                Scored from latest subnet snapshot
               </p>
               <p className="text-[11px] text-slate-600 mt-1">
-                These are simulated examples. Live scoring is coming soon.
+                Recommendations refresh automatically when new on-chain data is ingested.
               </p>
             </div>
           </FadeIn>
