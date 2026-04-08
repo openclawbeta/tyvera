@@ -13,6 +13,23 @@
 
 import { SCHEMA_SQL } from "./schema";
 
+async function addColumnIfMissing(
+  db: DbClient,
+  table: string,
+  column: string,
+  definition: string,
+): Promise<void> {
+  const info = await db.query(`PRAGMA table_info(${table})`);
+  const existing = new Set(
+    (info[0]?.rows ?? []).map((row) => String(row[1])),
+  );
+
+  if (existing.has(column)) return;
+
+  console.log(`[db] Adding missing column ${table}.${column}`);
+  await db.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+}
+
 /* ── Shared interface ────────────────────────────────────────────── */
 
 export interface QueryResult {
@@ -125,6 +142,10 @@ export async function getDb(): Promise<DbClient> {
     for (const stmt of statements) {
       await _client.execute(stmt);
     }
+
+    // Backward-compatible column migrations for previously created tables.
+    await addColumnIfMissing(_client, "payment_intents", "billing_cycle", "TEXT NOT NULL DEFAULT 'monthly'");
+    await addColumnIfMissing(_client, "payment_intents", "duration_days", "INTEGER NOT NULL DEFAULT 30");
 
     return _client;
   })();
