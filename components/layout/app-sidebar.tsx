@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
+  BarChart3,
   Network,
   Wallet,
   TrendingUp,
@@ -28,6 +29,7 @@ import { ALERT_BADGE_REFRESH_MS } from "@/lib/config";
 
 const NAV_ITEMS = [
   { label: "Dashboard",       href: "/dashboard",       icon: LayoutDashboard },
+  { label: "Metrics",         href: "/metrics",         icon: BarChart3 },
   { label: "AI Intel",        href: "/chat",            icon: MessageSquare },
   { label: "Subnets",         href: "/subnets",         icon: Network },
   { label: "Validators",      href: "/validators",      icon: Users },
