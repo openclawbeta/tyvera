@@ -1,757 +1,579 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Bell,
+  Settings2,
+  CheckCheck,
   Trash2,
-  Plus,
-  AlertTriangle,
-  TrendingDown,
-  Waves,
-  Star,
-  Zap,
-  Clock,
-  CheckCircle2,
+  RefreshCw,
+  Shield,
+  WalletCards,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
 import { StatCard } from "@/components/ui-custom/stat-card";
-import { getSubnets, fetchSubnetsFromApi } from "@/lib/api/subnets";
+import { useWallet } from "@/lib/wallet-context";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import {
-  getAlertRules,
-  saveAlertRule,
-  deleteAlertRule,
-  toggleAlertRule,
-  getAlertHistory,
-  acknowledgeAlert,
-  evaluateAlerts,
-  getAlertPresets,
-} from "@/lib/api/alerts";
-import type { AlertRule, AlertEvent, AlertPreset } from "@/lib/types/alerts";
-import type { SubnetDetailModel } from "@/lib/types/subnets";
+  ALERT_TYPE_META,
+  severityColor,
+  categoryIcon,
+  alertCategory,
+} from "@/lib/alerts/types";
+import type {
+  Alert,
+  AlertRule,
+  AlertType,
+  AlertCategory as AlertCat,
+} from "@/lib/alerts/types";
 
-const PRESET_ICONS: Record<string, React.ReactNode> = {
-  TrendingDown: <TrendingDown className="w-5 h-5" />,
-  Waves: <Waves className="w-5 h-5" />,
-  AlertTriangle: <AlertTriangle className="w-5 h-5" />,
-  Star: <Star className="w-5 h-5" />,
-  Zap: <Zap className="w-5 h-5" />,
+const CATEGORY_LABELS: Record<AlertCat, string> = {
+  staking: "Staking",
+  risk: "Risk",
+  whale: "Whale / Flow",
+  price: "Price",
 };
 
+const CATEGORY_ORDER: AlertCat[] = ["staking", "risk", "whale", "price"];
+
+function timeAgo(dateStr: string): string {
+  const diffSec = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+  if (diffSec < 60) return "just now";
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+  return `${Math.floor(diffSec / 86400)}d ago`;
+}
+
 export default function AlertsPage() {
+  const { address: walletAddress } = useWallet();
+  const [tab, setTab] = useState<"feed" | "settings">("feed");
+
+  // Feed state
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [feedLoading, setFeedLoading] = useState(false);
+  const [feedFilter, setFeedFilter] = useState<"all" | "unread">("all");
+
+  // Rules state
   const [rules, setRules] = useState<AlertRule[]>([]);
-  const [history, setHistory] = useState<AlertEvent[]>([]);
-  const [subnets, setSubnets] = useState<SubnetDetailModel[]>([]);
-  const [showNewRuleForm, setShowNewRuleForm] = useState(false);
-  const [historyFilter, setHistoryFilter] = useState<"all" | "unacknowledged">("all");
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [rulesLoading, setRulesLoading] = useState(false);
+  const [editingThresholds, setEditingThresholds] = useState<Record<number, number>>({});
 
-  // Load initial data
-  useEffect(() => {
-    const initialSubnets = getSubnets();
-    setSubnets(initialSubnets);
-    const initialRules = getAlertRules();
-    setRules(initialRules);
-    const initialHistory = getAlertHistory();
-    setHistory(initialHistory);
-
-    // Evaluate alerts immediately on mount
-    const newEvents = evaluateAlerts(initialRules, initialSubnets);
-    if (newEvents.length > 0) {
-      setToastMessage(`${newEvents.length} new alert${newEvents.length !== 1 ? "s" : ""} triggered`);
-      setTimeout(() => setToastMessage(null), 4000);
-      setHistory(getAlertHistory());
-    }
-
-    // Fetch fresh subnet data
-    fetchSubnetsFromApi()
-      .then((result) => {
-        setSubnets(result.subnets);
-        const moreEvents = evaluateAlerts(initialRules, result.subnets);
-        if (moreEvents.length > 0) {
-          setHistory(getAlertHistory());
-        }
-      })
-      .catch(() => {
-        /* Alerts page can still function with initial snapshot data */
-      });
-  }, []);
-
-  // Polling: re-evaluate every 5 minutes
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const result = await fetchSubnetsFromApi();
-        setSubnets(result.subnets);
-        const currentRules = getAlertRules();
-        const newEvents = evaluateAlerts(currentRules, result.subnets);
-        if (newEvents.length > 0) {
-          setHistory(getAlertHistory());
-          setToastMessage(`${newEvents.length} new alert${newEvents.length !== 1 ? "s" : ""} triggered`);
-          setTimeout(() => setToastMessage(null), 4000);
-        }
-      } catch {
-        // silently fail
+  // ── Fetch alert feed ──────────────────────────────────────────────
+  const fetchFeed = useCallback(async () => {
+    if (!walletAddress) return;
+    setFeedLoading(true);
+    try {
+      const unreadOnly = feedFilter === "unread" ? "&unread=1" : "";
+      const res = await fetchWithTimeout(
+        `/api/alerts?address=${encodeURIComponent(walletAddress)}&limit=50${unreadOnly}`,
+        { timeoutMs: 8000 },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setAlerts(data.alerts ?? []);
+        setUnreadCount(data.unread ?? 0);
       }
-    }, 5 * 60 * 1000);
+    } catch {
+      // silent
+    } finally {
+      setFeedLoading(false);
+    }
+  }, [walletAddress, feedFilter]);
 
-    return () => clearInterval(interval);
-  }, []);
+  useEffect(() => {
+    fetchFeed();
+  }, [fetchFeed]);
 
-  // Compute summary stats
+  // ── Fetch alert rules ─────────────────────────────────────────────
+  const fetchRules = useCallback(async () => {
+    if (!walletAddress) return;
+    setRulesLoading(true);
+    try {
+      const res = await fetchWithTimeout(
+        `/api/alert-rules?address=${encodeURIComponent(walletAddress)}`,
+        { timeoutMs: 8000 },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setRules(data);
+      }
+    } catch {
+      // silent
+    } finally {
+      setRulesLoading(false);
+    }
+  }, [walletAddress]);
+
+  useEffect(() => {
+    fetchRules();
+  }, [fetchRules]);
+
+  // ── Actions ───────────────────────────────────────────────────────
+  const markAllRead = async () => {
+    if (!walletAddress) return;
+    try {
+      await fetchWithTimeout("/api/alerts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: walletAddress }),
+        timeoutMs: 6000,
+      });
+      setAlerts((prev) => prev.map((a) => ({ ...a, read: true })));
+      setUnreadCount(0);
+    } catch {
+      // silent
+    }
+  };
+
+  const initDefaults = async () => {
+    if (!walletAddress) return;
+    try {
+      const res = await fetchWithTimeout("/api/alert-rules", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: walletAddress, action: "init_defaults" }),
+        timeoutMs: 8000,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRules(data.rules ?? []);
+      }
+    } catch {
+      // silent
+    }
+  };
+
+  const updateRule = async (ruleId: number, alertType: AlertType, threshold: number, enabled: boolean) => {
+    if (!walletAddress) return;
+    try {
+      await fetchWithTimeout("/api/alert-rules", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          address: walletAddress,
+          type: alertType,
+          threshold,
+          enabled,
+        }),
+        timeoutMs: 6000,
+      });
+      fetchRules();
+    } catch {
+      // silent
+    }
+  };
+
+  const deleteRule = async (ruleId: number) => {
+    if (!walletAddress) return;
+    try {
+      await fetchWithTimeout("/api/alert-rules", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: walletAddress, ruleId }),
+        timeoutMs: 6000,
+      });
+      setRules((prev) => prev.filter((r) => r.id !== ruleId));
+    } catch {
+      // silent
+    }
+  };
+
+  // Group rules by category
+  const rulesByCategory = CATEGORY_ORDER.map((cat) => ({
+    category: cat,
+    label: CATEGORY_LABELS[cat],
+    icon: categoryIcon(cat),
+    rules: rules.filter((r) => {
+      const meta = ALERT_TYPE_META[r.alert_type as AlertType];
+      return meta?.category === cat;
+    }),
+  }));
+
+  // Stats
   const activeRules = rules.filter((r) => r.enabled).length;
-  const triggeredToday = history.filter((e) => {
-    const trigger = new Date(e.triggeredAt);
+  const todayAlerts = alerts.filter((a) => {
+    const d = new Date(a.created_at);
     const now = new Date();
-    return (
-      trigger.toDateString() === now.toDateString() &&
-      !e.acknowledged
-    );
+    return d.toDateString() === now.toDateString();
   }).length;
-  const unacknowledged = history.filter((e) => !e.acknowledged).length;
 
-  const filteredHistory =
-    historyFilter === "unacknowledged"
-      ? history.filter((e) => !e.acknowledged)
-      : history;
+  // ── Not connected ─────────────────────────────────────────────────
+  if (!walletAddress) {
+    return (
+      <div className="min-h-screen w-full" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1a1f35 100%)" }}>
+        <div className="p-6 lg:p-8 max-w-5xl mx-auto">
+          <PageHeader title="Smart Alerts" subtitle="Personalized notifications for your staked subnets" />
+          <div className="mt-12 flex flex-col items-center text-center">
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
+              style={{ background: "rgba(34,211,238,0.1)", border: "1px solid rgba(34,211,238,0.2)" }}
+            >
+              <WalletCards className="w-7 h-7" style={{ color: "#22d3ee" }} />
+            </div>
+            <h2 className="text-lg font-semibold text-white mb-2">Connect your wallet</h2>
+            <p className="text-sm max-w-md" style={{ color: "#94a3b8" }}>
+              Alerts are personalized to your staked subnets. Connect your Bittensor wallet to configure alert thresholds and receive notifications that matter to you.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1a1f35 100%)" }}>
-      {/* Toast notification */}
-      {toastMessage && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className="fixed top-24 left-1/2 z-50 -translate-x-1/2"
-        >
-          <GlassCard glow="emerald" padding="md" className="flex items-center gap-3">
-            <Bell className="w-4 h-4 text-emerald-400" />
-            <span className="text-sm text-slate-300">{toastMessage}</span>
-          </GlassCard>
-        </motion.div>
-      )}
-
-      {/* Page content */}
-      <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+      <div className="p-6 lg:p-8 max-w-5xl mx-auto">
         {/* Header */}
-        <PageHeader
-          title="Smart Alerts"
-          subtitle="Custom notifications for subnet changes"
-        />
+        <PageHeader title="Smart Alerts" subtitle="Personalized notifications for your staked subnets" />
 
         {/* Summary cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <StatCard
-              label="Active Rules"
-              value={String(activeRules)}
-              accent="cyan"
-              index={0}
-            />
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
+            <StatCard label="Active Rules" value={String(activeRules)} accent="cyan" index={0} />
           </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.07, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <StatCard
-              label="Triggered Today"
-              value={String(triggeredToday)}
-              accent="amber"
-              index={1}
-            />
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.07 }}>
+            <StatCard label="Today" value={String(todayAlerts)} accent="amber" index={1} />
           </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.14, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <StatCard
-              label="Unacknowledged"
-              value={String(unacknowledged)}
-              accent="rose"
-              index={2}
-            />
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.14 }}>
+            <StatCard label="Unread" value={String(unreadCount)} accent="rose" index={2} />
           </motion.div>
         </div>
 
-        {/* Main content grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
-          {/* LEFT: Your Rules */}
-          <div className="lg:col-span-1">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                <Bell className="w-4 h-4 text-cyan-400" />
-                Your Rules
-              </h2>
+        {/* Tab switcher */}
+        <div className="flex gap-1 mt-8 p-1 rounded-xl w-fit" style={{ background: "rgba(255,255,255,0.04)" }}>
+          <button
+            onClick={() => setTab("feed")}
+            className="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+            style={{
+              background: tab === "feed" ? "rgba(34,211,238,0.15)" : "transparent",
+              color: tab === "feed" ? "#22d3ee" : "#64748b",
+            }}
+          >
+            <Bell className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
+            Alert Feed
+          </button>
+          <button
+            onClick={() => setTab("settings")}
+            className="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+            style={{
+              background: tab === "settings" ? "rgba(34,211,238,0.15)" : "transparent",
+              color: tab === "settings" ? "#22d3ee" : "#64748b",
+            }}
+          >
+            <Settings2 className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
+            Alert Rules
+          </button>
+        </div>
 
-              <div className="space-y-3">
-                {rules.map((rule) => (
-                  <RuleCard
-                    key={rule.id}
-                    rule={rule}
-                    subnets={subnets}
-                    onToggle={() => {
-                      toggleAlertRule(rule.id);
-                      setRules(getAlertRules());
-                    }}
-                    onDelete={() => {
-                      deleteAlertRule(rule.id);
-                      setRules(getAlertRules());
-                    }}
-                  />
-                ))}
-
-                {/* Create Rule Form */}
-                {showNewRuleForm ? (
-                  <CreateRuleForm
-                    subnets={subnets}
-                    onSave={(newRule) => {
-                      saveAlertRule(newRule);
-                      setRules(getAlertRules());
-                      setShowNewRuleForm(false);
-                    }}
-                    onCancel={() => setShowNewRuleForm(false)}
-                  />
-                ) : (
+        {/* ── Feed Tab ──────────────────────────────────────────────────── */}
+        {tab === "feed" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-6">
+            {/* Feed controls */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setFeedFilter("all")}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                  style={{
+                    background: feedFilter === "all" ? "rgba(34,211,238,0.15)" : "rgba(255,255,255,0.04)",
+                    color: feedFilter === "all" ? "#22d3ee" : "#64748b",
+                  }}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setFeedFilter("unread")}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                  style={{
+                    background: feedFilter === "unread" ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.04)",
+                    color: feedFilter === "unread" ? "#f87171" : "#64748b",
+                  }}
+                >
+                  Unread{unreadCount > 0 ? ` (${unreadCount})` : ""}
+                </button>
+              </div>
+              <div className="flex gap-2">
+                {unreadCount > 0 && (
                   <button
-                    onClick={() => setShowNewRuleForm(true)}
-                    className="w-full mt-4 px-4 py-3 rounded-xl flex items-center justify-center gap-2 transition-all duration-200"
+                    onClick={markAllRead}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                    style={{ background: "rgba(34,211,238,0.1)", color: "#22d3ee" }}
+                  >
+                    <CheckCheck className="w-3.5 h-3.5" />
+                    Mark all read
+                  </button>
+                )}
+                <button
+                  onClick={fetchFeed}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                  style={{ background: "rgba(255,255,255,0.04)", color: "#64748b" }}
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${feedLoading ? "animate-spin" : ""}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Alert list */}
+            <div className="space-y-2">
+              {feedLoading && alerts.length === 0 ? (
+                <GlassCard padding="md" className="text-center py-12">
+                  <p className="text-sm" style={{ color: "#64748b" }}>Loading alerts…</p>
+                </GlassCard>
+              ) : alerts.length === 0 ? (
+                <GlassCard padding="md" className="text-center py-12">
+                  <Bell className="w-8 h-8 mx-auto mb-3" style={{ color: "#334155" }} />
+                  <p className="text-sm mb-1" style={{ color: "#94a3b8" }}>
+                    {feedFilter === "unread" ? "No unread alerts" : "No alerts yet"}
+                  </p>
+                  <p className="text-xs" style={{ color: "#64748b" }}>
+                    {rules.length === 0
+                      ? "Set up your alert rules in the settings tab to get started"
+                      : "Alerts will appear here when your thresholds are triggered"}
+                  </p>
+                </GlassCard>
+              ) : (
+                alerts.map((alert, i) => (
+                  <motion.div
+                    key={alert.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: i * 0.03 }}
+                  >
+                    <GlassCard padding="md" className={alert.read ? "opacity-60" : ""}>
+                      <div className="flex items-start gap-3">
+                        {/* Severity + Category */}
+                        <div className="flex items-center gap-2 pt-0.5 flex-shrink-0">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full"
+                            style={{
+                              background: severityColor(alert.severity),
+                              boxShadow: `0 0 6px ${severityColor(alert.severity)}40`,
+                            }}
+                          />
+                          <span className="text-base">
+                            {categoryIcon(alertCategory(alert.alert_type as AlertType))}
+                          </span>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-white truncate">
+                              {alert.title}
+                            </span>
+                            <span
+                              className="text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0"
+                              style={{
+                                background: `${severityColor(alert.severity)}20`,
+                                color: severityColor(alert.severity),
+                              }}
+                            >
+                              {alert.severity}
+                            </span>
+                          </div>
+                          <p className="text-xs mt-1 leading-relaxed" style={{ color: "#94a3b8" }}>
+                            {alert.message}
+                          </p>
+                          <p className="text-[11px] mt-2" style={{ color: "#475569" }}>
+                            {timeAgo(alert.created_at)}
+                          </p>
+                        </div>
+
+                        {/* Unread dot */}
+                        {!alert.read && (
+                          <span
+                            className="w-2 h-2 rounded-full mt-2 flex-shrink-0"
+                            style={{ background: "#22d3ee" }}
+                          />
+                        )}
+                      </div>
+                    </GlassCard>
+                  </motion.div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── Settings Tab ──────────────────────────────────────────────── */}
+        {tab === "settings" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-6">
+            {/* Init defaults button */}
+            {rules.length === 0 && (
+              <GlassCard padding="md" glow="cyan" className="mb-6">
+                <div className="flex items-center gap-4">
+                  <Shield className="w-8 h-8 flex-shrink-0" style={{ color: "#22d3ee" }} />
+                  <div className="flex-1">
+                    <h3 className="text-sm font-semibold text-white">Get started with smart defaults</h3>
+                    <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>
+                      We'll set up 13 alert rules covering staking yields, risk events, whale flows, and price movements — all with sensible thresholds you can customize.
+                    </p>
+                  </div>
+                  <button
+                    onClick={initDefaults}
+                    className="px-4 py-2 rounded-xl text-sm font-semibold transition-all flex-shrink-0"
                     style={{
-                      background: "rgba(34, 211, 238, 0.08)",
-                      border: "1px solid rgba(34, 211, 238, 0.2)",
+                      background: "rgba(34,211,238,0.15)",
+                      border: "1px solid rgba(34,211,238,0.3)",
                       color: "#22d3ee",
                     }}
                     onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.background =
-                        "rgba(34, 211, 238, 0.12)";
+                      (e.currentTarget as HTMLElement).style.background = "rgba(34,211,238,0.22)";
                     }}
                     onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.background =
-                        "rgba(34, 211, 238, 0.08)";
+                      (e.currentTarget as HTMLElement).style.background = "rgba(34,211,238,0.15)";
                     }}
                   >
-                    <Plus className="w-4 h-4" />
-                    <span className="text-sm font-semibold">Create Rule</span>
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          </div>
-
-          {/* RIGHT: Alert History */}
-          <div className="lg:col-span-2">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-amber-400" />
-                  Alert History
-                </h2>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setHistoryFilter("all")}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                      historyFilter === "all"
-                        ? "bg-cyan-400/20 text-cyan-300"
-                        : "text-slate-500 hover:text-slate-400"
-                    }`}
-                  >
-                    All
-                  </button>
-                  <button
-                    onClick={() => setHistoryFilter("unacknowledged")}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                      historyFilter === "unacknowledged"
-                        ? "bg-rose-400/20 text-rose-300"
-                        : "text-slate-500 hover:text-slate-400"
-                    }`}
-                  >
-                    Unacknowledged
+                    Initialize Defaults
                   </button>
                 </div>
+              </GlassCard>
+            )}
+
+            {rulesLoading && rules.length === 0 ? (
+              <GlassCard padding="md" className="text-center py-12">
+                <p className="text-sm" style={{ color: "#64748b" }}>Loading rules…</p>
+              </GlassCard>
+            ) : (
+              <div className="space-y-8">
+                {rulesByCategory.map(({ category, label, icon, rules: catRules }) => (
+                  <div key={category}>
+                    <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                      <span className="text-base">{icon}</span>
+                      {label}
+                      <span className="text-[11px] font-normal" style={{ color: "#64748b" }}>
+                        ({catRules.length} rule{catRules.length !== 1 ? "s" : ""})
+                      </span>
+                    </h3>
+
+                    {catRules.length === 0 ? (
+                      <GlassCard padding="sm" className="py-4 text-center">
+                        <p className="text-xs" style={{ color: "#64748b" }}>
+                          No {label.toLowerCase()} rules configured
+                        </p>
+                      </GlassCard>
+                    ) : (
+                      <div className="space-y-2">
+                        {catRules.map((rule) => {
+                          const meta = ALERT_TYPE_META[rule.alert_type as AlertType];
+                          if (!meta) return null;
+                          const localThreshold = editingThresholds[rule.id] ?? rule.threshold;
+
+                          return (
+                            <motion.div
+                              key={rule.id}
+                              initial={{ opacity: 0, y: 6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                            >
+                              <GlassCard padding="md" className={!rule.enabled ? "opacity-50" : ""}>
+                                <div className="flex items-start gap-4">
+                                  {/* Info */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-semibold text-white">
+                                      {meta.label}
+                                    </div>
+                                    <p className="text-xs mt-1" style={{ color: "#64748b" }}>
+                                      {meta.description}
+                                    </p>
+
+                                    {/* Threshold slider */}
+                                    <div className="flex items-center gap-3 mt-3">
+                                      <span className="text-[11px] font-medium" style={{ color: "#94a3b8" }}>
+                                        Threshold:
+                                      </span>
+                                      <input
+                                        type="range"
+                                        min={meta.minThreshold}
+                                        max={meta.maxThreshold}
+                                        step={meta.step}
+                                        value={localThreshold}
+                                        onChange={(e) => {
+                                          setEditingThresholds((prev) => ({
+                                            ...prev,
+                                            [rule.id]: Number(e.target.value),
+                                          }));
+                                        }}
+                                        onMouseUp={() => {
+                                          const val = editingThresholds[rule.id];
+                                          if (val !== undefined && val !== rule.threshold) {
+                                            updateRule(rule.id, rule.alert_type as AlertType, val, rule.enabled);
+                                          }
+                                        }}
+                                        onTouchEnd={() => {
+                                          const val = editingThresholds[rule.id];
+                                          if (val !== undefined && val !== rule.threshold) {
+                                            updateRule(rule.id, rule.alert_type as AlertType, val, rule.enabled);
+                                          }
+                                        }}
+                                        className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer"
+                                        style={{
+                                          background: `linear-gradient(to right, #22d3ee ${((localThreshold - meta.minThreshold) / (meta.maxThreshold - meta.minThreshold)) * 100}%, rgba(255,255,255,0.08) ${((localThreshold - meta.minThreshold) / (meta.maxThreshold - meta.minThreshold)) * 100}%)`,
+                                        }}
+                                      />
+                                      <span
+                                        className="text-xs font-bold tabular-nums min-w-[3.5rem] text-right"
+                                        style={{ color: "#22d3ee" }}
+                                      >
+                                        {localThreshold}{meta.unit ? ` ${meta.unit}` : ""}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Controls */}
+                                  <div className="flex items-center gap-2 flex-shrink-0 pt-1">
+                                    {/* Toggle */}
+                                    <button
+                                      onClick={() =>
+                                        updateRule(rule.id, rule.alert_type as AlertType, rule.threshold, !rule.enabled)
+                                      }
+                                      className="relative w-10 h-6 rounded-full transition-all duration-200"
+                                      style={{
+                                        background: rule.enabled
+                                          ? "rgba(34,211,238,0.3)"
+                                          : "rgba(255,255,255,0.08)",
+                                      }}
+                                    >
+                                      <div
+                                        className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200"
+                                        style={{
+                                          transform: rule.enabled
+                                            ? "translateX(20px)"
+                                            : "translateX(2px)",
+                                        }}
+                                      />
+                                    </button>
+                                    {/* Delete */}
+                                    <button
+                                      onClick={() => deleteRule(rule.id)}
+                                      className="p-2 rounded-lg transition-colors"
+                                      style={{ color: "#475569" }}
+                                      onMouseEnter={(e) => {
+                                        (e.currentTarget as HTMLElement).style.color = "#f87171";
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        (e.currentTarget as HTMLElement).style.color = "#475569";
+                                      }}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </GlassCard>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-
-              <div className="space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto">
-                {filteredHistory.length === 0 ? (
-                  <GlassCard padding="md" className="text-center py-8">
-                    <p className="text-sm text-slate-500">No alerts yet</p>
-                  </GlassCard>
-                ) : (
-                  filteredHistory
-                    .sort(
-                      (a, b) =>
-                        new Date(b.triggeredAt).getTime() -
-                        new Date(a.triggeredAt).getTime()
-                    )
-                    .map((event) => (
-                      <AlertEventCard
-                        key={event.id}
-                        event={event}
-                        onAcknowledge={() => {
-                          acknowledgeAlert(event.id);
-                          setHistory(getAlertHistory());
-                        }}
-                      />
-                    ))
-                )}
-              </div>
-            </motion.div>
-          </div>
-        </div>
-
-        {/* Quick Setup: Presets */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-12"
-        >
-          <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-            <Star className="w-4 h-4 text-amber-400" />
-            Quick Setup
-          </h2>
-
-          <div className="flex gap-4 overflow-x-auto pb-4">
-            {getAlertPresets().map((preset) => (
-              <PresetCard
-                key={preset.name}
-                preset={preset}
-                onEnable={() => {
-                  preset.rules.forEach((ruleData) => {
-                    const newRule: AlertRule = {
-                      id: `rule-${Date.now()}-${Math.random()}`,
-                      ...ruleData,
-                      createdAt: new Date().toISOString(),
-                      lastTriggered: null,
-                      triggerCount: 0,
-                    };
-                    saveAlertRule(newRule);
-                  });
-                  setRules(getAlertRules());
-                  setToastMessage(`"${preset.name}" preset enabled`);
-                  setTimeout(() => setToastMessage(null), 3000);
-                }}
-              />
-            ))}
-          </div>
-        </motion.div>
+            )}
+          </motion.div>
+        )}
       </div>
     </div>
   );
-}
-
-// ── Rule Card Component ──────────────────────────────────────────────
-
-interface RuleCardProps {
-  rule: AlertRule;
-  subnets: SubnetDetailModel[];
-  onToggle: () => void;
-  onDelete: () => void;
-}
-
-function RuleCard({ rule, subnets, onToggle, onDelete }: RuleCardProps) {
-  const conditionText = formatCondition(rule, subnets);
-  const lastTriggeredText = rule.lastTriggered
-    ? formatTime(rule.lastTriggered)
-    : "Never";
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -10 }}
-    >
-      <GlassCard
-        padding="md"
-        className={`${!rule.enabled ? "opacity-60" : ""}`}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-white truncate">
-              {rule.name}
-            </h3>
-            <p className="text-xs text-slate-400 mt-2 leading-snug">
-              {conditionText}
-            </p>
-            <div className="flex items-center gap-3 mt-3 text-xs text-slate-500">
-              <span>Last: {lastTriggeredText}</span>
-              {rule.triggerCount > 0 && (
-                <span
-                  className="px-2 py-0.5 rounded-md font-semibold"
-                  style={{
-                    background: "rgba(34, 211, 238, 0.12)",
-                    color: "#22d3ee",
-                  }}
-                >
-                  {rule.triggerCount} times
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Toggle switch */}
-            <button
-              onClick={onToggle}
-              className="relative w-10 h-6 rounded-full transition-all duration-200"
-              style={{
-                background: rule.enabled
-                  ? "rgba(34, 211, 238, 0.3)"
-                  : "rgba(255, 255, 255, 0.08)",
-              }}
-            >
-              <div
-                className="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200"
-                style={{
-                  transform: rule.enabled ? "translateX(20px)" : "translateX(2px)",
-                }}
-              />
-            </button>
-            {/* Delete button */}
-            <button
-              onClick={() => {
-                if (
-                  window.confirm(
-                    `Delete rule "${rule.name}"?`
-                  )
-                ) {
-                  onDelete();
-                }
-              }}
-              className="p-2 rounded-lg text-slate-600 transition-colors hover:text-rose-400"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </GlassCard>
-    </motion.div>
-  );
-}
-
-// ── Create Rule Form ─────────────────────────────────────────────────
-
-interface CreateRuleFormProps {
-  subnets: SubnetDetailModel[];
-  onSave: (rule: AlertRule) => void;
-  onCancel: () => void;
-}
-
-function CreateRuleForm({ subnets, onSave, onCancel }: CreateRuleFormProps) {
-  const [name, setName] = useState("");
-  const [subnet, setSubnet] = useState<string>("any");
-  const [metric, setMetric] = useState<string>("yield");
-  const [operator, setOperator] = useState<string>("below");
-  const [value, setValue] = useState<string>("15");
-
-  const handleSave = () => {
-    const subnetNum = subnet === "any" ? "any" : parseInt(subnet);
-    const rule: AlertRule = {
-      id: `rule-${Date.now()}-${Math.random()}`,
-      name: name.trim() || `${metric} ${operator} ${value}`,
-      subnetFilter: subnetNum,
-      condition: {
-        metric: metric as any,
-        operator: operator as any,
-        value: parseFloat(value) || 0,
-      },
-      enabled: true,
-      createdAt: new Date().toISOString(),
-      lastTriggered: null,
-      triggerCount: 0,
-    };
-    onSave(rule);
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
-      <GlassCard padding="md" glow="cyan">
-        <div className="space-y-3">
-          <div>
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-              Subnet
-            </label>
-            <select
-              value={subnet}
-              onChange={(e) => setSubnet(e.target.value)}
-              className="w-full mt-1 px-3 py-2 rounded-lg text-sm bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-cyan-400"
-            >
-              <option value="any">Any Subnet</option>
-              {subnets.map((s) => (
-                <option key={s.netuid} value={String(s.netuid)}>
-                  {s.name} ({s.netuid})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                Metric
-              </label>
-              <select
-                value={metric}
-                onChange={(e) => setMetric(e.target.value)}
-                className="w-full mt-1 px-3 py-2 rounded-lg text-sm bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-cyan-400"
-              >
-                <option value="yield">Yield</option>
-                <option value="score">Score</option>
-                <option value="liquidity">Liquidity</option>
-                <option value="emissions">Emissions</option>
-                <option value="stakers">Stakers</option>
-                <option value="risk">Risk</option>
-                <option value="inflow">Inflow</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                Operator
-              </label>
-              <select
-                value={operator}
-                onChange={(e) => setOperator(e.target.value)}
-                className="w-full mt-1 px-3 py-2 rounded-lg text-sm bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-cyan-400"
-              >
-                <option value="above">Above</option>
-                <option value="below">Below</option>
-                <option value="changes_by">Changes By</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-              Value
-            </label>
-            <input
-              type="number"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              className="w-full mt-1 px-3 py-2 rounded-lg text-sm bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-cyan-400"
-              placeholder="0"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
-              Name (optional)
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full mt-1 px-3 py-2 rounded-lg text-sm bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-cyan-400"
-              placeholder="Auto-generated if empty"
-            />
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <button
-              onClick={handleSave}
-              className="flex-1 px-3 py-2 rounded-lg text-sm font-semibold bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/30 transition-all"
-            >
-              Save
-            </button>
-            <button
-              onClick={onCancel}
-              className="flex-1 px-3 py-2 rounded-lg text-sm font-semibold bg-slate-700/20 border border-slate-600/40 text-slate-400 hover:bg-slate-700/30 transition-all"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </GlassCard>
-    </motion.div>
-  );
-}
-
-// ── Alert Event Card ─────────────────────────────────────────────────
-
-interface AlertEventCardProps {
-  event: AlertEvent;
-  onAcknowledge: () => void;
-}
-
-function AlertEventCard({ event, onAcknowledge }: AlertEventCardProps) {
-  const getChangeColor = () => {
-    if (event.currentValue < event.previousValue) return "rose";
-    if (event.currentValue > event.previousValue) return "emerald";
-    return "amber";
-  };
-
-  const changeColor = getChangeColor();
-  const colorMap: Record<string, string> = {
-    rose: "text-rose-400",
-    emerald: "text-emerald-400",
-    amber: "text-amber-400",
-  };
-
-  return (
-    <GlassCard
-      padding="md"
-      className={`${event.acknowledged ? "opacity-50" : ""} transition-opacity`}
-    >
-      <div className="flex items-start gap-3">
-        <Bell className={`w-4 h-4 flex-shrink-0 mt-0.5 ${colorMap[changeColor]}`} />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-white">
-            {event.ruleName}
-          </p>
-          <p className="text-xs text-slate-400 mt-1">
-            <span className="font-semibold">{event.subnet.name}</span> ({event.subnet.netuid})
-          </p>
-          <p className="text-xs text-slate-500 mt-1.5 leading-snug">
-            {event.metric} changed from{" "}
-            <span className="font-semibold text-white">
-              {event.previousValue.toFixed(2)}
-            </span>{" "}
-            to{" "}
-            <span className={`font-semibold ${colorMap[changeColor]}`}>
-              {event.currentValue.toFixed(2)}
-            </span>{" "}
-            (threshold: {event.threshold.toFixed(2)})
-          </p>
-          <p className="text-xs text-slate-600 mt-2">
-            {formatTime(event.triggeredAt)}
-          </p>
-        </div>
-        {!event.acknowledged && (
-          <button
-            onClick={onAcknowledge}
-            className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-            style={{
-              background: "rgba(52, 211, 153, 0.12)",
-              border: "1px solid rgba(52, 211, 153, 0.2)",
-              color: "#34d399",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background =
-                "rgba(52, 211, 153, 0.18)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background =
-                "rgba(52, 211, 153, 0.12)";
-            }}
-          >
-            Acknowledge
-          </button>
-        )}
-        {event.acknowledged && (
-          <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-500" />
-        )}
-      </div>
-    </GlassCard>
-  );
-}
-
-// ── Preset Card ──────────────────────────────────────────────────────
-
-interface PresetCardProps {
-  preset: AlertPreset;
-  onEnable: () => void;
-}
-
-function PresetCard({ preset, onEnable }: PresetCardProps) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 10 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="flex-shrink-0 w-56"
-    >
-      <GlassCard padding="md" hover glow="violet">
-        <div className="space-y-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{
-                  background: "rgba(139, 92, 246, 0.15)",
-                  border: "1px solid rgba(139, 92, 246, 0.2)",
-                  color: "#a78bfa",
-                }}
-              >
-                {PRESET_ICONS[preset.icon] || <Star className="w-4 h-4" />}
-              </div>
-              <h3 className="text-sm font-semibold text-white">
-                {preset.name}
-              </h3>
-            </div>
-          </div>
-          <p className="text-xs text-slate-400 leading-snug">
-            {preset.description}
-          </p>
-          <button
-            onClick={onEnable}
-            className="w-full px-3 py-2 rounded-lg text-xs font-semibold transition-all"
-            style={{
-              background: "rgba(139, 92, 246, 0.2)",
-              border: "1px solid rgba(139, 92, 246, 0.3)",
-              color: "#a78bfa",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background =
-                "rgba(139, 92, 246, 0.28)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background =
-                "rgba(139, 92, 246, 0.2)";
-            }}
-          >
-            Enable
-          </button>
-        </div>
-      </GlassCard>
-    </motion.div>
-  );
-}
-
-// ── Utility functions ────────────────────────────────────────────────
-
-function formatCondition(rule: AlertRule, subnets: SubnetDetailModel[]): string {
-  const { metric, operator, value } = rule.condition;
-  const subnetLabel =
-    rule.subnetFilter === "any"
-      ? "any subnet"
-      : subnets.find((s) => s.netuid === rule.subnetFilter)?.name ||
-        `subnet ${rule.subnetFilter}`;
-  const operatorLabel =
-    operator === "above"
-      ? "is above"
-      : operator === "below"
-        ? "is below"
-        : "changes by";
-  return `When ${subnetLabel} ${metric} ${operatorLabel} ${value}`;
-}
-
-function formatTime(isoString: string): string {
-  const date = new Date(isoString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-
-  return date.toLocaleDateString();
 }

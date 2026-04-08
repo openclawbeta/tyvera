@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Search, Bell, Settings, Menu, X } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Search, Bell, Settings, Menu, X, CheckCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getSubnets } from "@/lib/api/subnets";
 import { LiveTicker } from "@/components/ui-custom/live-ticker";
@@ -9,12 +9,28 @@ import { WalletStatusChip } from "@/components/wallet/wallet-status-chip";
 import { WalletConnectModal } from "@/components/wallet/wallet-connect-modal";
 import { WalletApprovalDialog } from "@/components/wallet/wallet-approval-dialog";
 import { useSidebar } from "@/lib/sidebar-context";
+import { useWallet } from "@/lib/wallet-context";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+import { severityColor, categoryIcon, alertCategory } from "@/lib/alerts/types";
+import type { Alert, AlertType } from "@/lib/alerts/types";
 import Link from "next/link";
 import type { SubnetDetailModel } from "@/lib/types/subnets";
+
+/** Format a created_at timestamp to relative time */
+function timeAgo(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diffSec = Math.floor((now - then) / 1000);
+  if (diffSec < 60) return "just now";
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+  return `${Math.floor(diffSec / 86400)}d ago`;
+}
 
 export function Topbar() {
   const { toggle } = useSidebar();
   const router = useRouter();
+  const { address: walletAddress } = useWallet();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [subnets, setSubnets] = useState<SubnetDetailModel[]>([]);
@@ -27,6 +43,11 @@ export function Topbar() {
   const bellButtonRef = useRef<HTMLButtonElement>(null);
   const bellDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Alert state
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [alertsLoading, setAlertsLoading] = useState(false);
+
   // Load subnets on mount
   useEffect(() => {
     try {
@@ -36,6 +57,84 @@ export function Topbar() {
       console.error("Failed to load subnets:", error);
     }
   }, []);
+
+  // ── Alert feed ────────────────────────────────────────────────────
+  const fetchAlerts = useCallback(async () => {
+    if (!walletAddress) {
+      setAlerts([]);
+      setUnreadCount(0);
+      return;
+    }
+    try {
+      setAlertsLoading(true);
+      const res = await fetchWithTimeout(
+        `/api/alerts?address=${encodeURIComponent(walletAddress)}&limit=20`,
+        { timeoutMs: 8000 },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setAlerts(data.alerts ?? []);
+        setUnreadCount(data.unread ?? 0);
+      }
+    } catch {
+      // silently fail — bell just shows 0
+    } finally {
+      setAlertsLoading(false);
+    }
+  }, [walletAddress]);
+
+  // Fetch unread count on mount and periodically (every 60s)
+  useEffect(() => {
+    if (!walletAddress) {
+      setAlerts([]);
+      setUnreadCount(0);
+      return;
+    }
+
+    // Initial count-only fetch (lightweight)
+    fetchWithTimeout(
+      `/api/alerts?address=${encodeURIComponent(walletAddress)}&count=1`,
+      { timeoutMs: 6000 },
+    )
+      .then((r) => r.json())
+      .then((d) => setUnreadCount(d.unread ?? 0))
+      .catch(() => {});
+
+    const interval = setInterval(() => {
+      fetchWithTimeout(
+        `/api/alerts?address=${encodeURIComponent(walletAddress)}&count=1`,
+        { timeoutMs: 6000 },
+      )
+        .then((r) => r.json())
+        .then((d) => setUnreadCount(d.unread ?? 0))
+        .catch(() => {});
+    }, 60_000);
+
+    return () => clearInterval(interval);
+  }, [walletAddress]);
+
+  // Fetch full alerts when dropdown opens
+  useEffect(() => {
+    if (isBellOpen && walletAddress) {
+      fetchAlerts();
+    }
+  }, [isBellOpen, walletAddress, fetchAlerts]);
+
+  const markAllRead = async () => {
+    if (!walletAddress) return;
+    try {
+      await fetchWithTimeout("/api/alerts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: walletAddress }),
+        timeoutMs: 6000,
+      });
+      setAlerts((prev) => prev.map((a) => ({ ...a, read: true })));
+      setUnreadCount(0);
+    } catch {
+      // silent
+    }
+  };
 
   // Filter subnets based on search query
   useEffect(() => {
@@ -224,13 +323,19 @@ export function Topbar() {
             }}
           >
             <Bell className="w-3.5 h-3.5" />
-            <span
-              className="absolute top-[7px] right-[7px] w-[7px] h-[7px] rounded-full"
-              style={{
-                background: "#22d3ee",
-                boxShadow: "0 0 0 2px rgba(7,10,18,1), 0 0 6px rgba(34,211,238,0.5)",
-              }}
-            />
+            {unreadCount > 0 && (
+              <span
+                className="absolute top-[5px] right-[5px] min-w-[14px] h-[14px] rounded-full flex items-center justify-center text-[9px] font-bold"
+                style={{
+                  background: "#ef4444",
+                  color: "white",
+                  boxShadow: "0 0 0 2px rgba(7,10,18,1), 0 0 6px rgba(239,68,68,0.5)",
+                  padding: "0 3px",
+                }}
+              >
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
           </button>
 
           {/* Settings link — hidden on mobile (accessible via sidebar) */}
@@ -430,7 +535,7 @@ export function Topbar() {
       {isBellOpen && (
         <div
           ref={bellDropdownRef}
-          className="fixed top-[calc(2rem+52px+0.75rem)] right-4 w-64 rounded-xl z-50"
+          className="fixed top-[calc(2rem+52px+0.75rem)] right-4 w-80 rounded-xl z-50"
           style={{
             background: "rgba(15,23,42,0.95)",
             border: "1px solid rgba(255,255,255,0.08)",
@@ -440,30 +545,152 @@ export function Topbar() {
         >
           {/* Header */}
           <div
-            className="px-4 py-3 border-b font-medium text-sm"
-            style={{
-              borderColor: "rgba(255,255,255,0.06)",
-              color: "white",
-            }}
+            className="px-4 py-3 border-b flex items-center justify-between"
+            style={{ borderColor: "rgba(255,255,255,0.06)" }}
           >
-            Notifications
+            <span className="font-medium text-sm" style={{ color: "white" }}>
+              Notifications{unreadCount > 0 ? ` (${unreadCount})` : ""}
+            </span>
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllRead}
+                  className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-md transition-colors"
+                  style={{ color: "#22d3ee", background: "rgba(34,211,238,0.1)" }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = "rgba(34,211,238,0.18)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = "rgba(34,211,238,0.1)";
+                  }}
+                >
+                  <CheckCheck className="w-3 h-3" />
+                  Mark all read
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Content */}
-          <div className="px-4 py-8 text-center">
-            <div
-              className="text-sm mb-3"
-              style={{ color: "#94a3b8" }}
-            >
-              No new notifications
-            </div>
-            <div
-              className="text-xs"
-              style={{ color: "#64748b" }}
-            >
-              Alert notifications coming soon
-            </div>
+          <div className="overflow-y-auto" style={{ maxHeight: "360px" }}>
+            {!walletAddress ? (
+              <div className="px-4 py-8 text-center">
+                <div className="text-sm mb-2" style={{ color: "#94a3b8" }}>
+                  Connect your wallet
+                </div>
+                <div className="text-xs" style={{ color: "#64748b" }}>
+                  Alerts are personalized to your staked subnets
+                </div>
+              </div>
+            ) : alertsLoading && alerts.length === 0 ? (
+              <div className="px-4 py-8 text-center">
+                <div className="text-sm" style={{ color: "#64748b" }}>Loading alerts…</div>
+              </div>
+            ) : alerts.length === 0 ? (
+              <div className="px-4 py-8 text-center">
+                <div className="text-sm mb-2" style={{ color: "#94a3b8" }}>
+                  No alerts yet
+                </div>
+                <div className="text-xs" style={{ color: "#64748b" }}>
+                  Configure your alert thresholds in{" "}
+                  <button
+                    onClick={() => { setIsBellOpen(false); router.push("/alerts"); }}
+                    className="underline"
+                    style={{ color: "#22d3ee" }}
+                  >
+                    Alert Settings
+                  </button>
+                </div>
+              </div>
+            ) : (
+              alerts.map((alert) => (
+                <div
+                  key={alert.id}
+                  className="px-4 py-3 transition-colors cursor-default"
+                  style={{
+                    borderBottom: "1px solid rgba(255,255,255,0.04)",
+                    background: alert.read ? "transparent" : "rgba(34,211,238,0.04)",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.background = alert.read
+                      ? "transparent"
+                      : "rgba(34,211,238,0.04)";
+                  }}
+                >
+                  <div className="flex items-start gap-2.5">
+                    {/* Severity dot + Category icon */}
+                    <div className="flex items-center gap-1.5 pt-0.5 flex-shrink-0">
+                      <span
+                        className="w-2 h-2 rounded-full flex-shrink-0"
+                        style={{
+                          background: severityColor(alert.severity),
+                          boxShadow: `0 0 4px ${severityColor(alert.severity)}50`,
+                        }}
+                      />
+                      <span className="text-sm">
+                        {categoryIcon(alertCategory(alert.alert_type as AlertType))}
+                      </span>
+                    </div>
+
+                    {/* Alert content */}
+                    <div className="flex-1 min-w-0">
+                      <div
+                        className="text-xs font-medium truncate"
+                        style={{ color: alert.read ? "#94a3b8" : "white" }}
+                      >
+                        {alert.title}
+                      </div>
+                      <div
+                        className="text-[11px] mt-0.5 line-clamp-2"
+                        style={{ color: "#64748b" }}
+                      >
+                        {alert.message}
+                      </div>
+                      <div
+                        className="text-[10px] mt-1"
+                        style={{ color: "#475569" }}
+                      >
+                        {timeAgo(alert.created_at)}
+                      </div>
+                    </div>
+
+                    {/* Unread indicator */}
+                    {!alert.read && (
+                      <span
+                        className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0"
+                        style={{ background: "#22d3ee" }}
+                      />
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
+
+          {/* Footer */}
+          {walletAddress && (
+            <div
+              className="px-4 py-2.5 border-t text-center"
+              style={{ borderColor: "rgba(255,255,255,0.06)" }}
+            >
+              <button
+                onClick={() => { setIsBellOpen(false); router.push("/alerts"); }}
+                className="text-[11px] font-medium transition-colors"
+                style={{ color: "#22d3ee" }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.color = "#67e8f9";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.color = "#22d3ee";
+                }}
+              >
+                View all alerts & settings →
+              </button>
+            </div>
+          )}
         </div>
       )}
 

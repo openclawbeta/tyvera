@@ -77,4 +77,40 @@ export const SCHEMA_SQL = `
   CREATE INDEX IF NOT EXISTS idx_ak_hash ON api_keys(key_hash);
   CREATE INDEX IF NOT EXISTS idx_ak_wallet ON api_keys(wallet_address);
   CREATE INDEX IF NOT EXISTS idx_ak_status ON api_keys(status);
+
+  -- Alert rules: user-configured thresholds per wallet
+  CREATE TABLE IF NOT EXISTS alert_rules (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    wallet_address  TEXT    NOT NULL,
+    alert_type      TEXT    NOT NULL,           -- yield_drop, yield_spike, emission_change, validator_take,
+                                                -- dereg_risk, liquidity_drop, risk_change,
+                                                -- whale_inflow, whale_outflow, coldkey_swap,
+                                                -- tao_price_above, tao_price_below, alpha_price_change
+    subnet_filter   TEXT,                       -- NULL = all staked subnets, or comma-separated netuids
+    threshold       REAL    NOT NULL,           -- percentage or absolute value depending on type
+    enabled         INTEGER NOT NULL DEFAULT 1,
+    created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_ar_wallet ON alert_rules(wallet_address);
+  CREATE INDEX IF NOT EXISTS idx_ar_type ON alert_rules(alert_type);
+
+  -- Alerts: fired alert instances per wallet
+  CREATE TABLE IF NOT EXISTS alerts (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    wallet_address  TEXT    NOT NULL,
+    rule_id         INTEGER,                   -- FK to alert_rules (NULL for system-generated)
+    alert_type      TEXT    NOT NULL,
+    severity        TEXT    NOT NULL DEFAULT 'info',  -- info, warning, critical
+    title           TEXT    NOT NULL,
+    message         TEXT    NOT NULL,
+    metadata        TEXT,                      -- JSON: netuid, old_value, new_value, tx_hash, etc.
+    read            INTEGER NOT NULL DEFAULT 0,
+    created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_alerts_wallet ON alerts(wallet_address);
+  CREATE INDEX IF NOT EXISTS idx_alerts_read ON alerts(wallet_address, read);
+  CREATE INDEX IF NOT EXISTS idx_alerts_created ON alerts(created_at);
 `;
