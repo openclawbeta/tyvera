@@ -1,20 +1,26 @@
 /**
  * lib/chain/market-cache.ts
  *
- * In-memory cache for per-subnet market data (alpha price, volume, % changes).
+ * In-memory market-data enrichment cache for subnet alpha tokens.
  *
- * This data comes from TaoStats and is used to ENRICH chain-live responses.
- * Without it, chain-live responses still work — they just lack market fields.
+ * Data source priority:
+ *   1. CoinMarketCap (CMC_API_KEY) -- primary, free tier
+ *   2. TaoStats dtao/subnet/latest/v1 -- secondary fallback
  *
- * Populated by: /api/cron/sync-chain (after chain sync, as a best-effort enrichment)
- * Consumed by: /api/subnets route (merges into chain-live responses)
+ * Populated by calling refreshMarketCache() (typically from the chain
+ * sync cron or on-demand when the cache is stale).  Individual subnet
+ * market data is merged into chain-live responses via getMarketData(netuid).
+ *
+ * TTL: 10 minutes.  If both sources fail the stale cache is served
+ * until the next successful refresh.
  */
 
+// ── Types ────────────────────────────────────────────────────────────────────
+
 export interface SubnetMarketData {
-  alphaPrice?: number;
-  marketCap?: number;
-  volume24h?: number;
-  volumeCapRatio?: number;
+  alphaPrice: number;
+  marketCap: number;
+  volume24h: number;
   change1h?: number;
   change24h?: number;
   change1w?: number;
@@ -22,52 +28,88 @@ export interface SubnetMarketData {
   flow24h?: number;
   flow1w?: number;
   flow1m?: number;
-  dailyChainBuys?: number;
-  incentivePct?: number;
 }
 
-// netuid → market data
-let marketCache: Map<number, SubnetMarketData> = new Map();
-let marketCacheTimestamp = 0;
-const MARKET_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+// ── Cache state ──────────────────────────────────────────────────────────────
 
-/**
- * Store market data for all subnets (called after TaoStats fetch).
- */
-export function setMarketCache(data: Map<number, SubnetMarketData>): void {
-  marketCache = data;
-  marketCacheTimestamp = Date.now();
+const cache = new Map<number, SubnetMarketData>();
+let lastRefresh = 0;
+const TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+// ── Source 1: CoinMarketCap ──────────────────────────────────────────────────
+
+interface CmcTaoQuote {
+  price: number;
+  volume_24h: number;
+  percent_change_1h: number;
+  percent_change_24h: number;
+  percent_change_7d: number;
+  percent_change_30d: number;
+  market_cap: number;
 }
 
-/**
- * Get market data for a specific subnet.
- */
-export function getMarketData(netuid: number): SubnetMarketData | undefined {
-  return marketCache.get(netuid);
+async function fetchCmcTaoQuote(): Promise<CmcTaoQuote | null> {
+  const apiKey = process.env.CMC_API_KEY ?? "";
+  if (!apiKey) return null;
+
+  try {
+    const res = await fetch(
+      "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?slug=bittensor&convert=USD",
+      {
+        headers: {
+          "X-CMC_PRO_API_KEY": apiKey,
+          Accept: "application/json",
+        },
+        signal: AbortSignal.timeout(8000),
+      },
+    );
+    if (!res.ok) return null;
+
+    const body = (await res.json()) as {
+      data?: Record<
+        string,
+        { quote?: { USD?: Record<string, number> } }
+      >;
+    };
+
+    const entries = Object.values(body?.data ?? {});
+    const usd = entries[0]?.quote?.USD;
+    if (!usd || typeof usd.price !== "number" || usd.price <= 0) return null;
+
+    return {
+      price: usd.price,
+      volume_24h: usd.volume_24h ?? 0,
+      percent_change_1h: usd.percent_change_1h ?? 0,
+      percent_change_24h: usd.percent_change_24h ?? 0,
+      percent_change_7d: usd.percent_change_7d ?? 0,
+      percent_change_30d: usd.percent_change_30d ?? 0,
+      market_cap: usd.market_cap ?? 0,
+    };
+  } catch {
+    return null;
+  }
 }
 
-/**
- * Check if market cache is still fresh.
- */
-export function isMarketCacheFresh(): boolean {
-  return Date.now() - marketCacheTimestamp < MARKET_CACHE_TTL_MS;
+// ── Source 2: TaoStats (secondary) ───────────────────────────────────────────
+
+interface TaoStatsSubnet {
+  netuid: number;
+  price?: number;
+  alpha_price?: number;
+  market_cap?: number;
+  volume_24h?: number;
+  price_change_1h?: number;
+  price_change_24h?: number;
+  price_change_7d?: number;
+  price_change_30d?: number;
+  tao_in_24h_change?: number;
+  tao_in_7d_change?: number;
+  tao_in_30d_change?: number;
 }
 
-/**
- * Get the full market cache for bulk merge.
- */
-export function getMarketCacheAll(): Map<number, SubnetMarketData> {
-  return marketCache;
-}
-
-/**
- * Fetch market data from TaoStats and populate the cache.
- * Returns true on success, false on failure.
- * Designed to be called as best-effort (non-blocking) after chain sync.
- */
-export async function refreshMarketCache(): Promise<boolean> {
-  const apiKey = process.env.TAOSTATS_API_KEY;
-  if (!apiKey) return false;
+async function fetchTaoStatsMarket(): Promise<Map<number, SubnetMarketData> | null> {
+  const apiKey = process.env.TAOSTATS_API_KEY ?? "";
+  if (!apiKey) return null;
 
   try {
     const res = await fetch(
@@ -81,44 +123,116 @@ export async function refreshMarketCache(): Promise<boolean> {
         signal: AbortSignal.timeout(8000),
       },
     );
-
-    if (!res.ok) return false;
+    if (!res.ok) return null;
 
     const body = await res.json();
-    const rows: Record<string, unknown>[] = Array.isArray(body)
-      ? body
-      : (body.data ?? []);
+    const rows: TaoStatsSubnet[] = Array.isArray(body) ? body : (body.data ?? []);
+    const result = new Map<number, SubnetMarketData>();
 
-    const newCache = new Map<number, SubnetMarketData>();
-
-    for (const s of rows) {
-      const netuid = Number(s.netuid ?? 0);
+    for (const row of rows) {
+      const netuid = Number(row.netuid);
       if (netuid === 0) continue;
 
-      const alphaPrice = Number(s.alpha_price ?? s.price ?? 0) || undefined;
-      const marketCap = Number(s.market_cap ?? s.alpha_market_cap ?? 0) || undefined;
-      const volume24h = Number(s.volume_24h ?? s.alpha_volume_24h ?? 0) || undefined;
-
-      newCache.set(netuid, {
-        alphaPrice,
-        marketCap,
-        volume24h,
-        volumeCapRatio: (marketCap && volume24h) ? +((volume24h / marketCap) * 100).toFixed(1) : undefined,
-        change1h: Number(s.percent_change_1h ?? s.price_change_1h ?? 0) || undefined,
-        change24h: Number(s.percent_change_24h ?? s.price_change_24h ?? 0) || undefined,
-        change1w: Number(s.percent_change_7d ?? s.price_change_7d ?? 0) || undefined,
-        change1m: Number(s.percent_change_30d ?? s.price_change_30d ?? 0) || undefined,
-        flow24h: Number(s.net_flow_24h ?? 0) || undefined,
-        flow1w: Number(s.net_flow_7d ?? 0) || undefined,
-        flow1m: Number(s.net_flow_30d ?? 0) || undefined,
-        dailyChainBuys: Number(s.daily_chain_buys ?? 0) || undefined,
-        incentivePct: Number(s.incentive ?? 0) || undefined,
+      result.set(netuid, {
+        alphaPrice: Number(row.alpha_price ?? row.price ?? 0),
+        marketCap: Number(row.market_cap ?? 0),
+        volume24h: Number(row.volume_24h ?? 0),
+        change1h: row.price_change_1h != null ? Number(row.price_change_1h) : undefined,
+        change24h: row.price_change_24h != null ? Number(row.price_change_24h) : undefined,
+        change1w: row.price_change_7d != null ? Number(row.price_change_7d) : undefined,
+        change1m: row.price_change_30d != null ? Number(row.price_change_30d) : undefined,
+        flow24h: row.tao_in_24h_change != null ? Number(row.tao_in_24h_change) : undefined,
+        flow1w: row.tao_in_7d_change != null ? Number(row.tao_in_7d_change) : undefined,
+        flow1m: row.tao_in_30d_change != null ? Number(row.tao_in_30d_change) : undefined,
       });
     }
 
-    setMarketCache(newCache);
-    return true;
+    return result.size > 0 ? result : null;
   } catch {
+    return null;
+  }
+}
+
+// ── Public API ───────────────────────────────────────────────────────────────
+
+export function computeAlphaPrices(
+  chainSubnets: Array<{ netuid: number; tao_in?: number; alpha_in?: number; liquidity?: number }>,
+  taoUsd: number,
+): Map<number, SubnetMarketData> {
+  const result = new Map<number, SubnetMarketData>();
+
+  for (const s of chainSubnets) {
+    const taoIn = Number(s.tao_in ?? s.liquidity ?? 0);
+    const alphaIn = Number(s.alpha_in ?? 0);
+    if (taoIn <= 0 || alphaIn <= 0) continue;
+
+    const alphaPriceTao = taoIn / alphaIn;
+    const alphaPriceUsd = alphaPriceTao * taoUsd;
+
+    result.set(s.netuid, {
+      alphaPrice: +alphaPriceTao.toFixed(6),
+      marketCap: +(alphaPriceUsd * alphaIn).toFixed(2),
+      volume24h: 0,
+    });
+  }
+
+  return result;
+}
+
+export async function refreshMarketCache(
+  chainSubnets?: Array<{ netuid: number; tao_in?: number; alpha_in?: number; liquidity?: number }>,
+): Promise<boolean> {
+  // Strategy A: CMC TAO quote + chain pool ratios
+  const cmcQuote = await fetchCmcTaoQuote();
+  if (cmcQuote && chainSubnets && chainSubnets.length > 0) {
+    const alphaPrices = computeAlphaPrices(chainSubnets, cmcQuote.price);
+    for (const [netuid, data] of alphaPrices) {
+      data.change1h = cmcQuote.percent_change_1h;
+      data.change24h = cmcQuote.percent_change_24h;
+      data.change1w = cmcQuote.percent_change_7d;
+      data.change1m = cmcQuote.percent_change_30d;
+      cache.set(netuid, data);
+    }
+    lastRefresh = Date.now();
+    console.log("[market-cache] Refreshed " + alphaPrices.size + " subnets from CMC + chain pools");
+    return true;
+  }
+
+  // Strategy B: TaoStats full market data
+  const taoStatsData = await fetchTaoStatsMarket();
+  if (taoStatsData) {
+    cache.clear();
+    for (const [netuid, data] of taoStatsData) {
+      cache.set(netuid, data);
+    }
+    lastRefresh = Date.now();
+    console.log("[market-cache] Refreshed " + taoStatsData.size + " subnets from TaoStats");
+    return true;
+  }
+
+  if (cmcQuote) {
+    lastRefresh = Date.now();
+    console.log("[market-cache] CMC quote available but no chain data for alpha price derivation");
     return false;
   }
+
+  console.log("[market-cache] All sources failed -- serving stale cache");
+  return false;
+}
+
+export function getMarketData(netuid: number): SubnetMarketData | undefined {
+  return cache.get(netuid);
+}
+
+export function getMarketCacheAll(): Map<number, SubnetMarketData> {
+  return cache;
+}
+
+export function isMarketCacheFresh(): boolean {
+  return cache.size > 0 && Date.now() - lastRefresh < TTL_MS;
+}
+
+export function setMarketCache(netuid: number, data: SubnetMarketData): void {
+  cache.set(netuid, data);
+  lastRefresh = Date.now();
 }
