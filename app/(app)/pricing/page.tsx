@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, Zap, TrendingUp, Shield, Building2, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
@@ -316,7 +316,7 @@ export default function PricingPage() {
           const totalAnnual = tier.annualPrice;
 
           return (
-            <FadeIn key={tier.name} delay={idx * 80}>
+            <FadeIn key={tier.name} delay={idx * 0.08}>
               <div
                 className={cn(
                   "relative rounded-2xl flex flex-col h-full",
@@ -475,9 +475,9 @@ export default function PricingPage() {
                 </thead>
                 <tbody>
                   {COMPARISON_FEATURES.map((section) => (
-                    <>
+                    <React.Fragment key={section.category}>
                       {/* Section header */}
-                      <tr key={`section-${section.category}`}>
+                      <tr>
                         <td
                           colSpan={5}
                           className="px-5 py-2.5 text-[11px] font-bold text-slate-500 uppercase tracking-widest"
@@ -501,7 +501,7 @@ export default function PricingPage() {
                           ))}
                         </tr>
                       ))}
-                    </>
+                    </React.Fragment>
                   ))}
                   {/* CTA row at bottom of comparison */}
                   <tr>
