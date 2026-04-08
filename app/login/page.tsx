@@ -9,9 +9,9 @@ import {
   ArrowRight,
   Shield,
   Wallet,
-  ChevronRight,
 } from "lucide-react";
 import { useWallet } from "@/lib/wallet-context";
+import { WalletConnectModal } from "@/components/wallet/wallet-connect-modal";
 
 const TRUST_ITEMS = [
   { icon: Shield,       text: "No seed phrase storage",       sub: "We never see your private keys." },
@@ -21,7 +21,7 @@ const TRUST_ITEMS = [
 
 export default function LoginPage() {
   const router = useRouter();
-  const { walletState, connect, availableExtensions, connectionError } = useWallet();
+  const { walletState, openModal } = useWallet();
 
   // Redirect to dashboard once connected
   useEffect(() => {
@@ -29,11 +29,6 @@ export default function LoginPage() {
       router.push("/dashboard");
     }
   }, [walletState, router]);
-
-  function handleWalletConnect() {
-    const ext = availableExtensions.length > 0 ? availableExtensions[0] : "polkadotjs";
-    connect(ext);
-  }
 
   const isIdle = walletState === "disconnected";
   const isConnecting = walletState === "connecting";
@@ -187,7 +182,7 @@ export default function LoginPage() {
                 Sign in
               </h1>
               <p className="text-[13px] text-slate-500">
-                Connect your wallet or sign in with email.
+                Connect your wallet to continue with the same secure Tyvera wallet flow used across the app.
               </p>
             </div>
 
@@ -196,10 +191,10 @@ export default function LoginPage() {
               {isIdle && (
                 <>
                   <div className="mb-6 p-4 rounded-xl" style={{ background: "rgba(34,211,238,0.05)", border: "1px solid rgba(34,211,238,0.15)" }}>
-                    <p className="text-[12px] text-slate-300">Connect your Polkadot.js or Talisman wallet to get started.</p>
+                    <p className="text-[12px] text-slate-300">Connect with Polkadot.js, SubWallet, or Talisman to continue.</p>
                   </div>
                   <button
-                    onClick={handleWalletConnect}
+                    onClick={openModal}
                     className="w-full flex items-center gap-3 rounded-xl px-4 py-3.5 transition-all duration-200"
                     style={{
                       background: "rgba(255,255,255,0.045)",
@@ -210,26 +205,42 @@ export default function LoginPage() {
                     <div
                       className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
                       style={{
-                        background: "linear-gradient(135deg, #e6007a 0%, #c0006a 100%)",
-                        boxShadow: "0 2px 8px rgba(230,0,122,0.3)",
+                        background: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
+                        boxShadow: "0 2px 8px rgba(34,211,238,0.25)",
                       }}
                     >
-                      <span className="text-white text-[11px] font-black">P</span>
+                      <Wallet className="w-4 h-4 text-black" />
                     </div>
                     <div className="flex-1 text-left">
                       <div className="text-[13px] font-semibold text-white" style={{ letterSpacing: "-0.01em" }}>
                         Connect Wallet
                       </div>
-                      <div className="text-[10px] text-slate-600 mt-0.5">Polkadot.js Extension</div>
+                      <div className="text-[10px] text-slate-600 mt-0.5">Opens the shared Tyvera wallet selector</div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-slate-600" />
+                    <ArrowRight className="w-4 h-4 text-slate-600" />
                   </button>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {['Polkadot.js', 'SubWallet', 'Talisman'].map((wallet) => (
+                      <span
+                        key={wallet}
+                        className="px-2.5 py-1 rounded-full text-[10px] font-medium"
+                        style={{
+                          background: 'rgba(255,255,255,0.04)',
+                          border: '1px solid rgba(255,255,255,0.07)',
+                          color: '#94a3b8',
+                        }}
+                      >
+                        {wallet}
+                      </span>
+                    ))}
+                  </div>
 
                   {/* Trust note */}
                   <div className="flex items-start gap-2 px-1 mt-4">
                     <Shield className="w-3 h-3 text-slate-700 flex-shrink-0 mt-0.5" />
                     <p className="text-[10px] text-slate-700 leading-relaxed">
-                      Read-only connection. We never access your private keys or execute transactions without your approval.
+                      The same wallet modal and verification flow is used everywhere in Tyvera. We never access your private keys or execute transactions without your approval.
                     </p>
                   </div>
                 </>
@@ -264,6 +275,8 @@ export default function LoginPage() {
           </p>
         </motion.div>
       </div>
+
+      <WalletConnectModal />
     </div>
   );
 }
