@@ -123,6 +123,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     console.error("[Subscribe] Error:", err);
-    return NextResponse.json({ error: "Failed to create subscription" }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json(
+      { error: "Failed to create subscription", detail: message },
+      { status: 500 },
+    );
   }
 }
