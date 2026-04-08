@@ -188,8 +188,7 @@ export default function TermsPage() {
               Questions?
             </h2>
             <p className="text-sm leading-relaxed">
-              For questions about these Terms, open an issue on our GitHub or reach out through the Bittensor Discord
-              community.
+              For questions about these Terms, email us at tyvera.ai@gmail.com.
             </p>
           </section>
         </div>

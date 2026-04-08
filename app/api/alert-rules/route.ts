@@ -17,13 +17,13 @@ import {
   initDefaultRules,
 } from "@/lib/db/alerts";
 import { ALERT_TYPE_META, type AlertType } from "@/lib/alerts/types";
-import { verifyWalletAuth, getAuthenticatedAddress } from "@/lib/api/wallet-auth";
+import { requireWalletAuth, getAuthenticatedAddress } from "@/lib/api/wallet-auth";
 
 export async function GET(req: NextRequest) {
   const queryAddress = req.nextUrl.searchParams.get("address");
 
   // Verify wallet ownership
-  const auth = await verifyWalletAuth(req);
+  const auth = await requireWalletAuth(req);
   if (auth.errorResponse) return auth.errorResponse;
 
   const address = getAuthenticatedAddress(req, auth, queryAddress);
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     const { address: bodyAddress, type, threshold, enabled, subnetFilter } = body;
 
     // Verify wallet ownership
-    const auth = await verifyWalletAuth(req);
+    const auth = await requireWalletAuth(req);
     if (auth.errorResponse) return auth.errorResponse;
 
     const address = getAuthenticatedAddress(req, auth, bodyAddress);
@@ -91,7 +91,7 @@ export async function DELETE(req: NextRequest) {
     const body = await req.json();
     const { address: bodyAddress, ruleId } = body;
 
-    const auth = await verifyWalletAuth(req);
+    const auth = await requireWalletAuth(req);
     if (auth.errorResponse) return auth.errorResponse;
 
     const address = getAuthenticatedAddress(req, auth, bodyAddress);
@@ -117,7 +117,7 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const { address: bodyAddress, action } = body;
 
-    const auth = await verifyWalletAuth(req);
+    const auth = await requireWalletAuth(req);
     if (auth.errorResponse) return auth.errorResponse;
 
     const address = getAuthenticatedAddress(req, auth, bodyAddress);

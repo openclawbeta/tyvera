@@ -715,9 +715,9 @@ export default function HomePage() {
           <div className="flex flex-wrap gap-5">
             {[
               { label: "Subnets", href: "/subnets" },
-              { label: "Developers", href: "/developers" },
               { label: "Privacy", href: "/privacy" },
               { label: "Terms", href: "/terms" },
+              { label: "Risk Disclosure", href: "/risk-disclosure" },
             ].map(({ label, href }) => (
               <Link
                 key={label}

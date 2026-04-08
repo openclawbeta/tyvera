@@ -57,7 +57,7 @@ const TIERS: PricingTier[] = [
       "Strategies": "1",
       "Alert Rules": "—",
       "Tax Export": "—",
-      "API Access": "—",
+      "Internal APIs": "Included",
     },
   },
   {
@@ -93,7 +93,7 @@ const TIERS: PricingTier[] = [
       "Strategies": "All 5",
       "Alert Rules": "3",
       "Tax Export": "1/mo",
-      "API Access": "—",
+      "Internal APIs": "Included",
     },
   },
   {
@@ -121,7 +121,7 @@ const TIERS: PricingTier[] = [
       "All-time activity history",
       "Unlimited AI Intel queries",
       "Unlimited tax CSV exports",
-      "API access (1,000 calls/day)",
+      "Advanced portfolio, alerts, and recommendations",
     ],
     limits: {
       "Subnets": "All",
@@ -130,7 +130,7 @@ const TIERS: PricingTier[] = [
       "Strategies": "All 5",
       "Alert Rules": "Unlimited",
       "Tax Export": "Unlimited",
-      "API Access": "1K/day",
+      "Internal APIs": "Included",
     },
   },
   {
@@ -148,7 +148,7 @@ const TIERS: PricingTier[] = [
     cta: "Contact Us",
     features: [
       "Everything in Strategist",
-      "Unlimited API access",
+      "Priority operational support",
       "Custom webhooks (Slack, Discord, Telegram)",
       "Team access (up to 5 wallets)",
       "White-label embeddable charts",
@@ -163,7 +163,7 @@ const TIERS: PricingTier[] = [
       "Strategies": "All 5",
       "Alert Rules": "Unlimited",
       "Tax Export": "Unlimited",
-      "API Access": "Unlimited",
+      "Internal APIs": "Included",
     },
   },
 ];
@@ -197,7 +197,7 @@ const COMPARISON_FEATURES = [
     { name: "CSV export", tiers: [false, "1/mo", "Unlimited", "Unlimited"] },
   ]},
   { category: "Platform", items: [
-    { name: "API access", tiers: [false, false, "1K/day", "Unlimited"] },
+    { name: "Internal Tyvera APIs", tiers: ["Included", "Included", "Included", "Included"] },
     { name: "Custom webhooks", tiers: [false, false, false, true] },
     { name: "Team access", tiers: [false, false, false, "5 wallets"] },
     { name: "White-label embeds", tiers: [false, false, false, true] },
@@ -269,7 +269,7 @@ export default function PricingPage() {
 
     // Institutional — contact flow
     if (planId === "INSTITUTIONAL") {
-      window.open("mailto:support@tyvera.com?subject=Institutional%20Plan%20Inquiry", "_blank");
+      window.open("mailto:tyvera.ai@gmail.com?subject=Institutional%20Plan%20Inquiry", "_blank");
       return;
     }
 
@@ -603,7 +603,7 @@ export default function PricingPage() {
           >
             <h3 className="text-sm font-semibold text-white mb-2">On-Chain Payments</h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Pay directly in TAO via smart contract. No intermediaries, no KYC for TAO payments. Fiat via Stripe also available.
+              Pay directly in TAO on-chain. No intermediaries. Review all transfer details carefully before sending funds.
             </p>
           </div>
           <div
@@ -615,7 +615,7 @@ export default function PricingPage() {
           >
             <h3 className="text-sm font-semibold text-white mb-2">Upgrade Anytime</h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Switch tiers instantly. Pro-rated billing on upgrades, immediate access to new features. Cancel or downgrade at any time.
+              Switch tiers as the product evolves. Premium access and feature availability may change as Tyvera matures.
             </p>
           </div>
         </div>

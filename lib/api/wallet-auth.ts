@@ -14,6 +14,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { decodeAddress, signatureVerify } from "@polkadot/util-crypto";
 
 import { AUTH_WINDOW_MS } from "@/lib/config";
 
@@ -26,12 +27,8 @@ export interface WalletAuthResult {
 /**
  * Verify wallet ownership from request headers.
  *
- * For MVP: validates the message format and timestamp freshness.
- * The signature check uses a lightweight verification that the address
- * is consistent with the request. Full sr25519 verification requires
- * @polkadot/util-crypto on the server.
- *
- * In production, upgrade to full cryptographic verification.
+ * Performs full cryptographic signature verification against the
+ * claimed wallet address and rejects stale or malformed auth attempts.
  */
 export async function verifyWalletAuth(request: NextRequest): Promise<WalletAuthResult> {
   const address = request.headers.get("X-Wallet-Address");
@@ -89,8 +86,10 @@ export async function verifyWalletAuth(request: NextRequest): Promise<WalletAuth
     };
   }
 
-  // Validate address format (SS58 for Bittensor: starts with 5, 48 chars)
-  if (!/^5[A-Za-z0-9]{47}$/.test(address)) {
+  // Validate address format and decode SS58.
+  try {
+    decodeAddress(address);
+  } catch {
     return {
       verified: false,
       errorResponse: NextResponse.json(
@@ -100,14 +99,16 @@ export async function verifyWalletAuth(request: NextRequest): Promise<WalletAuth
     };
   }
 
-  // MVP: Accept the auth if message format and timestamp are valid.
-  // The frontend must sign with the wallet extension, so the signature
-  // proves the user has the extension connected with this address.
-  //
-  // TODO: Add full sr25519 signature verification:
-  //   import { signatureVerify } from "@polkadot/util-crypto";
-  //   const { isValid } = signatureVerify(message, signature, address);
-  //   if (!isValid) return { verified: false, errorResponse: ... };
+  const { isValid } = signatureVerify(message, signature, address);
+  if (!isValid) {
+    return {
+      verified: false,
+      errorResponse: NextResponse.json(
+        { error: "Invalid wallet signature" },
+        { status: 401 },
+      ),
+    };
+  }
 
   return { verified: true, address };
 }

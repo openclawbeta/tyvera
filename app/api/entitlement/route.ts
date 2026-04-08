@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEntitlement } from "@/lib/db/subscriptions";
-import { getTierForPlan, normalizeTier } from "@/lib/types/tiers";
+import { normalizeTier } from "@/lib/types/tiers";
 import type { Tier } from "@/lib/types/tiers";
+import { requireWalletAuth, getAuthenticatedAddress } from "@/lib/api/wallet-auth";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Entitlement endpoint — now backed by SQLite                         */
@@ -25,13 +26,20 @@ export interface EntitlementResponse {
 }
 
 export async function GET(request: NextRequest) {
-  const address = request.nextUrl.searchParams.get("address");
+  const queryAddress = request.nextUrl.searchParams.get("address");
+  const auth = await requireWalletAuth(request);
+  if (auth.errorResponse) return auth.errorResponse;
 
+  const address = getAuthenticatedAddress(request, auth, queryAddress);
   if (!address) {
     return NextResponse.json(
       { error: "Missing required query parameter: address" },
       { status: 400 },
     );
+  }
+
+  if (auth.verified && auth.address !== address) {
+    return NextResponse.json({ error: "Address mismatch" }, { status: 403 });
   }
 
   try {

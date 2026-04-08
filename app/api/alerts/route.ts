@@ -10,12 +10,12 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getAlerts, getUnreadCount, markAlertsRead } from "@/lib/db/alerts";
-import { verifyWalletAuth, getAuthenticatedAddress } from "@/lib/api/wallet-auth";
+import { requireWalletAuth, getAuthenticatedAddress } from "@/lib/api/wallet-auth";
 
 export async function GET(req: NextRequest) {
   const queryAddress = req.nextUrl.searchParams.get("address");
 
-  const auth = await verifyWalletAuth(req);
+  const auth = await requireWalletAuth(req);
   if (auth.errorResponse) return auth.errorResponse;
 
   const address = getAuthenticatedAddress(req, auth, queryAddress);
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { address: bodyAddress, alertIds } = body;
 
-    const auth = await verifyWalletAuth(req);
+    const auth = await requireWalletAuth(req);
     if (auth.errorResponse) return auth.errorResponse;
 
     const address = getAuthenticatedAddress(req, auth, bodyAddress);

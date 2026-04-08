@@ -162,8 +162,7 @@ export default function PrivacyPage() {
               Questions?
             </h2>
             <p className="text-sm leading-relaxed">
-              For questions about this Privacy Policy, open an issue on our GitHub or contact us through our
-              official channels on the Bittensor Discord.
+              For questions about this Privacy Policy, email us at tyvera.ai@gmail.com.
             </p>
           </section>
         </div>

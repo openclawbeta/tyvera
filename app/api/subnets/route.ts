@@ -41,6 +41,7 @@ import {
   isSubnetCacheFresh,
   getSubnetCacheAgeMs,
 } from "@/lib/chain/cache";
+import { isAllowedInternalOrigin } from "@/lib/api/internal-origin";
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -202,6 +203,13 @@ function enrichWithMarketData(subnets: SubnetDetailModel[]): SubnetDetailModel[]
 export async function GET(request: NextRequest) {
   const netuidParam   = request.nextUrl.searchParams.get("netuid");
   const netuidFilter  = netuidParam != null ? Number(netuidParam) : undefined;
+
+  if (!isAllowedInternalOrigin(request)) {
+    return NextResponse.json(
+      { error: "This endpoint is for Tyvera frontend use only." },
+      { status: 403, headers: { "Cache-Control": "no-store" } },
+    );
+  }
 
   // ── Priority 0: In-memory cache from cron/sync-chain ───────────
   const chainCache = getSubnetCache();
