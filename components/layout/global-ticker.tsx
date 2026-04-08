@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 interface TickerData {
   taoUsd: number;
@@ -28,7 +29,7 @@ export function GlobalTicker() {
   useEffect(() => {
     const fetchTicker = async () => {
       try {
-        const res = await fetch("/api/tao-rate");
+        const res = await fetchWithTimeout("/api/tao-rate", { timeoutMs: 8_000 });
         if (!res.ok) throw new Error("Failed to fetch ticker");
         const data: TickerData = await res.json();
         if (typeof data.taoUsd === "number" && data.taoUsd > 0) {
@@ -52,7 +53,7 @@ export function GlobalTicker() {
   useEffect(() => {
     const fetchSubnets = async () => {
       try {
-        const res = await fetch("/api/subnets");
+        const res = await fetchWithTimeout("/api/subnets", { timeoutMs: 10_000 });
         if (!res.ok) throw new Error("Failed to fetch subnets");
         const data: SubnetData[] = await res.json();
         setSubnetCount(data.length);

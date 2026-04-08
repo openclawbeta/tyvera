@@ -168,22 +168,26 @@ export function getSubnetHistory(
 export interface SubnetFetchResult {
   subnets: SubnetDetailModel[];
   dataSource: string;
+  /** Snapshot age in seconds, when available */
+  snapshotAgeSec: number | null;
 }
 
 export async function fetchSubnetsFromApi(): Promise<SubnetFetchResult> {
   try {
     const resp = await fetchWithTimeout("/api/subnets", { cache: "no-store", timeoutMs: 10_000 });
-    if (!resp.ok) return { subnets: getSubnets(), dataSource: "static-snapshot" };
+    if (!resp.ok) return { subnets: getSubnets(), dataSource: "static-snapshot", snapshotAgeSec: null };
     const dataSource = resp.headers.get("X-Data-Source") ?? "unknown";
+    const ageRaw = resp.headers.get("X-Snapshot-Age");
+    const snapshotAgeSec = ageRaw ? Number(ageRaw) : null;
     const data: unknown = await resp.json();
-    if (!Array.isArray(data) || data.length === 0) return { subnets: getSubnets(), dataSource: "static-snapshot" };
+    if (!Array.isArray(data) || data.length === 0) return { subnets: getSubnets(), dataSource: "static-snapshot", snapshotAgeSec: null };
     const subnets = (data as SubnetDetailModel[]).map((subnet) => ({
       ...subnet,
       ...deriveTableFields(subnet),
     }));
-    return { subnets, dataSource };
+    return { subnets, dataSource, snapshotAgeSec };
   } catch {
-    return { subnets: getSubnets(), dataSource: "static-snapshot" };
+    return { subnets: getSubnets(), dataSource: "static-snapshot", snapshotAgeSec: null };
   }
 }
 

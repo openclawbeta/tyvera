@@ -111,7 +111,7 @@ function WalletBanner() {
             Connect your wallet to execute recommendations
           </p>
           <p className="text-[11px] text-slate-500 leading-relaxed">
-            Browse freely -- wallet connection is only needed when you want to approve a move.
+            Browse freely — wallet connection is only needed when you want to approve a move.
             Your seed phrase is never stored. You approve every transaction individually.
           </p>
         </div>
@@ -157,7 +157,7 @@ export default function RecommendationsPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PageHeader
           title="Recommendations"
-          subtitle="Risk-adjusted reallocation opportunities -- you approve every move"
+          subtitle="Risk-adjusted reallocation opportunities — you approve every move"
         />
         <div className="flex items-center gap-2 mt-0.5">
           <div

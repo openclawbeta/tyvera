@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import {
   Zap, ArrowRight, Shield, Lock, Eye, CheckCircle,
   Network, TrendingUp, Lightbulb, Wallet, BarChart2,
@@ -93,7 +94,7 @@ export default function HomePage() {
   const [featured, setFeatured] = useState<LiveSubnet[]>([]);
 
   useEffect(() => {
-    fetch("/api/subnets")
+    fetchWithTimeout("/api/subnets", { timeoutMs: 10_000 })
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (!Array.isArray(data) || data.length === 0) return;

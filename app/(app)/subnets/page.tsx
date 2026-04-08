@@ -24,6 +24,7 @@ export default function SubnetsPage() {
   const [subnets, setSubnets] = useState<SubnetDetailModel[]>(() => seedSubnets);
   const [totalSubnets, setTotalSubnets] = useState<number>(seedSubnets.length);
   const [dataSource, setDataSource] = useState<string>("static-snapshot");
+  const [snapshotAge, setSnapshotAge] = useState<number | null>(null);
   const [liveLoaded, setLiveLoaded] = useState(false);
 
   useEffect(() => {
@@ -35,6 +36,7 @@ export default function SubnetsPage() {
         setSubnets(result.subnets);
         setTotalSubnets(result.subnets.length);
         setDataSource(result.dataSource);
+        setSnapshotAge(result.snapshotAgeSec);
         setLiveLoaded(true);
       })
       .catch(() => {
@@ -115,7 +117,7 @@ export default function SubnetsPage() {
         subtitle={`${totalSubnets} subnets · scored, ranked, and filtered`}
       >
         <div className="flex items-center gap-3">
-          <DataSourceBadge source={dataSource} />
+          <DataSourceBadge source={dataSource} ageSec={snapshotAge} />
           <div className="text-xs text-slate-500">
             Showing <span className="text-white font-semibold">{filtered.length}</span> of {totalSubnets}
           </div>

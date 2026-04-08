@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { ChevronDown, ChevronUp, Shield, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 interface MetagraphNeuron {
   uid: number;
@@ -58,7 +59,7 @@ export function MetagraphTable({ netuid }: MetagraphTableProps) {
     const fetchMetagraph = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/metagraph?netuid=${netuid}`);
+        const response = await fetchWithTimeout(`/api/metagraph?netuid=${netuid}`, { timeoutMs: 12_000 });
         if (!response.ok) throw new Error("Failed to fetch metagraph");
         const data = await response.json();
         setNeurons(Array.isArray(data) ? data : []);

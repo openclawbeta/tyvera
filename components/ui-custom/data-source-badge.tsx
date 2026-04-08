@@ -107,15 +107,26 @@ const SOURCE_META: Record<DataSource, SourceMeta> = {
   },
 };
 
+function formatAge(seconds: number): string {
+  if (seconds < 60) return `${seconds}s old`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)}m old`;
+  if (seconds < 86400) return `${Math.round(seconds / 3600)}h old`;
+  return `${Math.round(seconds / 86400)}d old`;
+}
+
 interface DataSourceBadgeProps {
   source: DataSource | string | null;
+  /** Snapshot age in seconds, shown when available */
+  ageSec?: number | null;
   className?: string;
 }
 
-export function DataSourceBadge({ source, className = "" }: DataSourceBadgeProps) {
+export function DataSourceBadge({ source, ageSec, className = "" }: DataSourceBadgeProps) {
   const key = (source && source in SOURCE_META ? source : "unknown") as DataSource;
   const meta = SOURCE_META[key];
   const Icon = meta.icon;
+
+  const ageLabel = ageSec != null && ageSec > 0 ? formatAge(ageSec) : null;
 
   return (
     <div
@@ -125,7 +136,7 @@ export function DataSourceBadge({ source, className = "" }: DataSourceBadgeProps
         border: `1px solid ${meta.borderColor}`,
         color: meta.color,
       }}
-      title={meta.detail}
+      title={ageLabel ? `${meta.detail} · ${ageLabel}` : meta.detail}
     >
       {meta.pulse && (
         <span
@@ -135,6 +146,9 @@ export function DataSourceBadge({ source, className = "" }: DataSourceBadgeProps
       )}
       <Icon className="w-3 h-3" />
       <span>{meta.label}</span>
+      {ageLabel && (
+        <span style={{ opacity: 0.7 }}>· {ageLabel}</span>
+      )}
     </div>
   );
 }

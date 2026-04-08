@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import {
   AreaChart,
   Area,
@@ -55,7 +56,7 @@ export function PriceHistoryChart() {
   const fetchPriceHistory = async (days: number) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/tao-price-history?days=${days}`);
+      const response = await fetchWithTimeout(`/api/tao-price-history?days=${days}`, { timeoutMs: 10_000 });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const result: PriceHistoryResponse = await response.json();
       setData(result);

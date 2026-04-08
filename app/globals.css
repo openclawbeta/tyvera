@@ -381,7 +381,7 @@
 }
 
 .ticker-track {
-  animation: tickerMove 34s linear infinite;
+  animation: tickerMove 64s linear infinite;
 }
 
 .ticker-track:hover {

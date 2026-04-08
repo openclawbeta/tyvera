@@ -67,12 +67,13 @@ export function LiveTicker() {
         const data: unknown = await res.json();
         if (!Array.isArray(data) || data.length === 0) return;
 
-        // Sort by yield descending, take top 16
+        // Take top 32 by yield so the scroll loop is long enough to
+        // avoid obvious repetition on wide screens.
         const sorted = data
           .filter(isSubnetRow)
           .filter((s) => s.yield > 0)
           .sort((a, b) => b.yield - a.yield)
-          .slice(0, 16);
+          .slice(0, 32);
 
         const mapped: SubnetTicker[] = sorted.map((s) => ({
           label: `SN${s.netuid} · ${s.name}`,
