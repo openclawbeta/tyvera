@@ -604,7 +604,7 @@ export default function DevelopersPage() {
         >
           <h3 className="text-base font-semibold text-white mb-2">Ready to build?</h3>
           <p className="text-sm text-slate-400 mb-4">
-            Get API access with a Strategist subscription — 1,000 requests/day for $29/mo.
+            Get API access with a Strategist subscription — 1,000 requests/day for $49.99/mo.
           </p>
           <a
             href="/pricing"

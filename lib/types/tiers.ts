@@ -94,8 +94,8 @@ export const TIER_DEFINITIONS: TierDefinition[] = [
     id: "analyst",
     displayName: "Analyst",
     description: "Full data access for active stakers",
-    monthlyPrice: 9,
-    annualPrice: 86,
+    monthlyPrice: 19.99,
+    annualPrice: 191.90,
     features: [
       "subnet_list",
       "subnet_list_full",
@@ -126,8 +126,8 @@ export const TIER_DEFINITIONS: TierDefinition[] = [
     id: "strategist",
     displayName: "Strategist",
     description: "AI-powered edge for power users",
-    monthlyPrice: 29,
-    annualPrice: 278,
+    monthlyPrice: 49.99,
+    annualPrice: 479.90,
     features: [
       "subnet_list",
       "subnet_list_full",
@@ -170,8 +170,8 @@ export const TIER_DEFINITIONS: TierDefinition[] = [
     id: "institutional",
     displayName: "Institutional",
     description: "For funds, DAOs, and subnet teams",
-    monthlyPrice: 99,
-    annualPrice: 950,
+    monthlyPrice: 99.99,
+    annualPrice: 959.90,
     features: [
       "subnet_list",
       "subnet_list_full",
