@@ -175,6 +175,28 @@ function mapTaoStatsRow(s: Record<string, unknown>): SubnetDetailModel {
   };
 }
 
+// ── Market enrichment helper ─────────────────────────────────────────────────
+
+function enrichWithMarketData(subnets: SubnetDetailModel[]): SubnetDetailModel[] {
+  return subnets.map((s) => {
+    const market = isMarketCacheFresh() ? getMarketData(s.netuid) : undefined;
+    if (!market) return s;
+    return {
+      ...s,
+      alphaPrice: market.alphaPrice,
+      marketCap: market.marketCap,
+      volume24h: market.volume24h,
+      change1h: market.change1h,
+      change24h: market.change24h,
+      change1w: market.change1w,
+      change1m: market.change1m,
+      flow24h: market.flow24h,
+      flow1w: market.flow1w,
+      flow1m: market.flow1m,
+    };
+  });
+}
+
 // ── Route handler ─────────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
@@ -225,25 +247,7 @@ export async function GET(request: NextRequest) {
       chainSubnets = chainSubnets.filter((s) => s.netuid === netuidFilter);
     }
     const cacheAgeSec = Math.round(getSubnetCacheAgeMs() / 1000);
-
-    // Market enrichment
-    const enriched = chainSubnets.map((s) => {
-      const market = isMarketCacheFresh() ? getMarketData(s.netuid) : undefined;
-      if (!market) return s;
-      return {
-        ...s,
-        alphaPrice: market.alphaPrice,
-        marketCap: market.marketCap,
-        volume24h: market.volume24h,
-        change1h: market.change1h,
-        change24h: market.change24h,
-        change1w: market.change1w,
-        change1m: market.change1m,
-        flow24h: market.flow24h,
-        flow1w: market.flow1w,
-        flow1m: market.flow1m,
-      };
-    });
+    const enriched = enrichWithMarketData(chainSubnets);
 
     return NextResponse.json(enriched, {
       headers: {
@@ -257,9 +261,9 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // ── Priority 1: Subtensor snapshot ───────────
+  // ── Priority 1: Fresh subtensor snapshot (< 2h old) ───────────
   const snapshot = readSubtensorSnapshot(netuidFilter);
-  if (snapshot) {
+  if (snapshot && !snapshot.isStale) {
     // Best-effort market enrichment
     if (!isMarketCacheFresh()) {
       await refreshMarketCache(
@@ -272,37 +276,21 @@ export async function GET(request: NextRequest) {
       ).catch(() => false);
     }
 
-    const enriched = snapshot.subnets.map((s) => {
-      const market = isMarketCacheFresh() ? getMarketData(s.netuid) : undefined;
-      if (!market) return s;
-      return {
-        ...s,
-        alphaPrice: market.alphaPrice,
-        marketCap: market.marketCap,
-        volume24h: market.volume24h,
-        change1h: market.change1h,
-        change24h: market.change24h,
-        change1w: market.change1w,
-        change1m: market.change1m,
-        flow24h: market.flow24h,
-        flow1w: market.flow1w,
-        flow1m: market.flow1m,
-      };
-    });
+    const enriched = enrichWithMarketData(snapshot.subnets);
 
     return NextResponse.json(enriched, {
       headers: {
-        "X-Data-Source":    snapshot.isStale ? "subtensor-snapshot-stale" : "subtensor-snapshot",
+        "X-Data-Source":    "subtensor-snapshot",
         "X-Subnet-Count":  String(enriched.length),
         "X-Snapshot-Age":  String(snapshot.ageSeconds),
-        "X-Snapshot-Stale": String(snapshot.isStale),
+        "X-Snapshot-Stale": "false",
         "X-Market-Enriched": String(isMarketCacheFresh()),
         "Cache-Control":   "public, s-maxage=300",
       },
     });
   }
 
-  // ── Priority 2: TaoStats live API ───────────
+  // ── Priority 2: TaoStats live API (preferred when snapshot is stale) ───────
   const apiKey = process.env.TAOSTATS_API_KEY ?? "";
   if (apiKey) {
     try {
@@ -343,7 +331,22 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // ── Priority 3: Static TypeScript snapshot ───────────
+  // ── Priority 3: Stale snapshot (better than nothing) ───────────
+  if (snapshot) {
+    const enriched = enrichWithMarketData(snapshot.subnets);
+    return NextResponse.json(enriched, {
+      headers: {
+        "X-Data-Source":    "subtensor-snapshot-stale",
+        "X-Subnet-Count":  String(enriched.length),
+        "X-Snapshot-Age":  String(snapshot.ageSeconds),
+        "X-Snapshot-Stale": "true",
+        "X-Market-Enriched": String(isMarketCacheFresh()),
+        "Cache-Control":   "public, s-maxage=60",
+      },
+    });
+  }
+
+  // ── Priority 4: Static TypeScript snapshot ───────────
   const staticData = netuidFilter != null
     ? SUBNETS_REAL.filter((s) => s.netuid === netuidFilter)
     : SUBNETS_REAL;
