@@ -1,11 +1,10 @@
 /* ─────────────────────────────────────────────────────────────────── */
 /* Subscription CRUD operations                                        */
 /*                                                                     */
-/* All functions are async because getDb() is async on first call.     */
-/* After first call, the db is cached and returns instantly.           */
+/* Uses the DbClient abstraction — works with both Turso and sql.js.  */
 /* ─────────────────────────────────────────────────────────────────── */
 
-import { getDb, saveDb } from "./index";
+import { getDb } from "./index";
 import { getTierForPlan } from "@/lib/types/tiers";
 import type { Tier } from "@/lib/types/tiers";
 
@@ -35,6 +34,12 @@ export interface ActiveEntitlement {
   days_remaining: number;
 }
 
+/* ── Helpers ──────────────────────────────────────────────────────── */
+
+function rowToObject(columns: string[], values: any[]): Record<string, unknown> {
+  return Object.fromEntries(columns.map((c, i) => [c, values[i]]));
+}
+
 /* ── Read ─────────────────────────────────────────────────────────── */
 
 /**
@@ -48,7 +53,7 @@ export async function getEntitlement(walletAddress: string): Promise<ActiveEntit
   const tierOrder = ["PRO_PLATINUM", "PRO_GOLD", "PRO_SILVER"];
 
   for (const planId of tierOrder) {
-    const rows = db.exec(
+    const rows = await db.query(
       `SELECT * FROM subscriptions
        WHERE wallet_address = ? AND plan_id = ? AND status IN ('active', 'grace')
        AND expires_at > datetime('now')
@@ -56,11 +61,8 @@ export async function getEntitlement(walletAddress: string): Promise<ActiveEntit
       [walletAddress, planId],
     );
 
-    if (rows.length > 0 && rows[0].values.length > 0) {
-      const row = rows[0];
-      const cols = row.columns;
-      const vals = row.values[0];
-      const obj = Object.fromEntries(cols.map((c: string, i: number) => [c, vals[i]])) as Record<string, unknown>;
+    if (rows.length > 0 && rows[0].rows.length > 0) {
+      const obj = rowToObject(rows[0].columns, rows[0].rows[0]);
 
       const expiresAt = new Date(obj.expires_at as string);
       const now = new Date();
@@ -78,18 +80,15 @@ export async function getEntitlement(walletAddress: string): Promise<ActiveEntit
   }
 
   // Check admin overrides
-  const overrides = db.exec(
+  const overrides = await db.query(
     `SELECT * FROM admin_overrides
      WHERE wallet_address = ? AND expires_at > datetime('now')
      ORDER BY expires_at DESC LIMIT 1`,
     [walletAddress],
   );
 
-  if (overrides.length > 0 && overrides[0].values.length > 0) {
-    const row = overrides[0];
-    const cols = row.columns;
-    const vals = row.values[0];
-    const obj = Object.fromEntries(cols.map((c: string, i: number) => [c, vals[i]])) as Record<string, unknown>;
+  if (overrides.length > 0 && overrides[0].rows.length > 0) {
+    const obj = rowToObject(overrides[0].columns, overrides[0].rows[0]);
 
     const expiresAt = new Date(obj.expires_at as string);
     const now = new Date();
@@ -128,7 +127,7 @@ export async function activateSubscription(params: {
   const now = new Date();
   const expiresAt = new Date(now.getTime() + durationDays * 86_400_000);
 
-  db.run(
+  await db.execute(
     `INSERT INTO subscriptions (wallet_address, plan_id, tier, status, amount_tao, tx_hash, memo, activated_at, expires_at)
      VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?)`,
     [
@@ -143,39 +142,28 @@ export async function activateSubscription(params: {
     ],
   );
 
-  saveDb();
-
   // Return the created subscription
-  const rows = db.exec(
+  const rows = await db.query(
     "SELECT * FROM subscriptions WHERE wallet_address = ? ORDER BY id DESC LIMIT 1",
     [walletAddress],
   );
 
-  const row = rows[0];
-  const cols = row.columns;
-  const vals = row.values[0];
-  return Object.fromEntries(cols.map((c: string, i: number) => [c, vals[i]])) as unknown as Subscription;
+  return rowToObject(rows[0].columns, rows[0].rows[0]) as unknown as Subscription;
 }
 
 /**
  * Expire subscriptions that are past their expiry date.
- * Should be called periodically (e.g., via cron or on each API request).
  */
 export async function expireSubscriptions(): Promise<number> {
   const db = await getDb();
 
-  // Move active subscriptions past expiry to "expired"
-  db.run(
+  await db.execute(
     `UPDATE subscriptions SET status = 'expired', updated_at = datetime('now')
      WHERE status = 'active' AND expires_at <= datetime('now')`,
   );
 
-  // Count how many were expired
-  const result = db.exec("SELECT changes() as count");
-  const count = result.length > 0 ? (result[0].values[0][0] as number) : 0;
-
-  if (count > 0) saveDb();
-  return count;
+  const result = await db.query("SELECT changes() as count");
+  return result.length > 0 && result[0].rows.length > 0 ? (result[0].rows[0][0] as number) : 0;
 }
 
 /**
@@ -194,13 +182,11 @@ export async function adminGrantSubscription(params: {
   const tier = getTierForPlan(planId);
   const expiresAt = new Date(Date.now() + durationDays * 86_400_000);
 
-  db.run(
+  await db.execute(
     `INSERT INTO admin_overrides (wallet_address, plan_id, tier, reason, granted_by, expires_at)
      VALUES (?, ?, ?, ?, ?, ?)`,
     [walletAddress, planId, tier, reason, grantedBy, expiresAt.toISOString()],
   );
-
-  saveDb();
 }
 
 /* ── Payment Intents ──────────────────────────────────────────────── */
@@ -218,13 +204,11 @@ export async function storePaymentIntent(params: {
 }): Promise<void> {
   const db = await getDb();
 
-  db.run(
+  await db.execute(
     `INSERT INTO payment_intents (id, wallet_address, plan_id, amount_tao, memo, status, expires_at)
      VALUES (?, ?, ?, ?, ?, 'awaiting_payment', ?)`,
     [params.id, params.walletAddress, params.planId, params.amountTao, params.memo, params.expiresAt],
   );
-
-  saveDb();
 }
 
 /**
@@ -240,16 +224,14 @@ export async function findPaymentIntentByMemo(memo: string): Promise<{
 } | null> {
   const db = await getDb();
 
-  const rows = db.exec(
+  const rows = await db.query(
     `SELECT * FROM payment_intents WHERE memo = ? AND status = 'awaiting_payment' LIMIT 1`,
     [memo],
   );
 
-  if (rows.length === 0 || rows[0].values.length === 0) return null;
+  if (rows.length === 0 || rows[0].rows.length === 0) return null;
 
-  const cols = rows[0].columns;
-  const vals = rows[0].values[0];
-  return Object.fromEntries(cols.map((c: string, i: number) => [c, vals[i]])) as unknown as {
+  return rowToObject(rows[0].columns, rows[0].rows[0]) as unknown as {
     id: string;
     wallet_address: string;
     plan_id: string;
@@ -268,14 +250,12 @@ export async function confirmPaymentIntent(memo: string, txHash: string): Promis
 
   const db = await getDb();
 
-  // Update payment intent
-  db.run(
+  await db.execute(
     `UPDATE payment_intents SET status = 'confirmed', tx_hash = ?, confirmed_at = datetime('now')
      WHERE memo = ?`,
     [txHash, memo],
   );
 
-  // Activate subscription
   await activateSubscription({
     walletAddress: intent.wallet_address,
     planId: intent.plan_id,
@@ -284,6 +264,5 @@ export async function confirmPaymentIntent(memo: string, txHash: string): Promis
     memo,
   });
 
-  saveDb();
   return true;
 }
