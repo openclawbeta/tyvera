@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, X, Zap, TrendingUp, Shield, Building2, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { FadeIn } from "@/components/ui-custom/fade-in";
@@ -222,12 +223,16 @@ interface PaymentInstructions {
 }
 
 export default function PricingPage() {
+  const router = useRouter();
   const [billing, setBilling] = useState<BillingCycle>("monthly");
   const [subscribing, setSubscribing] = useState<string | null>(null);
   const [paymentInfo, setPaymentInfo] = useState<PaymentInstructions | null>(null);
 
   const handleSubscribe = async (planId: string) => {
-    if (planId === "FREE") return;
+    if (planId === "FREE") {
+      router.push("/subnets");
+      return;
+    }
     setSubscribing(planId);
 
     try {
@@ -498,6 +503,25 @@ export default function PricingPage() {
                       ))}
                     </>
                   ))}
+                  {/* CTA row at bottom of comparison */}
+                  <tr>
+                    <td className="px-5 py-4" />
+                    {TIERS.map((tier) => (
+                      <td key={tier.name} className="px-4 py-4 text-center">
+                        <button
+                          onClick={() => handleSubscribe(tier.planId)}
+                          className={cn(
+                            "px-4 py-2 rounded-lg text-xs font-semibold transition-all",
+                            tier.popular
+                              ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30"
+                              : "bg-white/[0.06] text-slate-300 border border-white/[0.08] hover:bg-white/[0.1]",
+                          )}
+                        >
+                          {tier.cta}
+                        </button>
+                      </td>
+                    ))}
+                  </tr>
                 </tbody>
               </table>
             </div>

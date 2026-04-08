@@ -75,11 +75,16 @@ export function LiveTicker() {
           .sort((a, b) => b.yield - a.yield)
           .slice(0, 32);
 
-        const mapped: SubnetTicker[] = sorted.map((s) => ({
-          label: `SN${s.netuid} · ${s.name}`,
-          yieldRate: `${s.yield.toFixed(1)}%`,
-          delta: s.yieldDelta7d ?? 0,
-        }));
+        const mapped: SubnetTicker[] = sorted.map((s) => {
+          // Avoid "SN97 · SN97" — if name is just the netuid placeholder, show it once
+          const hasRealName = s.name && !/^SN\d+$/.test(s.name);
+          const label = hasRealName ? `SN${s.netuid} · ${s.name}` : `SN${s.netuid}`;
+          return {
+            label,
+            yieldRate: `${s.yield.toFixed(1)}%`,
+            delta: s.yieldDelta7d ?? 0,
+          };
+        });
 
         if (mapped.length > 0) {
           setItems(mapped);

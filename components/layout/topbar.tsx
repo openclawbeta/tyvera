@@ -1,15 +1,136 @@
 "use client";
 
-import { Search, Bell, Settings, Menu } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Search, Bell, Settings, Menu, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { getSubnets } from "@/lib/api/subnets";
 import { LiveTicker } from "@/components/ui-custom/live-ticker";
 import { WalletStatusChip } from "@/components/wallet/wallet-status-chip";
 import { WalletConnectModal } from "@/components/wallet/wallet-connect-modal";
 import { WalletApprovalDialog } from "@/components/wallet/wallet-approval-dialog";
 import { useSidebar } from "@/lib/sidebar-context";
 import Link from "next/link";
+import type { SubnetDetailModel } from "@/lib/types/subnets";
 
 export function Topbar() {
   const { toggle } = useSidebar();
+  const router = useRouter();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [subnets, setSubnets] = useState<SubnetDetailModel[]>([]);
+  const [filteredSubnets, setFilteredSubnets] = useState<SubnetDetailModel[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchModalRef = useRef<HTMLDivElement>(null);
+
+  const [isBellOpen, setIsBellOpen] = useState(false);
+  const bellButtonRef = useRef<HTMLButtonElement>(null);
+  const bellDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Load subnets on mount
+  useEffect(() => {
+    try {
+      const allSubnets = getSubnets();
+      setSubnets(allSubnets);
+    } catch (error) {
+      console.error("Failed to load subnets:", error);
+    }
+  }, []);
+
+  // Filter subnets based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredSubnets([]);
+      setSelectedIndex(0);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const filtered = subnets.filter(
+      (subnet) =>
+        subnet.name.toLowerCase().includes(query) ||
+        subnet.category?.toLowerCase().includes(query) ||
+        subnet.netuid.toString() === query ||
+        subnet.symbol?.toLowerCase().includes(query)
+    );
+
+    setFilteredSubnets(filtered);
+    setSelectedIndex(0);
+  }, [searchQuery, subnets]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // ⌘K or Ctrl+K to open search
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+      // Escape to close search
+      else if (e.key === "Escape") {
+        setIsSearchOpen(false);
+        setIsBellOpen(false);
+      }
+      // ArrowDown/Up in search
+      else if (isSearchOpen && filteredSubnets.length > 0) {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setSelectedIndex((prev) =>
+            prev < filteredSubnets.length - 1 ? prev + 1 : prev
+          );
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          setSelectedIndex((prev) => (prev > 0 ? prev - 1 : 0));
+        }
+        // Enter to select
+        else if (e.key === "Enter") {
+          e.preventDefault();
+          const selected = filteredSubnets[selectedIndex];
+          if (selected) {
+            handleSelectSubnet(selected);
+          }
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isSearchOpen, filteredSubnets, selectedIndex]);
+
+  // Auto-focus search input when opened
+  useEffect(() => {
+    if (isSearchOpen && searchInputRef.current) {
+      setTimeout(() => searchInputRef.current?.focus(), 0);
+    }
+  }, [isSearchOpen]);
+
+  // Close search modal when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        searchModalRef.current &&
+        !searchModalRef.current.contains(e.target as Node)
+      ) {
+        setIsSearchOpen(false);
+      }
+      if (
+        bellDropdownRef.current &&
+        !bellDropdownRef.current.contains(e.target as Node) &&
+        !bellButtonRef.current?.contains(e.target as Node)
+      ) {
+        setIsBellOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelectSubnet = (subnet: SubnetDetailModel) => {
+    setIsSearchOpen(false);
+    setSearchQuery("");
+    router.push(`/subnets/${subnet.netuid}`);
+  };
 
   return (
     <>
@@ -50,6 +171,7 @@ export function Topbar() {
 
           {/* Search — hidden on smallest screens */}
           <button
+            onClick={() => setIsSearchOpen(true)}
             className="hidden sm:flex items-center gap-2 transition-all duration-200"
             style={{
               padding: "5px 12px",
@@ -88,6 +210,8 @@ export function Topbar() {
 
           {/* Bell */}
           <button
+            ref={bellButtonRef}
+            onClick={() => setIsBellOpen(!isBellOpen)}
             className="relative w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200"
             style={{ color: "#64748b" }}
             onMouseEnter={(e) => {
@@ -156,6 +280,192 @@ export function Topbar() {
           </div>
         </div>
       </header>
+
+      {/* Search Modal */}
+      {isSearchOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center pt-20"
+          style={{ background: "rgba(0,0,0,0.5)" }}
+          onClick={() => setIsSearchOpen(false)}
+        >
+          <div
+            ref={searchModalRef}
+            className="w-full max-w-xl mx-4 rounded-2xl overflow-hidden"
+            style={{
+              background: "rgba(15,23,42,0.95)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              backdropFilter: "blur(20px)",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Search Input */}
+            <div
+              className="p-4 border-b"
+              style={{ borderColor: "rgba(255,255,255,0.06)" }}
+            >
+              <div className="flex items-center gap-3">
+                <Search className="w-4 h-4 flex-shrink-0" style={{ color: "#64748b" }} />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search by name, netuid, or category…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 bg-transparent text-sm text-white placeholder-slate-500 outline-none"
+                  style={{ color: "white" }}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="p-1 hover:bg-slate-700 rounded transition-colors"
+                  >
+                    <X className="w-4 h-4" style={{ color: "#64748b" }} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Results List */}
+            <div
+              className="overflow-y-auto"
+              style={{ maxHeight: "calc(8 * 3.5rem)" }}
+            >
+              {filteredSubnets.length > 0 ? (
+                filteredSubnets.map((subnet, index) => (
+                  <button
+                    key={subnet.netuid}
+                    onClick={() => handleSelectSubnet(subnet)}
+                    className="w-full px-4 py-3 text-left transition-colors flex items-center gap-3 group"
+                    style={{
+                      background:
+                        index === selectedIndex
+                          ? "rgba(34,211,238,0.1)"
+                          : "transparent",
+                      borderBottom: "1px solid rgba(255,255,255,0.04)",
+                      color: index === selectedIndex ? "#22d3ee" : "white",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.background =
+                        "rgba(34,211,238,0.08)";
+                      (e.currentTarget as HTMLElement).style.color = "#22d3ee";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (index !== selectedIndex) {
+                        (e.currentTarget as HTMLElement).style.background =
+                          "transparent";
+                        (e.currentTarget as HTMLElement).style.color = "white";
+                      }
+                    }}
+                  >
+                    {/* Netuid Badge */}
+                    <div
+                      className="px-2 py-1 rounded text-[11px] font-semibold flex-shrink-0"
+                      style={{
+                        background: "rgba(34,211,238,0.15)",
+                        color: "#22d3ee",
+                      }}
+                    >
+                      {subnet.netuid}
+                    </div>
+
+                    {/* Subnet Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">
+                        {subnet.name}
+                      </div>
+                      <div
+                        className="text-xs truncate"
+                        style={{ color: "#94a3b8" }}
+                      >
+                        {subnet.category || "Uncategorized"}
+                      </div>
+                    </div>
+
+                    {/* Score */}
+                    <div
+                      className="text-xs font-semibold flex-shrink-0"
+                      style={{ color: "#22d3ee" }}
+                    >
+                      {subnet.score?.toFixed(1) || "—"}
+                    </div>
+                  </button>
+                ))
+              ) : searchQuery.trim() ? (
+                <div
+                  className="px-4 py-8 text-center text-sm"
+                  style={{ color: "#64748b" }}
+                >
+                  No subnets found matching "{searchQuery}"
+                </div>
+              ) : (
+                <div
+                  className="px-4 py-8 text-center text-sm"
+                  style={{ color: "#64748b" }}
+                >
+                  Type to search subnets
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            {filteredSubnets.length > 0 && (
+              <div
+                className="px-4 py-2 text-[11px] text-center"
+                style={{
+                  color: "#64748b",
+                  borderTop: "1px solid rgba(255,255,255,0.04)",
+                }}
+              >
+                Press <kbd style={{ color: "#94a3b8" }}>↑↓</kbd> to navigate,{" "}
+                <kbd style={{ color: "#94a3b8" }}>Enter</kbd> to select,{" "}
+                <kbd style={{ color: "#94a3b8" }}>Esc</kbd> to close
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Bell Notification Dropdown */}
+      {isBellOpen && (
+        <div
+          ref={bellDropdownRef}
+          className="fixed top-[calc(2rem+52px+0.75rem)] right-4 w-64 rounded-xl z-50"
+          style={{
+            background: "rgba(15,23,42,0.95)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            backdropFilter: "blur(20px)",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.3)",
+          }}
+        >
+          {/* Header */}
+          <div
+            className="px-4 py-3 border-b font-medium text-sm"
+            style={{
+              borderColor: "rgba(255,255,255,0.06)",
+              color: "white",
+            }}
+          >
+            Notifications
+          </div>
+
+          {/* Content */}
+          <div className="px-4 py-8 text-center">
+            <div
+              className="text-sm mb-3"
+              style={{ color: "#94a3b8" }}
+            >
+              No new notifications
+            </div>
+            <div
+              className="text-xs"
+              style={{ color: "#64748b" }}
+            >
+              Alert notifications coming soon
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Wallet modals */}
       <WalletConnectModal />

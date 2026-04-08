@@ -104,7 +104,7 @@ export default function HomePage() {
           .filter((s: LiveSubnet) => s.netuid > 0 && s.yield > 0 && s.yield < 1000)
           .sort((a: LiveSubnet, b: LiveSubnet) => b.yield - a.yield);
         const tickerItems = sorted.slice(0, 10).map((s: LiveSubnet) => ({
-          name: `SN${s.netuid} ${s.name}`,
+          name: /^SN\d+$/.test(s.name) ? `SN${s.netuid}` : `SN${s.netuid} ${s.name}`,
           yield: `${s.yield.toFixed(1)}%`,
           up: s.yieldDelta7d >= 0,
         }));
