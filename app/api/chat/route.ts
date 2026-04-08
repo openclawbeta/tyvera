@@ -1,19 +1,19 @@
 /* ─────────────────────────────────────────────────────────────────── */
-/* /api/chat — AI chat endpoint powered by Anthropic Claude            */
+/* /api/chat — AI chat endpoint powered by OpenAI (gpt-4o-mini)       */
 /*                                                                     */
 /* POST /api/chat { message, subnets?, history? }                      */
 /* Returns structured ChatResponse + natural language summary          */
 /*                                                                     */
-/* Falls back to the pattern-matcher engine when ANTHROPIC_API_KEY     */
+/* Falls back to the pattern-matcher engine when OPENAI_API_KEY        */
 /* is not set, so local dev still works.                               */
 /* ─────────────────────────────────────────────────────────────────── */
 
 import { NextRequest, NextResponse } from "next/server";
 import type { SubnetDetailModel } from "@/lib/types/subnets";
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const ANTHROPIC_MODEL = "claude-sonnet-4-20250514";
-const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_MODEL = "gpt-4o-mini";
+const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
 interface ChatRequestBody {
   message: string;
@@ -67,8 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If no API key, fall back to pattern matcher
-    if (!ANTHROPIC_API_KEY) {
-      // Dynamic import to avoid bundling the large pattern matcher when API key is set
+    if (!OPENAI_API_KEY) {
       const { analyzeQuery } = await import("@/lib/ai/subnet-intelligence");
       const response = analyzeQuery(message, subnets);
       return NextResponse.json({
@@ -78,8 +77,9 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Build messages array for Anthropic
-    const messages = [
+    // Build messages array for OpenAI
+    const chatMessages = [
+      { role: "system" as const, content: buildSystemPrompt(subnets) },
       ...history.slice(-10).map((h) => ({
         role: h.role as "user" | "assistant",
         content: h.content,
@@ -87,26 +87,25 @@ export async function POST(request: NextRequest) {
       { role: "user" as const, content: message },
     ];
 
-    // Call Anthropic API directly (no SDK dependency needed)
-    const resp = await fetch(ANTHROPIC_API_URL, {
+    // Call OpenAI API directly (no SDK dependency needed)
+    const resp = await fetch(OPENAI_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: ANTHROPIC_MODEL,
+        model: OPENAI_MODEL,
+        messages: chatMessages,
         max_tokens: 1024,
-        system: buildSystemPrompt(subnets),
-        messages,
+        temperature: 0.7,
       }),
       signal: AbortSignal.timeout(30_000),
     });
 
     if (!resp.ok) {
       const errText = await resp.text().catch(() => "Unknown error");
-      console.error(`[Chat] Anthropic API error ${resp.status}:`, errText);
+      console.error(`[Chat] OpenAI API error ${resp.status}:`, errText);
 
       // Fall back to pattern matcher on API error
       const { analyzeQuery } = await import("@/lib/ai/subnet-intelligence");
@@ -119,11 +118,11 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await resp.json();
-    const content = data.content?.[0]?.text ?? "I wasn't able to generate a response. Please try again.";
+    const content = data.choices?.[0]?.message?.content ?? "I wasn't able to generate a response. Please try again.";
 
     return NextResponse.json({
       content,
-      source: "anthropic",
+      source: "openai",
     });
   } catch (err) {
     console.error("[Chat] Error:", err);

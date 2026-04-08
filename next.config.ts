@@ -10,7 +10,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
-      "connect-src 'self' https://api.taostats.io https://api.coingecko.com https://pro-api.coinmarketcap.com https://entrypoint-finney.opentensor.ai https://raw.githubusercontent.com https://api.anthropic.com wss://entrypoint-finney.opentensor.ai",
+      "connect-src 'self' https://api.taostats.io https://api.coingecko.com https://pro-api.coinmarketcap.com https://entrypoint-finney.opentensor.ai https://raw.githubusercontent.com https://api.openai.com wss://entrypoint-finney.opentensor.ai",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
