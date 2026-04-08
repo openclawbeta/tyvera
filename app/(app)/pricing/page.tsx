@@ -64,9 +64,9 @@ const TIERS: PricingTier[] = [
     name: "Analyst",
     planId: "ANALYST",
     tagline: "Full data access for active stakers",
-    monthlyPrice: 9,
-    annualPrice: 86,
-    taoEstimate: "~0.025 τ/mo",
+    monthlyPrice: 19.99,
+    annualPrice: 191.90,
+    taoEstimate: "~0.055 τ/mo",
     icon: <TrendingUp className="w-5 h-5" />,
     accent: "text-cyan-400",
     accentBorder: "rgba(34,211,238,0.25)",
@@ -100,9 +100,9 @@ const TIERS: PricingTier[] = [
     name: "Strategist",
     planId: "STRATEGIST",
     tagline: "AI-powered edge for power users",
-    monthlyPrice: 29,
-    annualPrice: 278,
-    taoEstimate: "~0.08 τ/mo",
+    monthlyPrice: 49.99,
+    annualPrice: 479.90,
+    taoEstimate: "~0.14 τ/mo",
     icon: <Shield className="w-5 h-5" />,
     accent: "text-emerald-400",
     accentBorder: "rgba(52,211,153,0.25)",
@@ -137,8 +137,8 @@ const TIERS: PricingTier[] = [
     name: "Institutional",
     planId: "INSTITUTIONAL",
     tagline: "For funds, DAOs, and subnet teams",
-    monthlyPrice: 99,
-    annualPrice: 950,
+    monthlyPrice: 99.99,
+    annualPrice: 959.90,
     taoEstimate: "~0.27 τ/mo",
     icon: <Building2 className="w-5 h-5" />,
     accent: "text-amber-400",
@@ -312,7 +312,7 @@ export default function PricingPage() {
       {/* Tier Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
         {TIERS.map((tier, idx) => {
-          const price = billing === "monthly" ? tier.monthlyPrice : Math.round(tier.annualPrice / 12);
+          const price = billing === "monthly" ? tier.monthlyPrice : Math.round((tier.annualPrice / 12) * 100) / 100;
           const totalAnnual = tier.annualPrice;
 
           return (
@@ -370,7 +370,7 @@ export default function PricingPage() {
                         <span className="text-3xl font-bold text-white">Free</span>
                       ) : (
                         <>
-                          <span className="text-3xl font-bold text-white">${price}</span>
+                          <span className="text-3xl font-bold text-white">${price % 1 === 0 ? price : price.toFixed(2)}</span>
                           <span className="text-sm text-slate-500">/mo</span>
                         </>
                       )}
