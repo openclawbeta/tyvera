@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getBlockHeight } from "@/lib/chain";
+import { checkApiAuth, rateLimitHeaders } from "@/lib/api/auth-middleware";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* In-memory cache (5-minute TTL)                                       */
@@ -111,7 +112,12 @@ async function fetchFromTaoStats(): Promise<CachedRate | null> {
 /* Route handler                                                        */
 /* ─────────────────────────────────────────────────────────────────── */
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // ── API key auth (optional — anonymous OK for frontend) ──────────
+  const auth = await checkApiAuth(request);
+  if (auth.errorResponse) return auth.errorResponse;
+  const extraHeaders = auth.validation ? rateLimitHeaders(auth.validation) : {};
+
   const now = Date.now();
 
   // Block height: prefer chain cache (always fresh from cron)
@@ -133,6 +139,7 @@ export async function GET() {
       {
         headers: {
           "Cache-Control": "public, max-age=300, s-maxage=300",
+          ...extraHeaders,
         },
       },
     );
@@ -162,6 +169,7 @@ export async function GET() {
       {
         headers: {
           "Cache-Control": "public, max-age=300, s-maxage=300",
+          ...extraHeaders,
         },
       },
     );
@@ -185,6 +193,7 @@ export async function GET() {
         status: 200,
         headers: {
           "Cache-Control": "public, max-age=60, s-maxage=60",
+          ...extraHeaders,
         },
       },
     );

@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/sync-chain",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/verify-payments",
+      "schedule": "*/1 * * * *"
+    },
+    {
+      "path": "/api/cron/reset-counters",
+      "schedule": "0 0 * * *"
     }
   ]
 }

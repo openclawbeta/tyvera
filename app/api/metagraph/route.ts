@@ -25,6 +25,7 @@ import {
   isMetagraphCacheFresh,
   setMetagraphCache,
 } from "@/lib/chain";
+import { checkApiAuth, rateLimitHeaders } from "@/lib/api/auth-middleware";
 
 interface MetagraphNeuron {
   uid: number;
@@ -155,6 +156,11 @@ async function fetchFromTaoStats(netuid: number): Promise<MetagraphNeuron[] | nu
 }
 
 export async function GET(request: NextRequest) {
+  // ── API key auth (optional — anonymous OK for frontend) ──────────
+  const auth = await checkApiAuth(request);
+  if (auth.errorResponse) return auth.errorResponse;
+  const extraHeaders = auth.validation ? rateLimitHeaders(auth.validation) : {};
+
   const netuid = request.nextUrl.searchParams.get("netuid");
 
   if (!netuid || isNaN(Number(netuid))) {
@@ -187,6 +193,7 @@ export async function GET(request: NextRequest) {
           "X-Data-Source": "chain-live",
           "X-Block-Height": String(cached.blockHeight),
           "Cache-Control": "public, s-maxage=120",
+          ...extraHeaders,
         },
       });
     }
@@ -215,6 +222,7 @@ export async function GET(request: NextRequest) {
           "X-Data-Source": "chain-live",
           "X-Block-Height": String(chainResult.blockHeight),
           "Cache-Control": "public, s-maxage=120",
+          ...extraHeaders,
         },
       });
     }
@@ -229,6 +237,7 @@ export async function GET(request: NextRequest) {
       headers: {
         "X-Data-Source": "taostats-live",
         "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+        ...extraHeaders,
       },
     });
   }
@@ -239,6 +248,7 @@ export async function GET(request: NextRequest) {
     headers: {
       "X-Data-Source": "synthetic",
       "Cache-Control": "public, s-maxage=300",
+      ...extraHeaders,
     },
   });
 }

@@ -20,6 +20,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { fetchSubnetsFromChain, setSubnetCache } from "@/lib/chain";
+import { refreshMarketCache } from "@/lib/chain/market-cache";
 
 export const maxDuration = 60; // Vercel Pro allows up to 60s
 export const dynamic = "force-dynamic";
@@ -52,12 +53,16 @@ export async function GET(request: NextRequest) {
     // Store in cache for other routes to read
     setSubnetCache(snapshot);
 
+    // Best-effort: enrich with TaoStats market data (non-blocking)
+    const marketOk = await refreshMarketCache().catch(() => false);
+
     return NextResponse.json({
       ok: true,
       subnets: snapshot.subnets.length,
       blockHeight: snapshot.blockHeight,
       syncDurationMs: snapshot.syncDurationMs,
       fetchedAt: snapshot.fetchedAt,
+      marketEnriched: marketOk,
     });
   } catch (err) {
     console.error("[cron/sync-chain] Fatal error:", err);

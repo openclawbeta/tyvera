@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkApiAuth, rateLimitHeaders } from "@/lib/api/auth-middleware";
 
 interface PriceHistoryResponse {
   prices: Array<{ date: string; price: number }>;
@@ -58,6 +59,11 @@ function calculateChanges(
 }
 
 export async function GET(request: NextRequest) {
+  // ── API key auth (optional — anonymous OK for frontend) ──────────
+  const auth = await checkApiAuth(request);
+  if (auth.errorResponse) return auth.errorResponse;
+  const extraHeaders = auth.validation ? rateLimitHeaders(auth.validation) : {};
+
   try {
     const searchParams = request.nextUrl.searchParams;
     const daysParam = searchParams.get("days") ?? "30";
@@ -106,6 +112,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result, {
       headers: {
         "Cache-Control": `public, s-maxage=${cacheMaxAge}, stale-while-revalidate=3600`,
+        ...extraHeaders,
       },
     });
   } catch (error) {
@@ -124,6 +131,7 @@ export async function GET(request: NextRequest) {
       {
         headers: {
           "Cache-Control": "public, s-maxage=300",
+          ...extraHeaders,
         },
       }
     );

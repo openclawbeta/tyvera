@@ -46,6 +46,8 @@ import {
 } from "@/lib/data/subnets-curated-metadata";
 import { getSubnetCache, isSubnetCacheFresh, getSubnetCacheAgeMs, setSubnetCache, fetchSubnetsFromChain } from "@/lib/chain";
 import type { ChainSubnet } from "@/lib/chain";
+import { checkApiAuth, rateLimitHeaders } from "@/lib/api/auth-middleware";
+import { getMarketData, isMarketCacheFresh } from "@/lib/chain/market-cache";
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -224,6 +226,9 @@ function mapChainSubnet(s: ChainSubnet): SubnetDetailModel {
   const score      = deriveScore(s.taoIn, yieldPct, s.stakers, 0, s.ageDays);
   const confidence = deriveConfidence(s.taoIn, s.stakers, 0, s.ageDays);
 
+  // Merge market enrichment data (from TaoStats cache, if fresh)
+  const market = isMarketCacheFresh() ? getMarketData(s.netuid) : undefined;
+
   return {
     id:            `sn${s.netuid}`,
     netuid:        s.netuid,
@@ -250,12 +255,30 @@ function mapChainSubnet(s: ChainSubnet): SubnetDetailModel {
     isWatched:     false,
     breakeven:     deriveBreakeven(yieldPct),
     age:           s.ageDays,
+    // Market fields — enriched from TaoStats when available
+    alphaPrice:    market?.alphaPrice,
+    marketCap:     market?.marketCap,
+    volume24h:     market?.volume24h,
+    volumeCapRatio: market?.volumeCapRatio,
+    change1h:      market?.change1h,
+    change24h:     market?.change24h,
+    change1w:      market?.change1w,
+    change1m:      market?.change1m,
+    flow24h:       market?.flow24h,
+    flow1w:        market?.flow1w,
+    flow1m:        market?.flow1m,
+    incentivePct:  market?.incentivePct,
   };
 }
 
 // ── Route handler ─────────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
+  // ── API key auth (optional — anonymous OK for frontend) ──────────
+  const auth = await checkApiAuth(request);
+  if (auth.errorResponse) return auth.errorResponse;
+  const extraHeaders = auth.validation ? rateLimitHeaders(auth.validation) : {};
+
   const netuidParam   = request.nextUrl.searchParams.get("netuid");
   const netuidFilter  = netuidParam != null ? Number(netuidParam) : undefined;
 
@@ -276,6 +299,7 @@ export async function GET(request: NextRequest) {
           "X-Block-Height": String(chainCache.blockHeight),
           "X-Cache-Age":    String(Math.round(ageMs / 1000)),
           "Cache-Control":  "public, s-maxage=120",
+          ...extraHeaders,
         },
       });
     }
@@ -309,6 +333,7 @@ export async function GET(request: NextRequest) {
               "X-Subnet-Count": String(chainSubnets.length),
               "X-Block-Height": String(freshSnapshot.blockHeight),
               "Cache-Control":  "public, s-maxage=120",
+              ...extraHeaders,
             },
           });
         }
@@ -330,6 +355,7 @@ export async function GET(request: NextRequest) {
         "X-Snapshot-Age":  String(snapshot.ageSeconds),
         "X-Snapshot-Stale": String(snapshot.isStale),
         "Cache-Control":   "public, s-maxage=300",
+        ...extraHeaders,
       },
     });
   }
@@ -368,6 +394,7 @@ export async function GET(request: NextRequest) {
           "X-Data-Source":  "taostats-live",
           "X-Subnet-Count": String(subnets.length),
           "Cache-Control":  "public, s-maxage=60",
+          ...extraHeaders,
         },
       });
     } catch (err) {
@@ -387,6 +414,7 @@ export async function GET(request: NextRequest) {
       "X-Data-Source":   isApiKeySet ? "static-snapshot-fallback" : "static-snapshot",
       "X-Subnet-Count":  String(staticData.length),
       "Cache-Control":   "public, s-maxage=300",
+      ...extraHeaders,
     },
   });
 }
