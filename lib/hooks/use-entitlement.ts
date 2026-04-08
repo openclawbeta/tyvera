@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import type { Tier, GatedFeature } from "@/lib/types/tiers";
 import { tierHasFeature, normalizeTier } from "@/lib/types/tiers";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+import { useWallet } from "@/lib/wallet-context";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Phase 2E — useEntitlement hook                                      */
@@ -35,9 +36,10 @@ const DEFAULT_STATE: EntitlementState = {
 
 export function useEntitlement(address: string | null): EntitlementState {
   const [state, setState] = useState<EntitlementState>(DEFAULT_STATE);
+  const { walletState, getAuthHeaders } = useWallet();
 
   useEffect(() => {
-    if (!address) {
+    if (!address || (walletState !== "verified" && walletState !== "pending_approval")) {
       setState(DEFAULT_STATE);
       return;
     }
@@ -46,7 +48,11 @@ export function useEntitlement(address: string | null): EntitlementState {
 
     setState((prev) => ({ ...prev, loading: true }));
 
-    fetchWithTimeout(`/api/entitlement?address=${encodeURIComponent(address)}`, { timeoutMs: 8_000 })
+    getAuthHeaders()
+      .then((authHeaders) => fetchWithTimeout(`/api/entitlement?address=${encodeURIComponent(address)}`, {
+        timeoutMs: 8_000,
+        headers: authHeaders,
+      }))
       .then((res) => {
         if (!res.ok) throw new Error(`Entitlement fetch failed: ${res.status}`);
         return res.json();
@@ -73,7 +79,7 @@ export function useEntitlement(address: string | null): EntitlementState {
     return () => {
       cancelled = true;
     };
-  }, [address]);
+  }, [address, walletState, getAuthHeaders]);
 
   return state;
 }

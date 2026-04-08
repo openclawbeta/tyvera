@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { useWallet } from "@/lib/wallet-context";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 export type TierLevel = "explorer" | "analyst" | "strategist" | "institutional";
 
@@ -64,17 +65,21 @@ const EntitlementContext = createContext<EntitlementCtx | null>(null);
 
 export function EntitlementProvider({ children }: { children: ReactNode }): React.JSX.Element {
   const [tier, setTier] = useState<TierLevel>("explorer");
-  const { address } = useWallet();
+  const { address, walletState, getAuthHeaders } = useWallet();
 
   /** Fetch the user's tier from the server based on wallet address */
   const refreshTier = useCallback(async () => {
-    if (!address) {
+    if (!address || (walletState !== "verified" && walletState !== "pending_approval")) {
       setTier("explorer");
       return;
     }
 
     try {
-      const res = await fetch(`/api/entitlement?address=${encodeURIComponent(address)}`);
+      const authHeaders = await getAuthHeaders();
+      const res = await fetchWithTimeout(`/api/entitlement?address=${encodeURIComponent(address)}`, {
+        timeoutMs: 8000,
+        headers: authHeaders,
+      });
       if (!res.ok) {
         setTier("explorer");
         return;
@@ -91,7 +96,7 @@ export function EntitlementProvider({ children }: { children: ReactNode }): Reac
       // On network error, keep current tier or default to explorer
       setTier("explorer");
     }
-  }, [address]);
+  }, [address, walletState, getAuthHeaders]);
 
   // Fetch tier when wallet connects/disconnects
   useEffect(() => {

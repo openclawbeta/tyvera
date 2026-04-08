@@ -47,7 +47,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function AlertsPage() {
-  const { address: walletAddress } = useWallet();
+  const { address: walletAddress, walletState, getAuthHeaders } = useWallet();
   const [tab, setTab] = useState<"feed" | "settings">("feed");
 
   // Feed state
@@ -63,13 +63,14 @@ export default function AlertsPage() {
 
   // ── Fetch alert feed ──────────────────────────────────────────────
   const fetchFeed = useCallback(async () => {
-    if (!walletAddress) return;
+    if (!walletAddress || (walletState !== "verified" && walletState !== "pending_approval")) return;
     setFeedLoading(true);
     try {
+      const authHeaders = await getAuthHeaders();
       const unreadOnly = feedFilter === "unread" ? "&unread=1" : "";
       const res = await fetchWithTimeout(
         `/api/alerts?address=${encodeURIComponent(walletAddress)}&limit=50${unreadOnly}`,
-        { timeoutMs: 8000 },
+        { timeoutMs: 8000, headers: authHeaders },
       );
       if (res.ok) {
         const data = await res.json();
@@ -81,7 +82,7 @@ export default function AlertsPage() {
     } finally {
       setFeedLoading(false);
     }
-  }, [walletAddress, feedFilter]);
+  }, [walletAddress, walletState, feedFilter, getAuthHeaders]);
 
   useEffect(() => {
     fetchFeed();
@@ -89,12 +90,13 @@ export default function AlertsPage() {
 
   // ── Fetch alert rules ─────────────────────────────────────────────
   const fetchRules = useCallback(async () => {
-    if (!walletAddress) return;
+    if (!walletAddress || (walletState !== "verified" && walletState !== "pending_approval")) return;
     setRulesLoading(true);
     try {
+      const authHeaders = await getAuthHeaders();
       const res = await fetchWithTimeout(
         `/api/alert-rules?address=${encodeURIComponent(walletAddress)}`,
-        { timeoutMs: 8000 },
+        { timeoutMs: 8000, headers: authHeaders },
       );
       if (res.ok) {
         const data = await res.json();
@@ -105,7 +107,7 @@ export default function AlertsPage() {
     } finally {
       setRulesLoading(false);
     }
-  }, [walletAddress]);
+  }, [walletAddress, walletState, getAuthHeaders]);
 
   useEffect(() => {
     fetchRules();
@@ -113,11 +115,12 @@ export default function AlertsPage() {
 
   // ── Actions ───────────────────────────────────────────────────────
   const markAllRead = async () => {
-    if (!walletAddress) return;
+    if (!walletAddress || (walletState !== "verified" && walletState !== "pending_approval")) return;
     try {
+      const authHeaders = await getAuthHeaders();
       await fetchWithTimeout("/api/alerts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ address: walletAddress }),
         timeoutMs: 6000,
       });
@@ -129,11 +132,12 @@ export default function AlertsPage() {
   };
 
   const initDefaults = async () => {
-    if (!walletAddress) return;
+    if (!walletAddress || (walletState !== "verified" && walletState !== "pending_approval")) return;
     try {
+      const authHeaders = await getAuthHeaders();
       const res = await fetchWithTimeout("/api/alert-rules", {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ address: walletAddress, action: "init_defaults" }),
         timeoutMs: 8000,
       });
@@ -147,11 +151,12 @@ export default function AlertsPage() {
   };
 
   const updateRule = async (ruleId: number, alertType: AlertType, threshold: number, enabled: boolean) => {
-    if (!walletAddress) return;
+    if (!walletAddress || (walletState !== "verified" && walletState !== "pending_approval")) return;
     try {
+      const authHeaders = await getAuthHeaders();
       await fetchWithTimeout("/api/alert-rules", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({
           address: walletAddress,
           type: alertType,
@@ -167,11 +172,12 @@ export default function AlertsPage() {
   };
 
   const deleteRule = async (ruleId: number) => {
-    if (!walletAddress) return;
+    if (!walletAddress || (walletState !== "verified" && walletState !== "pending_approval")) return;
     try {
+      const authHeaders = await getAuthHeaders();
       await fetchWithTimeout("/api/alert-rules", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ address: walletAddress, ruleId }),
         timeoutMs: 6000,
       });
