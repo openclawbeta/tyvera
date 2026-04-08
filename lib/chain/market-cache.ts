@@ -34,7 +34,8 @@ export interface SubnetMarketData {
 
 const cache = new Map<number, SubnetMarketData>();
 let lastRefresh = 0;
-const TTL_MS = 10 * 60 * 1000; // 10 minutes
+import { MARKET_DATA_CACHE_TTL_MS } from "@/lib/config";
+const TTL_MS = MARKET_DATA_CACHE_TTL_MS;
 
 // ── Source 1: CoinMarketCap ──────────────────────────────────────────────────
 

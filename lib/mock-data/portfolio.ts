@@ -142,7 +142,7 @@ export const RECENT_CHANGES: RecentChange[] = [
     toSubnet: "Protein Folding",
     amount: 0.22,
     timestamp: "2026-03-28T10:14:00Z",
-    txHash: "0x4a2c1e8f3b7d9a0c5e2f1b4d8a3c7e9f2b5d0a8c",
+    txHash: "4821003-2",
     status: "CONFIRMED",
   },
   {
@@ -151,7 +151,7 @@ export const RECENT_CHANGES: RecentChange[] = [
     subnet: "Text Prompting",
     amount: 0.50,
     timestamp: "2026-03-20T15:42:00Z",
-    txHash: "0x9f3b7d1c4a2e8f0b5d2c9a1e4f7b0d3c6a8e2f5b",
+    txHash: "4798221-5",
     status: "CONFIRMED",
   },
   {
@@ -161,7 +161,7 @@ export const RECENT_CHANGES: RecentChange[] = [
     toSubnet: "Multi-Modality",
     amount: 0.18,
     timestamp: "2026-03-12T08:31:00Z",
-    txHash: "0x2e5a1d8c3f7b0e4d9c2a6f1b5d8a0c3e7f4b2d9a",
+    txHash: "4762018-1",
     status: "CONFIRMED",
   },
 ];

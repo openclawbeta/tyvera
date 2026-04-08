@@ -1,6 +1,7 @@
 import { getEntitlement, storePaymentIntent } from "@/lib/db/subscriptions";
 import { TIER_DEFINITIONS } from "@/lib/types/tiers";
 import { randomUUID } from "crypto";
+import { PAYMENT_INTENT_EXPIRY_MS } from "@/lib/config";
 import type { WalletBillingState } from "@/lib/types/billing-state";
 
 /**
@@ -72,7 +73,7 @@ export async function createPaymentIntent(planId: string, walletAddress?: string
   const amountTao = tierDef ? tierDef.monthlyPrice : 0;
   const intentId = randomUUID();
   const memo = "TYV-" + randomUUID().slice(0, 8).toUpperCase();
-  const expiresAt = new Date(Date.now() + 86400000).toISOString();
+  const expiresAt = new Date(Date.now() + PAYMENT_INTENT_EXPIRY_MS).toISOString();
 
   await storePaymentIntent({
     id: intentId,

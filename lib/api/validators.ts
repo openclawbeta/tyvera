@@ -18,10 +18,12 @@ const DELEGATE_REGISTRY_URL =
 // TaoStats delegate stats endpoint
 const TAOSTATS_DELEGATES_URL = "https://api.taostats.io/api/v1/delegate";
 
-// In-memory cache with 10-minute TTL
+import { VALIDATOR_CACHE_TTL_MS } from "@/lib/config";
+
+// In-memory cache
 let cachedValidators: ValidatorInfo[] | null = null;
 let cacheTimestamp = 0;
-const CACHE_TTL_MS = 10 * 60 * 1000;
+const CACHE_TTL_MS = VALIDATOR_CACHE_TTL_MS;
 
 /**
  * Known top validators with their names for fallback.

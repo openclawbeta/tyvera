@@ -7,6 +7,7 @@
 import { getDb } from "./index";
 import { getTierForPlan } from "@/lib/types/tiers";
 import type { Tier } from "@/lib/types/tiers";
+import { MONTHLY_DURATION_DAYS } from "@/lib/config";
 
 /* ── Types ────────────────────────────────────────────────────────── */
 
@@ -121,7 +122,7 @@ export async function activateSubscription(params: {
   durationDays?: number;
 }): Promise<Subscription> {
   const db = await getDb();
-  const { walletAddress, planId, amountTao, txHash, memo, durationDays = 30 } = params;
+  const { walletAddress, planId, amountTao, txHash, memo, durationDays = MONTHLY_DURATION_DAYS } = params;
 
   const tier = getTierForPlan(planId);
   const now = new Date();
@@ -177,7 +178,7 @@ export async function adminGrantSubscription(params: {
   grantedBy?: string;
 }): Promise<void> {
   const db = await getDb();
-  const { walletAddress, planId, reason, durationDays = 30, grantedBy = "admin" } = params;
+  const { walletAddress, planId, reason, durationDays = MONTHLY_DURATION_DAYS, grantedBy = "admin" } = params;
 
   const tier = getTierForPlan(planId);
   const expiresAt = new Date(Date.now() + durationDays * 86_400_000);

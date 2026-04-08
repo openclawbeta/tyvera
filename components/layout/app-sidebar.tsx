@@ -25,6 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/lib/sidebar-context";
 import { useWallet } from "@/lib/wallet-context";
+import { ALERT_BADGE_REFRESH_MS } from "@/lib/config";
 
 const NAV_ITEMS = [
   { label: "Dashboard",       href: "/dashboard",       icon: LayoutDashboard },
@@ -69,7 +70,7 @@ export function AppSidebar() {
     };
 
     fetchUnread();
-    const interval = setInterval(fetchUnread, 60_000); // refresh every 60s
+    const interval = setInterval(fetchUnread, ALERT_BADGE_REFRESH_MS);
     return () => clearInterval(interval);
   }, [address]);
 

@@ -9,6 +9,7 @@ import { getDb } from "./index";
 import { createHash, randomBytes } from "crypto";
 import type { Tier } from "@/lib/types/tiers";
 import { getApiRateLimit, normalizeTier } from "@/lib/types/tiers";
+import { MAX_API_KEYS_PER_WALLET } from "@/lib/config";
 
 /* ── Types ────────────────────────────────────────────────────────── */
 
@@ -62,14 +63,14 @@ export async function createApiKey(params: {
   const db = await getDb();
   const { walletAddress, tier, label = "default" } = params;
 
-  // Limit to 5 active keys per wallet
+  // Limit active keys per wallet
   const countResult = await db.query(
     "SELECT COUNT(*) as cnt FROM api_keys WHERE wallet_address = ? AND status = 'active'",
     [walletAddress],
   );
   const activeCount = countResult.length > 0 ? (countResult[0].rows[0][0] as number) : 0;
-  if (activeCount >= 5) {
-    throw new Error("Maximum 5 active API keys per wallet");
+  if (activeCount >= MAX_API_KEYS_PER_WALLET) {
+    throw new Error(`Maximum ${MAX_API_KEYS_PER_WALLET} active API keys per wallet`);
   }
 
   const key = generateKey();

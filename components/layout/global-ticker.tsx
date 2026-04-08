@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+import { TICKER_REFRESH_MS } from "@/lib/config";
 
 interface TickerData {
   taoUsd: number;
@@ -45,7 +46,7 @@ export function GlobalTicker() {
     fetchTicker();
 
     // Poll every 60 seconds
-    const interval = setInterval(fetchTicker, 60000);
+    const interval = setInterval(fetchTicker, TICKER_REFRESH_MS);
     return () => clearInterval(interval);
   }, []);
 

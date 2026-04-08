@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { storePaymentIntent } from "@/lib/db/subscriptions";
 import { TIER_DEFINITIONS } from "@/lib/types/tiers";
 import type { Tier } from "@/lib/types/tiers";
+import { MONTHLY_DURATION_DAYS, ANNUAL_DURATION_DAYS, PAYMENT_INTENT_EXPIRY_MS } from "@/lib/config";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Subscribe endpoint — creates a payment intent                       */
@@ -75,10 +76,10 @@ export async function POST(request: NextRequest) {
     const taoPrices = await getTaoPrices();
     const priceEntry = taoPrices[plan as keyof typeof taoPrices];
     const amountTao = billing === "annual" ? priceEntry.annual : priceEntry.monthly;
-    const durationDays = billing === "annual" ? 365 : 30;
+    const durationDays = billing === "annual" ? ANNUAL_DURATION_DAYS : MONTHLY_DURATION_DAYS;
     const memo = `TYV-${randomUUID().slice(0, 8).toUpperCase()}`;
     const intentId = randomUUID();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24h to pay
+    const expiresAt = new Date(Date.now() + PAYMENT_INTENT_EXPIRY_MS).toISOString();
 
     // Find the tier definition for display info
     const tierDef = TIER_DEFINITIONS.find((d) => d.planIds.includes(plan));

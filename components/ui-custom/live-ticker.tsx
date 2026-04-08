@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+import { LIVE_TICKER_REFRESH_MS } from "@/lib/config";
 
 interface SubnetTicker {
   label: string;
@@ -97,7 +98,7 @@ export function LiveTicker() {
 
     fetchSubnets();
     // Refresh every 5 minutes (matches API cache TTL)
-    const interval = setInterval(fetchSubnets, 5 * 60 * 1000);
+    const interval = setInterval(fetchSubnets, LIVE_TICKER_REFRESH_MS);
     return () => clearInterval(interval);
   }, []);
 

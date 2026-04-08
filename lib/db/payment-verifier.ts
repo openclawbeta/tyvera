@@ -10,6 +10,7 @@
 /* ─────────────────────────────────────────────────────────────────── */
 
 import { confirmPaymentIntent, findPaymentIntentByMemo, expireSubscriptions } from "./subscriptions";
+import { PAYMENT_VERIFY_INTERVAL_MS } from "@/lib/config";
 
 // Tyvera deposit address — set via DEPOSIT_ADDRESS env var
 const DEPOSIT_ADDRESS = process.env.DEPOSIT_ADDRESS ?? "5EkH7oV4EvT2otiH1teYu9gM2bkhuQTZbZrrPuqxHQMVTjRZ";
@@ -162,7 +163,7 @@ let _interval: ReturnType<typeof setInterval> | null = null;
  * Start the background verification loop.
  * Polls every `intervalMs` (default: 60 seconds).
  */
-export function startVerificationLoop(intervalMs = 60_000): void {
+export function startVerificationLoop(intervalMs = PAYMENT_VERIFY_INTERVAL_MS): void {
   if (_interval) return; // Already running
 
   console.log(`[PaymentVerifier] Starting — polling every ${intervalMs / 1000}s`);

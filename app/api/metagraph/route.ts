@@ -26,6 +26,7 @@ import {
   setMetagraphCache,
 } from "@/lib/chain";
 import { checkApiAuth, rateLimitHeaders } from "@/lib/api/auth-middleware";
+import { SYNTHETIC_VALIDATOR_COUNT, SYNTHETIC_MINER_COUNT } from "@/lib/config";
 
 interface MetagraphNeuron {
   uid: number;
@@ -71,14 +72,14 @@ function mulberry32(a: number) {
 
 /**
  * Generate synthetic metagraph data.
- * Allocates: 32 validators + 224 miners per subnet.
+ * Allocates validators + miners per subnet using configurable counts.
  */
 function generateSyntheticMetagraph(netuid: number): MetagraphNeuron[] {
   const neurons: MetagraphNeuron[] = [];
   const baseSeed = netuid * 1000;
 
-  // 32 validators
-  for (let i = 0; i < 32; i++) {
+  // Validators
+  for (let i = 0; i < SYNTHETIC_VALIDATOR_COUNT; i++) {
     const rng = mulberry32(baseSeed + i);
     const stake = 10000 + rng() * 90000; // 10k - 100k τ
     neurons.push({
@@ -94,13 +95,13 @@ function generateSyntheticMetagraph(netuid: number): MetagraphNeuron[] {
     });
   }
 
-  // 224 miners
-  for (let i = 0; i < 224; i++) {
-    const rng = mulberry32(baseSeed + 32 + i);
+  // Miners
+  for (let i = 0; i < SYNTHETIC_MINER_COUNT; i++) {
+    const rng = mulberry32(baseSeed + SYNTHETIC_VALIDATOR_COUNT + i);
     const stake = 100 + rng() * 10000; // 100 - 10k τ
     neurons.push({
-      uid: 32 + i,
-      hotkey: generateHotkey(baseSeed + 32 + i),
+      uid: SYNTHETIC_VALIDATOR_COUNT + i,
+      hotkey: generateHotkey(baseSeed + SYNTHETIC_VALIDATOR_COUNT + i),
       type: "miner",
       stake: Math.round(stake * 100) / 100,
       trust: rng() * 0.8, // 0 - 0.8

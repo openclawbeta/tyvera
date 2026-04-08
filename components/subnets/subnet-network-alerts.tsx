@@ -201,7 +201,7 @@ export function SubnetNetworkAlerts({ subnets }: SubnetNetworkAlertsProps) {
             <div>
               <h3 className="text-white font-medium">Coldkey Swap Monitoring</h3>
               <p className="text-white/60 text-sm mt-1">
-                Coldkey swap monitoring requires direct chain indexing — coming soon
+                Coldkey swap monitoring requires direct chain indexing. This feature is under development and will be available in a future update.
               </p>
             </div>
           </div>

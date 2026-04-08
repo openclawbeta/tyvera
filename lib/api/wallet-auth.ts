@@ -15,7 +15,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-const AUTH_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+import { AUTH_WINDOW_MS } from "@/lib/config";
 
 export interface WalletAuthResult {
   verified: boolean;

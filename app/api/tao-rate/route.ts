@@ -13,6 +13,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { TAO_RATE_CACHE_TTL_MS } from "@/lib/config";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* In-memory cache (5-minute TTL)                                       */
@@ -29,7 +30,7 @@ interface CachedRate {
 
 let cache: CachedRate | null = null;
 let cacheTimestamp = 0;
-const TTL_MS = 5 * 60 * 1000; // 5 minutes
+const TTL_MS = TAO_RATE_CACHE_TTL_MS;
 
 const FALLBACK_RATE = 600;
 const FALLBACK_CHANGE = 0;

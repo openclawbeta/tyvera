@@ -15,6 +15,7 @@ import { severityColor, categoryIcon, alertCategory } from "@/lib/alerts/types";
 import type { Alert, AlertType } from "@/lib/alerts/types";
 import Link from "next/link";
 import type { SubnetDetailModel } from "@/lib/types/subnets";
+import { ALERT_BADGE_REFRESH_MS } from "@/lib/config";
 
 /** Format a created_at timestamp to relative time */
 function timeAgo(dateStr: string): string {
@@ -108,7 +109,7 @@ export function Topbar() {
         .then((r) => r.json())
         .then((d) => setUnreadCount(d.unread ?? 0))
         .catch(() => {});
-    }, 60_000);
+    }, ALERT_BADGE_REFRESH_MS);
 
     return () => clearInterval(interval);
   }, [walletAddress]);

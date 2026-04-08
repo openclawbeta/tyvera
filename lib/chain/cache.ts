@@ -19,8 +19,10 @@ import type { ChainSnapshot, MetagraphCacheEntry } from "./types";
 
 let subnetCache: ChainSnapshot | null = null;
 
-/** Max age before consumers should treat data as stale (10 minutes). */
-const SUBNET_MAX_AGE_MS = 10 * 60 * 1000;
+import { SUBNET_CACHE_TTL_MS, METAGRAPH_CACHE_TTL_MS } from "@/lib/config";
+
+/** Max age before consumers should treat data as stale. */
+const SUBNET_MAX_AGE_MS = SUBNET_CACHE_TTL_MS;
 
 export function setSubnetCache(snapshot: ChainSnapshot): void {
   subnetCache = snapshot;
@@ -50,8 +52,8 @@ export function getSubnetCacheAgeMs(): number {
 
 const metagraphCache = new Map<number, MetagraphCacheEntry>();
 
-/** Max age for metagraph entries (5 minutes). */
-const METAGRAPH_MAX_AGE_MS = 5 * 60 * 1000;
+/** Max age for metagraph entries. */
+const METAGRAPH_MAX_AGE_MS = METAGRAPH_CACHE_TTL_MS;
 
 export function setMetagraphCache(entry: MetagraphCacheEntry): void {
   metagraphCache.set(entry.netuid, entry);
