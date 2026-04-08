@@ -6,6 +6,7 @@ import { Check, X, Zap, TrendingUp, Shield, Building2, ArrowRight } from "lucide
 import { PageHeader } from "@/components/layout/page-header";
 import { FadeIn } from "@/components/ui-custom/fade-in";
 import { cn } from "@/lib/utils";
+import { useWallet } from "@/lib/wallet-context";
 
 type BillingCycle = "monthly" | "annual";
 
@@ -223,10 +224,12 @@ interface PaymentInstructions {
 
 export default function PricingPage() {
   const router = useRouter();
+  const { address, walletState, openModal } = useWallet();
   const [billing, setBilling] = useState<BillingCycle>("monthly");
   const [subscribing, setSubscribing] = useState<string | null>(null);
   const [paymentInfo, setPaymentInfo] = useState<PaymentInstructions | null>(null);
   const [taoUsd, setTaoUsd] = useState<number | null>(null);
+  const [subscribeError, setSubscribeError] = useState<string | null>(null);
 
   // Fetch live TAO/USD rate
   useEffect(() => {
@@ -256,10 +259,26 @@ export default function PricingPage() {
   };
 
   const handleSubscribe = async (planId: string) => {
+    setSubscribeError(null);
+
+    // Free tier — go straight to subnets
     if (planId === "FREE") {
       router.push("/subnets");
       return;
     }
+
+    // Institutional — contact flow
+    if (planId === "INSTITUTIONAL") {
+      window.open("mailto:support@tyvera.com?subject=Institutional%20Plan%20Inquiry", "_blank");
+      return;
+    }
+
+    // Paid tiers require a connected wallet
+    if (!address || walletState === "disconnected") {
+      openModal();
+      return;
+    }
+
     setSubscribing(planId);
 
     try {
@@ -267,7 +286,7 @@ export default function PricingPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          address: "CONNECT_WALLET", // In production, comes from wallet context
+          address,
           plan: planId,
           billing,
         }),
@@ -275,9 +294,11 @@ export default function PricingPage() {
       const data = await res.json();
       if (res.ok) {
         setPaymentInfo(data);
+      } else {
+        setSubscribeError(data.error || "Failed to create subscription");
       }
     } catch {
-      // Handle error
+      setSubscribeError("Network error — please try again");
     } finally {
       setSubscribing(null);
     }
@@ -599,6 +620,26 @@ export default function PricingPage() {
           </div>
         </div>
       </FadeIn>
+
+      {/* Subscribe Error */}
+      {subscribeError && (
+        <div
+          className="rounded-xl px-5 py-3 flex items-center gap-3"
+          style={{
+            background: "rgba(239,68,68,0.06)",
+            border: "1px solid rgba(239,68,68,0.2)",
+          }}
+        >
+          <X className="w-4 h-4 shrink-0 text-red-400" />
+          <span className="text-sm text-red-300">{subscribeError}</span>
+          <button
+            onClick={() => setSubscribeError(null)}
+            className="ml-auto text-xs text-slate-500 hover:text-slate-300"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Payment Instructions Modal */}
       {paymentInfo && (
