@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Activity, AlertTriangle, Download, RefreshCw, ShieldCheck, TrendingDown, TrendingUp } from "lucide-react";
+import { AlertTriangle, ArrowDownLeft, ArrowUpRight, Download, RefreshCw, ShieldCheck, TrendingDown, TrendingUp } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
 import { DataSourceBadge } from "@/components/ui-custom/data-source-badge";
@@ -16,12 +16,20 @@ const PRESET_OPTIONS = [
   "High liquidity",
   "Momentum leaders",
   "Confidence 80+",
+  "Traction leaders",
 ];
 
 function formatLiquidity(liquidity: number): string {
   if (liquidity >= 1_000_000) return `${(liquidity / 1_000_000).toFixed(1)}M τ`;
   if (liquidity >= 1_000) return `${formatLargeNumber(liquidity)} τ`;
   return `${liquidity.toFixed(0)} τ`;
+}
+
+function formatFlow(flow: number): string {
+  const sign = flow >= 0 ? "+" : "";
+  if (Math.abs(flow) >= 1_000_000) return `${sign}${(flow / 1_000_000).toFixed(1)}M τ`;
+  if (Math.abs(flow) >= 1_000) return `${sign}${(flow / 1_000).toFixed(1)}K τ`;
+  return `${sign}${flow.toFixed(1)} τ`;
 }
 
 function emissionsWidth(value: number, max: number): string {
@@ -34,6 +42,18 @@ function riskRank(risk: RiskLevel): number {
   if (risk === "MODERATE") return 2;
   if (risk === "HIGH") return 3;
   return 4;
+}
+
+function getFlow24h(subnet: SubnetDetailModel): number {
+  if (typeof subnet.flow24h === "number") return subnet.flow24h;
+  if (typeof subnet.inflow === "number") return subnet.inflow;
+  return 0;
+}
+
+function getFlowPct(subnet: SubnetDetailModel): number {
+  if (typeof subnet.inflowPct === "number") return subnet.inflowPct;
+  if (subnet.liquidity > 0) return (getFlow24h(subnet) / subnet.liquidity) * 100;
+  return 0;
 }
 
 export default function MetricsPage() {
@@ -86,11 +106,15 @@ export default function MetricsPage() {
       case "Confidence 80+":
         list = list.filter((s) => (s.confidence ?? 0) >= 80);
         break;
+      case "Traction leaders":
+        list = list.filter((s) => getFlow24h(s) > 0);
+        break;
     }
 
     return list.sort((a, b) => {
       if (preset === "Momentum leaders") return b.yieldDelta7d - a.yieldDelta7d;
       if (preset === "High liquidity") return b.liquidity - a.liquidity;
+      if (preset === "Traction leaders") return getFlow24h(b) - getFlow24h(a);
       return b.score - a.score;
     });
   }, [subnets, category, preset]);
@@ -98,11 +122,14 @@ export default function MetricsPage() {
   const topEmissions = useMemo(() => [...filtered].sort((a, b) => b.emissions - a.emissions).slice(0, 5), [filtered]);
   const improving = useMemo(() => [...filtered].sort((a, b) => b.yieldDelta7d - a.yieldDelta7d).slice(0, 3), [filtered]);
   const deteriorating = useMemo(() => [...filtered].sort((a, b) => a.yieldDelta7d - b.yieldDelta7d).slice(0, 3), [filtered]);
+  const topInflows = useMemo(() => [...filtered].sort((a, b) => getFlow24h(b) - getFlow24h(a)).slice(0, 3), [filtered]);
+  const topOutflows = useMemo(() => [...filtered].sort((a, b) => getFlow24h(a) - getFlow24h(b)).slice(0, 3), [filtered]);
 
   const avgYield = filtered.length ? filtered.reduce((sum, s) => sum + s.yield, 0) / filtered.length : 0;
   const avgScore = filtered.length ? filtered.reduce((sum, s) => sum + s.score, 0) / filtered.length : 0;
   const lowRiskCount = filtered.filter((s) => s.risk === "LOW").length;
   const topMomentum = improving[0];
+  const highestInflow = topInflows[0];
   const risingRisk = filtered.filter((s) => s.risk === "HIGH" || s.risk === "SPECULATIVE").length;
   const maxEmission = topEmissions.length ? Math.max(...topEmissions.map((s) => s.emissions)) : 0;
 
@@ -114,7 +141,7 @@ export default function MetricsPage() {
       <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
         <PageHeader
           title="Metrics"
-          subtitle="Live subnet intelligence across yield, liquidity, emissions, confidence, and risk. Built as a subnet allocation decision surface."
+          subtitle="Live subnet intelligence across yield, liquidity, emissions, confidence, risk, and traction. Built as a subnet allocation decision surface."
           className="items-start"
         >
           <div className="flex items-center gap-2">
@@ -123,8 +150,8 @@ export default function MetricsPage() {
         </PageHeader>
 
         <div className="flex flex-wrap items-center gap-2">
-          {['24H', '7D', '30D'].map((range) => (
-            <button key={range} className={cn('btn-ghost text-xs', range === '7D' && 'text-cyan-300 border-cyan-400/20 bg-cyan-400/10')}>
+          {["24H", "7D", "30D"].map((range) => (
+            <button key={range} className={cn("btn-ghost text-xs", range === "7D" && "text-cyan-300 border-cyan-400/20 bg-cyan-400/10")}>
               {range}
             </button>
           ))}
@@ -132,19 +159,19 @@ export default function MetricsPage() {
             <Download className="w-3.5 h-3.5" /> Export CSV
           </button>
           <button className="btn-ghost text-xs gap-1.5">
-            <RefreshCw className={cn('w-3.5 h-3.5', loading && 'animate-spin')} /> Refresh
+            <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} /> Refresh
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4">
         {[
-          { label: 'Tracked Subnets', value: String(filtered.length), sub: 'current result set' },
-          { label: 'Average Yield', value: `${avgYield.toFixed(1)}%`, sub: 'active subnet average' },
-          { label: 'Average Score', value: avgScore.toFixed(1), sub: 'composite quality' },
-          { label: 'Low-Risk Count', value: String(lowRiskCount), sub: 'allocator-friendlier set' },
-          { label: 'Top Momentum', value: topMomentum ? `SN${topMomentum.netuid}` : '—', sub: topMomentum ? `${topMomentum.yieldDelta7d.toFixed(1)}% 7d` : 'no data' },
-          { label: 'Rising Risk Flags', value: String(risingRisk), sub: 'high/speculative names' },
+          { label: "Tracked Subnets", value: String(filtered.length), sub: "full filtered result set" },
+          { label: "Average Yield", value: `${avgYield.toFixed(1)}%`, sub: "active subnet average" },
+          { label: "Average Score", value: avgScore.toFixed(1), sub: "composite quality" },
+          { label: "Low-Risk Count", value: String(lowRiskCount), sub: "allocator-friendlier set" },
+          { label: "Top Momentum", value: topMomentum ? `SN${topMomentum.netuid}` : "—", sub: topMomentum ? `${topMomentum.yieldDelta7d.toFixed(1)}% 7d` : "no data" },
+          { label: "Highest Inflow", value: highestInflow ? `SN${highestInflow.netuid}` : "—", sub: highestInflow ? formatFlow(getFlow24h(highestInflow)) : "no data" },
         ].map((stat) => (
           <GlassCard key={stat.label} padding="md">
             <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">{stat.label}</div>
@@ -160,10 +187,10 @@ export default function MetricsPage() {
             key={option}
             onClick={() => setPreset(option)}
             className={cn(
-              'px-3 py-2 rounded-full text-xs font-medium border transition-all',
+              "px-3 py-2 rounded-full text-xs font-medium border transition-all",
               preset === option
-                ? 'bg-cyan-400/15 text-cyan-300 border-cyan-400/25'
-                : 'bg-white/[0.03] text-slate-500 border-white/[0.07] hover:text-slate-300 hover:bg-white/[0.05]',
+                ? "bg-cyan-400/15 text-cyan-300 border-cyan-400/25"
+                : "bg-white/[0.03] text-slate-500 border-white/[0.07] hover:text-slate-300 hover:bg-white/[0.05]",
             )}
           >
             {option}
@@ -175,10 +202,10 @@ export default function MetricsPage() {
             key={option}
             onClick={() => setCategory(option)}
             className={cn(
-              'px-3 py-2 rounded-full text-xs font-medium border transition-all',
+              "px-3 py-2 rounded-full text-xs font-medium border transition-all",
               category === option
-                ? 'bg-violet-400/15 text-violet-300 border-violet-400/25'
-                : 'bg-white/[0.03] text-slate-500 border-white/[0.07] hover:text-slate-300 hover:bg-white/[0.05]',
+                ? "bg-violet-400/15 text-violet-300 border-violet-400/25"
+                : "bg-white/[0.03] text-slate-500 border-white/[0.07] hover:text-slate-300 hover:bg-white/[0.05]",
             )}
           >
             {option}
@@ -192,42 +219,46 @@ export default function MetricsPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="text-[17px] font-bold text-white tracking-[-0.02em]">Ranked subnet metrics</div>
-                <div className="text-[12px] text-slate-500 mt-1">Default sort is composite score so the page reinforces quality-first decisions.</div>
+                <div className="text-[12px] text-slate-500 mt-1">Showing the full filtered result set so visible rows match the headline counts.</div>
               </div>
-              <div className="text-[11px] text-slate-500">{filtered.length} visible</div>
+              <div className="text-[11px] text-slate-500">showing all {filtered.length}</div>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-white/[0.06]">
-              <div className="min-w-[1050px]">
-                <div className="grid grid-cols-[80px_1.4fr_.9fr_.9fr_.9fr_1fr_.85fr_.85fr_.85fr_.85fr] gap-3 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600 bg-white/[0.03] border-b border-white/[0.05]">
-                  <div>Subnet</div><div>Name</div><div>Yield</div><div>Score</div><div>Risk</div><div>Liquidity</div><div>Stakers</div><div>Emissions</div><div>7D</div><div>Conf.</div>
+            <div className="overflow-x-auto rounded-xl border border-white/[0.06] max-h-[760px]">
+              <div className="min-w-[1220px]">
+                <div className="sticky top-0 z-10 grid grid-cols-[80px_1.35fr_.9fr_.9fr_.9fr_1fr_.85fr_.85fr_.9fr_.85fr_.8fr_.8fr] gap-3 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600 bg-[#0d1220] border-b border-white/[0.05]">
+                  <div>Subnet</div><div>Name</div><div>Yield</div><div>Score</div><div>Risk</div><div>Liquidity</div><div>Stakers</div><div>Emissions</div><div>Flow 24H</div><div>Flow %</div><div>7D</div><div>Conf.</div>
                 </div>
-                {filtered.slice(0, 14).map((subnet) => (
-                  <button
-                    key={subnet.netuid}
-                    onClick={() => setSelected(subnet)}
-                    className={cn(
-                      'grid w-full text-left grid-cols-[80px_1.4fr_.9fr_.9fr_.9fr_1fr_.85fr_.85fr_.85fr_.85fr] gap-3 px-4 py-3 border-b border-white/[0.05] bg-white/[0.015] hover:bg-white/[0.03] transition-all',
-                      selected?.netuid === subnet.netuid && 'bg-cyan-400/[0.05]'
-                    )}
-                  >
-                    <div className="font-mono text-[12px] text-slate-300">SN{subnet.netuid}</div>
-                    <div>
-                      <div className="text-[13px] font-semibold text-white">{subnet.name}</div>
-                      <div className="text-[10px] text-slate-600 mt-0.5">{subnet.category} • {subnet.age}d old</div>
-                    </div>
-                    <div className="font-mono text-[12px] text-slate-200">{subnet.yield.toFixed(1)}%</div>
-                    <div className={cn('font-mono text-[12px] font-semibold', scoreColor(subnet.score))}>{subnet.score.toFixed(1)}</div>
-                    <div><span className={cn('px-2 py-1 rounded-full text-[10px] font-semibold border', riskBg(subnet.risk))}>{subnet.risk}</span></div>
-                    <div className="font-mono text-[12px] text-slate-300">{formatLiquidity(subnet.liquidity)}</div>
-                    <div className="font-mono text-[12px] text-slate-300">{formatLargeNumber(subnet.stakers)}</div>
-                    <div className="font-mono text-[12px] text-slate-300">{subnet.emissions.toFixed(1)} τ/d</div>
-                    <div className={cn('font-mono text-[12px] font-semibold', subnet.yieldDelta7d >= 0 ? 'text-emerald-400' : 'text-rose-400')}>
-                      {subnet.yieldDelta7d >= 0 ? '+' : ''}{subnet.yieldDelta7d.toFixed(1)}%
-                    </div>
-                    <div className="font-mono text-[12px] text-slate-300">{subnet.confidence ?? '—'}</div>
-                  </button>
-                ))}
+                {filtered.map((subnet) => {
+                  const flow24h = getFlow24h(subnet);
+                  const flowPct = getFlowPct(subnet);
+                  return (
+                    <button
+                      key={subnet.netuid}
+                      onClick={() => setSelected(subnet)}
+                      className={cn(
+                        "grid w-full text-left grid-cols-[80px_1.35fr_.9fr_.9fr_.9fr_1fr_.85fr_.85fr_.9fr_.85fr_.8fr_.8fr] gap-3 px-4 py-3 border-b border-white/[0.05] bg-white/[0.015] hover:bg-white/[0.03] transition-all",
+                        selected?.netuid === subnet.netuid && "bg-cyan-400/[0.05]"
+                      )}
+                    >
+                      <div className="font-mono text-[12px] text-slate-300">SN{subnet.netuid}</div>
+                      <div>
+                        <div className="text-[13px] font-semibold text-white">{subnet.name}</div>
+                        <div className="text-[10px] text-slate-600 mt-0.5">{subnet.category} • {subnet.age}d old</div>
+                      </div>
+                      <div className="font-mono text-[12px] text-slate-200">{subnet.yield.toFixed(1)}%</div>
+                      <div className={cn("font-mono text-[12px] font-semibold", scoreColor(subnet.score))}>{subnet.score.toFixed(1)}</div>
+                      <div><span className={cn("px-2 py-1 rounded-full text-[10px] font-semibold border", riskBg(subnet.risk))}>{subnet.risk}</span></div>
+                      <div className="font-mono text-[12px] text-slate-300">{formatLiquidity(subnet.liquidity)}</div>
+                      <div className="font-mono text-[12px] text-slate-300">{formatLargeNumber(subnet.stakers)}</div>
+                      <div className="font-mono text-[12px] text-slate-300">{subnet.emissions.toFixed(1)} τ/d</div>
+                      <div className={cn("font-mono text-[12px] font-semibold", flow24h >= 0 ? "text-emerald-400" : "text-rose-400")}>{formatFlow(flow24h)}</div>
+                      <div className={cn("font-mono text-[12px] font-semibold", flowPct >= 0 ? "text-emerald-400" : "text-rose-400")}>{flowPct >= 0 ? "+" : ""}{flowPct.toFixed(1)}%</div>
+                      <div className={cn("font-mono text-[12px] font-semibold", subnet.yieldDelta7d >= 0 ? "text-emerald-400" : "text-rose-400")}>{subnet.yieldDelta7d >= 0 ? "+" : ""}{subnet.yieldDelta7d.toFixed(1)}%</div>
+                      <div className="font-mono text-[12px] text-slate-300">{subnet.confidence ?? "—"}</div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </GlassCard>
@@ -239,10 +270,10 @@ export default function MetricsPage() {
               <div className="relative h-72 rounded-xl border border-white/[0.06] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] bg-white/[0.02] overflow-hidden">
                 <div className="absolute left-3 top-3 text-[10px] uppercase tracking-[0.08em] text-slate-600 font-semibold">Yield</div>
                 <div className="absolute right-3 bottom-3 text-[10px] uppercase tracking-[0.08em] text-slate-600 font-semibold">Liquidity</div>
-                {filtered.slice(0, 10).map((subnet, idx) => {
+                {filtered.slice(0, 16).map((subnet) => {
                   const left = Math.min(88, Math.max(8, (subnet.liquidity / Math.max(...filtered.map((s) => s.liquidity), 1)) * 100));
                   const top = Math.min(82, Math.max(10, 90 - (subnet.yield / Math.max(...filtered.map((s) => s.yield), 1)) * 70));
-                  const color = subnet.risk === 'LOW' ? '#34d399' : subnet.risk === 'MODERATE' ? '#fbbf24' : '#fb7185';
+                  const color = subnet.risk === "LOW" ? "#34d399" : subnet.risk === "MODERATE" ? "#fbbf24" : "#fb7185";
                   return (
                     <div
                       key={subnet.netuid}
@@ -265,10 +296,10 @@ export default function MetricsPage() {
                 <div className="absolute top-3 left-3 text-[10px] uppercase tracking-[0.08em] text-slate-600 font-semibold">Weak / Safe</div>
                 <div className="absolute bottom-3 left-3 text-[10px] uppercase tracking-[0.08em] text-slate-600 font-semibold">Weak / Risky</div>
                 <div className="absolute bottom-3 right-3 text-[10px] uppercase tracking-[0.08em] text-slate-600 font-semibold">Strong / Risky</div>
-                {filtered.slice(0, 10).map((subnet) => {
+                {filtered.slice(0, 16).map((subnet) => {
                   const left = Math.min(88, Math.max(8, subnet.score));
                   const top = Math.min(82, Math.max(10, 100 - riskRank(subnet.risk) * 22));
-                  const color = subnet.risk === 'LOW' ? '#34d399' : subnet.risk === 'MODERATE' ? '#fbbf24' : '#fb7185';
+                  const color = subnet.risk === "LOW" ? "#34d399" : subnet.risk === "MODERATE" ? "#fbbf24" : "#fb7185";
                   return (
                     <div
                       key={subnet.netuid}
@@ -300,27 +331,27 @@ export default function MetricsPage() {
             </GlassCard>
 
             <GlassCard padding="lg">
-              <div className="text-[15px] font-bold text-white mb-1">Movers / deteriorators</div>
-              <div className="text-[12px] text-slate-500 mb-4">Fast operational read of where conditions are improving or deteriorating.</div>
+              <div className="text-[15px] font-bold text-white mb-1">Traction / rotation</div>
+              <div className="text-[12px] text-slate-500 mb-4">Shows where stake appears to be flowing in and out right now.</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-                  <div className="flex items-center gap-2 text-[13px] font-semibold text-white mb-3"><TrendingUp className="w-4 h-4 text-emerald-400" /> Improving now</div>
+                  <div className="flex items-center gap-2 text-[13px] font-semibold text-white mb-3"><ArrowUpRight className="w-4 h-4 text-emerald-400" /> Inflows</div>
                   <div className="space-y-3">
-                    {improving.map((subnet) => (
+                    {topInflows.map((subnet) => (
                       <div key={subnet.netuid} className="text-[12px]">
                         <div className="font-semibold text-slate-200">SN{subnet.netuid} {subnet.name}</div>
-                        <div className="text-emerald-400 font-mono">+{subnet.yieldDelta7d.toFixed(1)}% 7d</div>
+                        <div className="text-emerald-400 font-mono">{formatFlow(getFlow24h(subnet))} • {getFlowPct(subnet).toFixed(1)}%</div>
                       </div>
                     ))}
                   </div>
                 </div>
                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-                  <div className="flex items-center gap-2 text-[13px] font-semibold text-white mb-3"><TrendingDown className="w-4 h-4 text-rose-400" /> Deteriorating now</div>
+                  <div className="flex items-center gap-2 text-[13px] font-semibold text-white mb-3"><ArrowDownLeft className="w-4 h-4 text-rose-400" /> Outflows</div>
                   <div className="space-y-3">
-                    {deteriorating.map((subnet) => (
+                    {topOutflows.map((subnet) => (
                       <div key={subnet.netuid} className="text-[12px]">
                         <div className="font-semibold text-slate-200">SN{subnet.netuid} {subnet.name}</div>
-                        <div className="text-rose-400 font-mono">{subnet.yieldDelta7d.toFixed(1)}% 7d</div>
+                        <div className="text-rose-400 font-mono">{formatFlow(getFlow24h(subnet))} • {getFlowPct(subnet).toFixed(1)}%</div>
                       </div>
                     ))}
                   </div>
@@ -341,23 +372,21 @@ export default function MetricsPage() {
                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
                   <div className="text-[14px] font-semibold text-white">SN{selected.netuid} {selected.name}</div>
                   <div className="text-[12px] text-slate-500 mt-2">{selected.category} • {selected.age} days old • {selected.symbol}</div>
-                  <div className="mt-4 text-[12px] text-slate-400 leading-relaxed">
-                    {selected.summary ?? selected.description}
-                  </div>
+                  <div className="mt-4 text-[12px] text-slate-400 leading-relaxed">{selected.summary ?? selected.description}</div>
                 </div>
                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
                   <div className="text-[14px] font-semibold text-white">Algorithm interpretation</div>
                   <div className="mt-3 inline-flex items-center gap-2 px-2.5 py-1.5 rounded-full text-[11px] font-semibold bg-emerald-400/10 text-emerald-300 border border-emerald-400/20">
-                    <ShieldCheck className="w-3.5 h-3.5" /> {selected.score >= 85 ? 'ACCUMULATE' : selected.score >= 75 ? 'HOLD / WATCH' : 'WATCH CAREFULLY'}
+                    <ShieldCheck className="w-3.5 h-3.5" /> {selected.score >= 85 ? "ACCUMULATE" : selected.score >= 75 ? "HOLD / WATCH" : "WATCH CAREFULLY"}
                   </div>
                   <div className="mt-4 text-[12px] text-slate-400 leading-relaxed">
-                    Tyvera currently likes this subnet because it combines better-than-average structural score with allocator-quality signals around liquidity, participation, and risk posture.
+                    Tyvera currently likes this subnet because it combines better-than-average structural score with allocator-quality signals around liquidity, participation, risk posture, and now visible traction.
                   </div>
                 </div>
                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
                   <div className="text-[14px] font-semibold text-white flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-400" /> Risk note</div>
                   <div className="mt-3 text-[12px] text-slate-400 leading-relaxed">
-                    Even strong subnets can deteriorate. Users should still inspect yield trend, liquidity support, confidence, and emissions durability before allocating fresh stake.
+                    Even strong subnets can deteriorate. Users should still inspect yield trend, liquidity support, confidence, emissions durability, and whether fresh stake is validating or abandoning the subnet.
                   </div>
                 </div>
               </div>
@@ -372,11 +401,9 @@ export default function MetricsPage() {
               <div className="space-y-4">
                 <div>
                   <div className="text-[15px] font-semibold text-white">SN{bestOpportunity.netuid} {bestOpportunity.name}</div>
-                  <div className="text-[12px] text-slate-400 leading-relaxed mt-2">
-                    Strongest composite quality right now with healthier allocator support than most alternatives.
-                  </div>
+                  <div className="text-[12px] text-slate-400 leading-relaxed mt-2">Strongest composite quality right now with healthier allocator support than most alternatives.</div>
                 </div>
-                <div className="text-[12px] text-emerald-300">Score {bestOpportunity.score.toFixed(1)} • {bestOpportunity.risk} risk • confidence {bestOpportunity.confidence ?? '—'}</div>
+                <div className="text-[12px] text-emerald-300">Score {bestOpportunity.score.toFixed(1)} • {bestOpportunity.risk} risk • confidence {bestOpportunity.confidence ?? "—"}</div>
               </div>
             )}
           </GlassCard>
@@ -387,9 +414,7 @@ export default function MetricsPage() {
               <div className="space-y-4">
                 <div>
                   <div className="text-[15px] font-semibold text-white">SN{warningSubnet.netuid} {warningSubnet.name}</div>
-                  <div className="text-[12px] text-slate-400 leading-relaxed mt-2">
-                    High headline reward but weaker supporting conditions. This is the kind of subnet the metrics page should help users avoid over-allocating into.
-                  </div>
+                  <div className="text-[12px] text-slate-400 leading-relaxed mt-2">High headline reward but weaker supporting conditions. This is the kind of subnet the metrics page should help users avoid over-allocating into.</div>
                 </div>
                 <div className="text-[12px] text-rose-300">{warningSubnet.yield.toFixed(1)}% yield • {warningSubnet.risk} risk • {warningSubnet.yieldDelta7d.toFixed(1)}% 7d</div>
               </div>
@@ -397,18 +422,21 @@ export default function MetricsPage() {
           </GlassCard>
 
           <GlassCard padding="lg">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600 mb-3">Reallocation watch</div>
-            <div className="text-[15px] font-semibold text-white">Potential shift: SN19 → SN49</div>
-            <div className="text-[12px] text-slate-400 leading-relaxed mt-2">
-              Better score, better confidence, better liquidity support. Recommendation logic should treat this as a watch signal, not automatic execution.
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600 mb-3">Traction now</div>
+            <div className="space-y-4">
+              {topInflows.slice(0, 2).map((subnet) => (
+                <div key={subnet.netuid}>
+                  <div className="text-[15px] font-semibold text-white">SN{subnet.netuid} {subnet.name}</div>
+                  <div className="text-[12px] text-slate-400 leading-relaxed mt-2">Gaining visible stake traction. Useful for spotting which subnets are attracting fresh allocator attention.</div>
+                  <div className="mt-2 text-[12px] text-emerald-300">{formatFlow(getFlow24h(subnet))} • {getFlowPct(subnet).toFixed(1)}%</div>
+                </div>
+              ))}
             </div>
           </GlassCard>
 
           <GlassCard padding="lg">
             <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600 mb-3">Why this page matters</div>
-            <div className="text-[12px] text-slate-400 leading-relaxed">
-              This page should compress subnet complexity into visible evidence for staking decisions. It is not just a ranking list — it is a decision surface.
-            </div>
+            <div className="text-[12px] text-slate-400 leading-relaxed">This page should compress subnet complexity into visible evidence for staking decisions. It is not just a ranking list — it is a decision surface.</div>
           </GlassCard>
         </div>
       </div>
