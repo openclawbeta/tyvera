@@ -66,3 +66,6 @@ export const ANNUAL_DURATION_DAYS = 365;
 
 /** Payment intent expiry — 24 hours */
 export const PAYMENT_INTENT_EXPIRY_MS = 24 * 60 * 60 * 1000;
+
+/** Grace period after subscription expires before full downgrade — 7 days */
+export const GRACE_PERIOD_DAYS = 7;

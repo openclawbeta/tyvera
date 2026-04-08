@@ -90,6 +90,8 @@ export async function POST(request: NextRequest) {
       planId: plan,
       amountTao,
       memo,
+      billingCycle: billing,
+      durationDays,
       expiresAt,
     });
 

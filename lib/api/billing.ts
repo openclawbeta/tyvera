@@ -67,10 +67,13 @@ export function getPlans() {
 /**
  * Create a real payment intent stored in the database.
  */
-export async function createPaymentIntent(planId: string, walletAddress?: string) {
+export async function createPaymentIntent(planId: string, walletAddress?: string, billingCycle: "monthly" | "annual" = "monthly") {
   const depositAddress = process.env.DEPOSIT_ADDRESS || "5EkH7oV4EvT2otiH1teYu9gM2bkhuQTZbZrrPuqxHQMVTjRZ";
   const tierDef = TIER_DEFINITIONS.find((d) => d.planIds.includes(planId));
-  const amountTao = tierDef ? tierDef.monthlyPrice : 0;
+  const amountTao = tierDef
+    ? (billingCycle === "annual" ? tierDef.annualPrice : tierDef.monthlyPrice)
+    : 0;
+  const durationDays = billingCycle === "annual" ? 365 : 30;
   const intentId = randomUUID();
   const memo = "TYV-" + randomUUID().slice(0, 8).toUpperCase();
   const expiresAt = new Date(Date.now() + PAYMENT_INTENT_EXPIRY_MS).toISOString();
@@ -81,6 +84,8 @@ export async function createPaymentIntent(planId: string, walletAddress?: string
     planId,
     amountTao,
     memo,
+    billingCycle,
+    durationDays,
     expiresAt,
   });
 

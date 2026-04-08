@@ -33,6 +33,8 @@ export const SCHEMA_SQL = `
     plan_id         TEXT NOT NULL,
     amount_tao      REAL NOT NULL,
     memo            TEXT NOT NULL UNIQUE,      -- unique memo for matching transfers
+    billing_cycle   TEXT NOT NULL DEFAULT 'monthly',  -- 'monthly' or 'annual'
+    duration_days   INTEGER NOT NULL DEFAULT 30,
     status          TEXT NOT NULL DEFAULT 'awaiting_payment',
     tx_hash         TEXT,
     confirmations   INTEGER NOT NULL DEFAULT 0,

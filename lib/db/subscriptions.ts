@@ -7,7 +7,7 @@
 import { getDb } from "./index";
 import { getTierForPlan } from "@/lib/types/tiers";
 import type { Tier } from "@/lib/types/tiers";
-import { MONTHLY_DURATION_DAYS } from "@/lib/config";
+import { MONTHLY_DURATION_DAYS, GRACE_PERIOD_DAYS } from "@/lib/config";
 
 /* ── Types ────────────────────────────────────────────────────────── */
 
@@ -153,18 +153,34 @@ export async function activateSubscription(params: {
 }
 
 /**
- * Expire subscriptions that are past their expiry date.
+ * Process subscription lifecycle transitions:
+ * 1. active → grace: when expires_at has passed
+ * 2. grace → expired: when grace period (7 days after expiry) has passed
  */
 export async function expireSubscriptions(): Promise<number> {
   const db = await getDb();
+  let totalChanged = 0;
 
+  // Step 1: Move expired active subscriptions to grace period
   await db.execute(
-    `UPDATE subscriptions SET status = 'expired', updated_at = datetime('now')
+    `UPDATE subscriptions SET status = 'grace', updated_at = datetime('now')
      WHERE status = 'active' AND expires_at <= datetime('now')`,
   );
+  const graceResult = await db.query("SELECT changes() as count");
+  const graceCount = graceResult.length > 0 && graceResult[0].rows.length > 0 ? (graceResult[0].rows[0][0] as number) : 0;
+  totalChanged += graceCount;
 
-  const result = await db.query("SELECT changes() as count");
-  return result.length > 0 && result[0].rows.length > 0 ? (result[0].rows[0][0] as number) : 0;
+  // Step 2: Expire grace-period subscriptions after GRACE_PERIOD_DAYS
+  await db.execute(
+    `UPDATE subscriptions SET status = 'expired', updated_at = datetime('now')
+     WHERE status = 'grace'
+     AND datetime(expires_at, '+${GRACE_PERIOD_DAYS} days') <= datetime('now')`,
+  );
+  const expiredResult = await db.query("SELECT changes() as count");
+  const expiredCount = expiredResult.length > 0 && expiredResult[0].rows.length > 0 ? (expiredResult[0].rows[0][0] as number) : 0;
+  totalChanged += expiredCount;
+
+  return totalChanged;
 }
 
 /**
@@ -201,14 +217,16 @@ export async function storePaymentIntent(params: {
   planId: string;
   amountTao: number;
   memo: string;
+  billingCycle: "monthly" | "annual";
+  durationDays: number;
   expiresAt: string;
 }): Promise<void> {
   const db = await getDb();
 
   await db.execute(
-    `INSERT INTO payment_intents (id, wallet_address, plan_id, amount_tao, memo, status, expires_at)
-     VALUES (?, ?, ?, ?, ?, 'awaiting_payment', ?)`,
-    [params.id, params.walletAddress, params.planId, params.amountTao, params.memo, params.expiresAt],
+    `INSERT INTO payment_intents (id, wallet_address, plan_id, amount_tao, memo, billing_cycle, duration_days, status, expires_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'awaiting_payment', ?)`,
+    [params.id, params.walletAddress, params.planId, params.amountTao, params.memo, params.billingCycle, params.durationDays, params.expiresAt],
   );
 }
 
@@ -222,6 +240,8 @@ export async function findPaymentIntentByMemo(memo: string): Promise<{
   amount_tao: number;
   memo: string;
   status: string;
+  billing_cycle: string;
+  duration_days: number;
 } | null> {
   const db = await getDb();
 
@@ -239,6 +259,8 @@ export async function findPaymentIntentByMemo(memo: string): Promise<{
     amount_tao: number;
     memo: string;
     status: string;
+    billing_cycle: string;
+    duration_days: number;
   };
 }
 
@@ -263,6 +285,7 @@ export async function confirmPaymentIntent(memo: string, txHash: string): Promis
     amountTao: intent.amount_tao,
     txHash,
     memo,
+    durationDays: intent.duration_days || MONTHLY_DURATION_DAYS,
   });
 
   return true;
