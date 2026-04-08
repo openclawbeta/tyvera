@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ArrowDownLeft, ArrowUpRight, ArrowUpDown, Download, RefreshCw, ShieldCheck, TrendingDown, TrendingUp } from "lucide-react";
+import { AlertTriangle, ArrowDownLeft, ArrowUpRight, Download, RefreshCw, ShieldCheck, TrendingDown, TrendingUp } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
 import { DataSourceBadge } from "@/components/ui-custom/data-source-badge";
 import { fetchSubnetsFromApi, getSubnets } from "@/lib/api/subnets";
 import type { RiskLevel, SubnetDetailModel } from "@/lib/types/subnets";
-import { cn, formatLargeNumber, riskBg, scoreColor, subnetGradient } from "@/lib/utils";
+import { cn, formatLargeNumber, subnetGradient } from "@/lib/utils";
+import { MetricsDataTable } from "@/components/subnets/metrics-data-table";
 
 const CATEGORY_OPTIONS = ["All", "AI", "Creative", "Infrastructure", "Data", "Finance", "Science", "Language", "Multi-Modal"];
 const PRESET_OPTIONS = [
@@ -19,9 +20,6 @@ const PRESET_OPTIONS = [
   "Confidence 80+",
   "Traction leaders",
 ];
-
-type SortKey = "netuid" | "name" | "yield" | "score" | "risk" | "liquidity" | "stakers" | "emissions" | "flow24h" | "flowPct" | "yieldDelta7d" | "confidence";
-type SortDirection = "asc" | "desc";
 
 function formatLiquidity(liquidity: number): string {
   if (liquidity >= 1_000_000) return `${(liquidity / 1_000_000).toFixed(1)}M τ`;
@@ -60,36 +58,6 @@ function getFlowPct(subnet: SubnetDetailModel): number {
   return 0;
 }
 
-function SortHeader({
-  label,
-  sortKey,
-  currentKey,
-  currentDirection,
-  onSort,
-}: {
-  label: string;
-  sortKey: SortKey;
-  currentKey: SortKey;
-  currentDirection: SortDirection;
-  onSort: (key: SortKey) => void;
-}) {
-  const active = sortKey === currentKey;
-  return (
-    <button
-      onClick={() => onSort(sortKey)}
-      className={cn(
-        "flex items-center gap-1.5 text-left transition-colors",
-        active ? "text-cyan-300" : "text-slate-600 hover:text-slate-300",
-      )}
-      title={`Sort by ${label}`}
-    >
-      <span>{label}</span>
-      <ArrowUpDown className={cn("w-3 h-3", active && "text-cyan-300")} />
-      {active && <span className="text-[9px] uppercase tracking-[0.08em]">{currentDirection}</span>}
-    </button>
-  );
-}
-
 export default function MetricsPage() {
   const router = useRouter();
   const seed = getSubnets();
@@ -100,8 +68,6 @@ export default function MetricsPage() {
   const [category, setCategory] = useState("All");
   const [selected, setSelected] = useState<SubnetDetailModel | null>(() => seed[0] ?? null);
   const [loading, setLoading] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>("score");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   useEffect(() => {
     let cancelled = false;
@@ -151,41 +117,7 @@ export default function MetricsPage() {
     return list;
   }, [subnets, category, preset]);
 
-  const filtered = useMemo(() => {
-    const list = [...baseFiltered];
-    list.sort((a, b) => {
-      const direction = sortDirection === "asc" ? 1 : -1;
-      switch (sortKey) {
-        case "netuid":
-          return (a.netuid - b.netuid) * direction;
-        case "name":
-          return a.name.localeCompare(b.name) * direction;
-        case "yield":
-          return (a.yield - b.yield) * direction;
-        case "score":
-          return (a.score - b.score) * direction;
-        case "risk":
-          return (riskRank(a.risk) - riskRank(b.risk)) * direction;
-        case "liquidity":
-          return (a.liquidity - b.liquidity) * direction;
-        case "stakers":
-          return (a.stakers - b.stakers) * direction;
-        case "emissions":
-          return (a.emissions - b.emissions) * direction;
-        case "flow24h":
-          return (getFlow24h(a) - getFlow24h(b)) * direction;
-        case "flowPct":
-          return (getFlowPct(a) - getFlowPct(b)) * direction;
-        case "yieldDelta7d":
-          return (a.yieldDelta7d - b.yieldDelta7d) * direction;
-        case "confidence":
-          return ((a.confidence ?? 0) - (b.confidence ?? 0)) * direction;
-        default:
-          return (a.score - b.score) * direction;
-      }
-    });
-    return list;
-  }, [baseFiltered, sortKey, sortDirection]);
+  const filtered = baseFiltered;
 
   const topEmissions = useMemo(() => [...filtered].sort((a, b) => b.emissions - a.emissions).slice(0, 5), [filtered]);
   const improving = useMemo(() => [...filtered].sort((a, b) => b.yieldDelta7d - a.yieldDelta7d).slice(0, 3), [filtered]);
@@ -202,15 +134,6 @@ export default function MetricsPage() {
 
   const bestOpportunity = [...filtered].sort((a, b) => b.score - a.score)[0];
   const warningSubnet = deteriorating.find((s) => s.risk === "HIGH" || s.risk === "SPECULATIVE") ?? deteriorating[0];
-
-  function handleSort(nextKey: SortKey) {
-    if (nextKey === sortKey) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(nextKey);
-      setSortDirection(nextKey === "name" || nextKey === "netuid" || nextKey === "risk" ? "asc" : "desc");
-    }
-  }
 
   return (
     <div className="max-w-[1600px] mx-auto space-y-6">
@@ -295,67 +218,15 @@ export default function MetricsPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="text-[17px] font-bold text-white tracking-[-0.02em]">Ranked subnet metrics</div>
-                <div className="text-[12px] text-slate-500 mt-1">Sortable columns with direct navigation into full subnet detail pages.</div>
+                <div className="text-[12px] text-slate-500 mt-1">Metrics now uses the same denser table language as Subnets, with traction-focused fields layered in.</div>
               </div>
-              <div className="text-[11px] text-slate-500">dense table • {filtered.length} visible</div>
+              <div className="text-[11px] text-slate-500">{filtered.length} visible</div>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border border-white/[0.06] max-h-[760px]">
-              <div className="min-w-[1280px]">
-                <div className="sticky top-0 z-10 grid grid-cols-[70px_1.35fr_.8fr_.8fr_.8fr_.95fr_.8fr_.8fr_.85fr_.8fr_.75fr_.75fr] gap-2.5 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] bg-[#0d1220] border-b border-white/[0.05]">
-                  <SortHeader label="Subnet" sortKey="netuid" currentKey={sortKey} currentDirection={sortDirection} onSort={handleSort} />
-                  <SortHeader label="Name" sortKey="name" currentKey={sortKey} currentDirection={sortDirection} onSort={handleSort} />
-                  <SortHeader label="Yield" sortKey="yield" currentKey={sortKey} currentDirection={sortDirection} onSort={handleSort} />
-                  <SortHeader label="Score" sortKey="score" currentKey={sortKey} currentDirection={sortDirection} onSort={handleSort} />
-                  <SortHeader label="Risk" sortKey="risk" currentKey={sortKey} currentDirection={sortDirection} onSort={handleSort} />
-                  <SortHeader label="Liquidity" sortKey="liquidity" currentKey={sortKey} currentDirection={sortDirection} onSort={handleSort} />
-                  <SortHeader label="Stakers" sortKey="stakers" currentKey={sortKey} currentDirection={sortDirection} onSort={handleSort} />
-                  <SortHeader label="Emissions" sortKey="emissions" currentKey={sortKey} currentDirection={sortDirection} onSort={handleSort} />
-                  <SortHeader label="Flow 24H" sortKey="flow24h" currentKey={sortKey} currentDirection={sortDirection} onSort={handleSort} />
-                  <SortHeader label="Flow %" sortKey="flowPct" currentKey={sortKey} currentDirection={sortDirection} onSort={handleSort} />
-                  <SortHeader label="7D" sortKey="yieldDelta7d" currentKey={sortKey} currentDirection={sortDirection} onSort={handleSort} />
-                  <SortHeader label="Conf." sortKey="confidence" currentKey={sortKey} currentDirection={sortDirection} onSort={handleSort} />
-                </div>
-                {filtered.map((subnet) => {
-                  const flow24h = getFlow24h(subnet);
-                  const flowPct = getFlowPct(subnet);
-                  return (
-                    <button
-                      key={subnet.netuid}
-                      onClick={() => router.push(`/subnets/${subnet.netuid}`)}
-                      onMouseEnter={() => setSelected(subnet)}
-                      className="grid w-full text-left grid-cols-[70px_1.35fr_.8fr_.8fr_.8fr_.95fr_.8fr_.8fr_.85fr_.8fr_.75fr_.75fr] gap-2.5 px-3 py-2.5 border-b border-white/[0.05] bg-white/[0.015] hover:bg-white/[0.03] transition-all"
-                    >
-                      <div className="flex items-center">
-                        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br", subnetGradient(subnet.netuid))}>
-                          {subnet.netuid}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <div className="text-[12px] font-semibold text-white">{subnet.name}</div>
-                          <span className={cn("px-1.5 py-0.5 rounded-full text-[9px] font-semibold border", riskBg(subnet.risk))}>{subnet.risk}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className={cn("px-1.5 py-0.5 rounded-full text-[9px] font-semibold border", subnet.score >= 85 ? "bg-emerald-400/10 text-emerald-300 border-emerald-400/20" : subnet.score >= 75 ? "bg-amber-400/10 text-amber-300 border-amber-400/20" : "bg-white/[0.04] text-slate-400 border-white/[0.08]")}>Score {subnet.score.toFixed(1)}</span>
-                          <span className="text-[10px] text-slate-600">SN{subnet.netuid} • {subnet.category} • {subnet.age}d</span>
-                        </div>
-                      </div>
-                      <div className="font-mono text-[11px] text-slate-200">{subnet.yield.toFixed(1)}%</div>
-                      <div className={cn("font-mono text-[11px] font-semibold", scoreColor(subnet.score))}>{subnet.score.toFixed(1)}</div>
-                      <div className="font-mono text-[11px] text-slate-300">{subnet.risk}</div>
-                      <div className="font-mono text-[11px] text-slate-300">{formatLiquidity(subnet.liquidity)}</div>
-                      <div className="font-mono text-[11px] text-slate-300">{formatLargeNumber(subnet.stakers)}</div>
-                      <div className="font-mono text-[11px] text-slate-300">{subnet.emissions.toFixed(1)} τ/d</div>
-                      <div className={cn("font-mono text-[11px] font-semibold", flow24h >= 0 ? "text-emerald-400" : "text-rose-400")}>{formatFlow(flow24h)}</div>
-                      <div className={cn("font-mono text-[11px] font-semibold", flowPct >= 0 ? "text-emerald-400" : "text-rose-400")}>{flowPct >= 0 ? "+" : ""}{flowPct.toFixed(1)}%</div>
-                      <div className={cn("font-mono text-[11px] font-semibold", subnet.yieldDelta7d >= 0 ? "text-emerald-400" : "text-rose-400")}>{subnet.yieldDelta7d >= 0 ? "+" : ""}{subnet.yieldDelta7d.toFixed(1)}%</div>
-                      <div className="font-mono text-[11px] text-slate-300">{subnet.confidence ?? "—"}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <MetricsDataTable
+              subnets={filtered}
+              onSelect={(netuid) => router.push(`/subnets/${netuid}`)}
+            />
           </GlassCard>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
