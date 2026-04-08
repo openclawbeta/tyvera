@@ -153,7 +153,7 @@ export function LiveTicker() {
       </div>
 
       {/* Scrolling strip */}
-      <div className="flex-1 overflow-hidden min-w-0">
+      <div className="flex-1 overflow-hidden min-w-0 pointer-events-none">
         <div className="ticker-track inline-flex min-w-max whitespace-nowrap will-change-transform">
           {scrollItems.map((item, i) => (
             <TickerItem

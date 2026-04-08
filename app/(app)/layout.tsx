@@ -13,7 +13,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
           {/* On mobile: full width (no left margin). On desktop: offset by sidebar width. */}
           <div className="flex-1 lg:ml-60 flex flex-col min-h-screen overflow-x-hidden">
-            {/* Fixed bars — GlobalTicker (z-40 top-0) + Topbar (z-30 top-8) */}
+            {/* Fixed bars — GlobalTicker (z-30 top-0) + Topbar (z-40 top-8) */}
             <GlobalTicker />
             <Topbar />
 

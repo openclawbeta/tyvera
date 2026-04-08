@@ -69,15 +69,16 @@ function matchIntent(query: string): string {
 // ── Data Analyzers ────────────────────────────────────────────────────────
 
 function getTopByYield(subnets: SubnetDetailModel[], count = 5): ChatResponse {
+  const capped = Math.min(count, 50); // cap at 50 max
   const sorted = [...subnets]
     .filter((s) => s.yield > 0)
     .sort((a, b) => b.yield - a.yield)
-    .slice(0, count);
+    .slice(0, capped);
 
   return {
     type: "list",
-    title: `Top ${count} Subnets by Yield`,
-    summary: `Here are the highest-yielding subnets. The top subnet is ${sorted[0]?.name} with ${sorted[0]?.yield.toFixed(2)}% APR.`,
+    title: `Top ${capped} Subnets by Yield`,
+    summary: `Here are the top ${sorted.length} highest-yielding subnets. The top subnet is ${sorted[0]?.name} with ${sorted[0]?.yield.toFixed(2)}% APR.`,
     data: sorted,
     suggestion: `Ask me to compare any two, or dive into risk profiles for these subnets.`,
   };
@@ -552,9 +553,13 @@ export function analyzeQuery(
 
   const intent = matchIntent(query);
 
+  // Parse "top N" count from the query (e.g., "top 15 by yield")
+  const topCountMatch = query.match(/top\s+(\d+)/i);
+  const topCount = topCountMatch ? parseInt(topCountMatch[1]) : 5;
+
   switch (intent) {
     case "top-yield":
-      return getTopByYield(subnets);
+      return getTopByYield(subnets, topCount);
     case "lowest-risk":
       return getLowestRisk(subnets);
     case "trending-up":

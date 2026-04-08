@@ -291,7 +291,7 @@ function ResponseRenderer({ response }: ResponseRendererProps) {
               </tr>
             </thead>
             <tbody>
-              {response.data.slice(0, 8).map((subnet, idx) => (
+              {response.data.map((subnet, idx) => (
                 <tr key={subnet.netuid} className="border-b border-slate-800/50">
                   <td className="px-2 py-2 text-slate-500">{idx + 1}</td>
                   <td className="px-2 py-2 text-cyan-300 font-medium">{subnet.name}</td>

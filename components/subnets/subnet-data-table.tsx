@@ -156,7 +156,7 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
               }}
               placeholder="Search by Subnet or Netuid..."
               aria-label="Search subnets by name or netuid"
-              className="w-full pl-9 pr-3 py-2 rounded-lg border border-white/[0.07] bg-white/[0.03] text-sm text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-cyan-400/40 transition-colors"
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-white/[0.1] bg-slate-900/60 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400/50 focus:ring-1 focus:ring-cyan-400/20 transition-colors"
             />
           </div>
 

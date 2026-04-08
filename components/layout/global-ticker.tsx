@@ -76,7 +76,7 @@ export function GlobalTicker() {
   if (isLoading && !ticker) {
     return (
       <div
-        className="fixed top-0 right-0 left-0 lg:left-60 h-8 z-40 flex items-center px-4 gap-4 text-xs text-slate-500"
+        className="fixed top-0 right-0 left-0 lg:left-60 h-8 z-30 flex items-center px-4 gap-4 text-xs text-slate-500"
         style={{
           background: "rgba(0,0,0,0.85)",
           borderBottom: "1px solid rgba(255,255,255,0.06)",
@@ -122,7 +122,7 @@ export function GlobalTicker() {
   if (isMobile) {
     return (
       <div
-        className="fixed top-0 right-0 left-0 lg:left-60 h-8 z-40 flex items-center px-4 gap-3 font-mono text-xs text-white"
+        className="fixed top-0 right-0 left-0 lg:left-60 h-8 z-30 flex items-center px-4 gap-3 font-mono text-xs text-white"
         style={{
           background: "rgba(0,0,0,0.85)",
           borderBottom: "1px solid rgba(255,255,255,0.06)",
@@ -145,7 +145,7 @@ export function GlobalTicker() {
   // Desktop: Full ticker with all metrics
   return (
     <div
-      className="fixed top-0 right-0 left-0 lg:left-60 h-8 z-40 flex items-center px-4 gap-4 font-mono text-xs text-slate-300 overflow-hidden"
+      className="fixed top-0 right-0 left-0 lg:left-60 h-8 z-30 flex items-center px-4 gap-4 font-mono text-xs text-slate-300 overflow-hidden"
       style={{
         background: "rgba(0,0,0,0.85)",
         borderBottom: "1px solid rgba(255,255,255,0.06)",

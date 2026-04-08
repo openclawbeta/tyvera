@@ -234,7 +234,7 @@ export function Topbar() {
   return (
     <>
       <header
-        className="fixed top-8 right-0 left-0 lg:left-60 h-[52px] z-30 flex items-center px-4 gap-3"
+        className="fixed top-8 right-0 left-0 lg:left-60 h-[52px] z-40 flex items-center px-4 gap-3"
         style={{
           background: "rgba(7,10,18,0.88)",
           borderBottom: "1px solid rgba(255,255,255,0.048)",
