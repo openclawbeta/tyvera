@@ -451,6 +451,119 @@ export default function SubnetDetailPage() {
         </div>
       </motion.div>
 
+      {/* ── Subnet dossier strip ── */}
+      <FadeIn delay={0.08}>
+        <div className="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-5">
+          <div
+            className="rounded-2xl p-6"
+            style={{
+              background: "rgba(255,255,255,0.018)",
+              border: "1px solid rgba(255,255,255,0.065)",
+              boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 20px rgba(0,0,0,0.24)",
+            }}
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(34,211,238,0.1)", border: "1px solid rgba(34,211,238,0.2)" }}>
+                <Layers className="w-3.5 h-3.5 text-cyan-300" />
+              </div>
+              <span className="font-bold text-slate-300 uppercase" style={{ fontSize: "10px", letterSpacing: "0.1em" }}>Subnet dossier</span>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: "Symbol", value: subnet.symbol },
+                { label: "Category", value: subnet.category },
+                { label: "Confidence", value: `${subnet.confidence ?? 0}%` },
+                { label: "Age", value: `${subnet.age}d` },
+                { label: "Allocator Yield", value: `${subnet.yield}%` },
+                { label: "Raw APR", value: `${subnet.rawYield ?? subnet.yield}%` },
+                { label: "Flow 24H", value: `${subnet.flow24h ?? subnet.inflow ?? 0} τ` },
+                { label: "Flow 1W", value: `${subnet.flow1w ?? subnet.inflow ?? 0} τ` },
+              ].map((item) => (
+                <div key={item.label} className="rounded-xl px-3 py-3" style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div className="text-[9.5px] font-semibold uppercase tracking-[0.08em] text-slate-600 mb-1">{item.label}</div>
+                  <div className="text-[13px] font-bold text-white tabular-nums">{item.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div
+            className="rounded-2xl p-6"
+            style={{
+              background: "rgba(255,255,255,0.018)",
+              border: "1px solid rgba(255,255,255,0.065)",
+              boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 20px rgba(0,0,0,0.24)",
+            }}
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)" }}>
+                <ExternalLink className="w-3.5 h-3.5 text-violet-300" />
+              </div>
+              <span className="font-bold text-slate-300 uppercase" style={{ fontSize: "10px", letterSpacing: "0.1em" }}>Project links</span>
+            </div>
+
+            {subnetLinks.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3">
+                {subnetLinks.map(({ label, href, icon: Icon }) => (
+                  <a
+                    key={`${label}-${href}-dossier`}
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-2 rounded-xl px-3 py-3 transition-colors duration-150 hover:bg-white/[0.06]"
+                    style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)", color: "#cbd5e1" }}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span className="text-[12px] font-medium">{label}</span>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[12px] text-slate-500">No curated project links yet. Use explorer data and operator research before allocating.</p>
+            )}
+          </div>
+        </div>
+      </FadeIn>
+
+      {/* ── Allocator view ── */}
+      <FadeIn delay={0.1}>
+        <div
+          className="rounded-2xl p-6"
+          style={{
+            background: "rgba(255,255,255,0.018)",
+            border: "1px solid rgba(255,255,255,0.065)",
+            boxShadow: "0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 20px rgba(0,0,0,0.24)",
+          }}
+        >
+          <div className="flex items-center gap-2 mb-5">
+            <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.2)" }}>
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+            </div>
+            <span className="font-bold text-slate-300 uppercase" style={{ fontSize: "10px", letterSpacing: "0.1em" }}>Allocator view</span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="text-[10px] uppercase tracking-[0.08em] text-slate-600 mb-1">Primary stance</div>
+              <div className="text-[15px] font-bold text-white">{subnet.score >= 85 ? 'ACCUMULATE' : subnet.score >= 75 ? 'HOLD / WATCH' : subnet.risk === 'HIGH' || subnet.risk === 'SPECULATIVE' ? 'AVOID / REDUCE' : 'WATCH'}</div>
+            </div>
+            <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="text-[10px] uppercase tracking-[0.08em] text-slate-600 mb-1">Why it matters</div>
+              <div className="text-[12px] text-slate-400 leading-relaxed">Use allocator yield, confidence, liquidity, emissions, and stake flow together. Raw APR alone is not safe enough.</div>
+            </div>
+            <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="text-[10px] uppercase tracking-[0.08em] text-slate-600 mb-1">Traction</div>
+              <div className="text-[12px] text-slate-400 leading-relaxed">{(subnet.flow24h ?? subnet.inflow ?? 0) >= 0 ? 'Stake appears to be flowing in.' : 'Stake appears to be flowing out.'} Use this alongside score and confidence, not alone.</div>
+            </div>
+            <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="text-[10px] uppercase tracking-[0.08em] text-slate-600 mb-1">Primary risk</div>
+              <div className="text-[12px] text-slate-400 leading-relaxed">{subnet.risk === 'LOW' ? 'No obvious immediate structural warning, but still monitor confidence and inflows.' : subnet.risk === 'MODERATE' ? 'Moderate risk means this subnet may still be viable, but allocator discipline matters.' : 'High or speculative risk means the subnet can look attractive while still being structurally fragile.'}</div>
+            </div>
+          </div>
+        </div>
+      </FadeIn>
+
       {/* ── Key metrics grid ── */}
       <StaggerContainer>
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
