@@ -4,14 +4,15 @@
  * Next.js Route Handler -- unified subnet data gateway.
  *
  * Data source priority (highest to lowest):
- *   0. In-memory cache from cron/sync-chain (live chain data, 5min TTL)
- *   1. public/data/subnets.json  (Subtensor snapshot, uses _meta.fetched_at)
- *   2. TaoStats REST API  (fallback)
- *   3. lib/data/subnets-real.ts  (static TypeScript snapshot)
+ *   0. In-memory cache from cron/sync-chain   → T2 (chain-cache)
+ *   1. public/data/subnets.json               → T3 (subtensor-snapshot)
+ *   2. TaoStats REST API                      → T1 (taostats-live)
+ *   3. Stale subtensor snapshot               → T3 (subtensor-snapshot-stale)
+ *   4. lib/data/subnets-real.ts               → T4 (static-snapshot)
  *
  * Market enrichment (best-effort):
- *   CoinMarketCap TAO/USD quote + on-chain pool ratios for per-subnet
- *   alpha prices, falling back to TaoStats dtao/subnet market data.
+ *   CoinMarketCap TAO/USD + on-chain pool ratios → per-subnet alpha prices,
+ *   falling back to TaoStats dtao/subnet market data.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -43,6 +44,12 @@ import {
   getSubnetCacheAgeMs,
 } from "@/lib/chain/cache";
 import { isAllowedInternalOrigin } from "@/lib/api/internal-origin";
+import {
+  DATA_SOURCES,
+  apiResponse,
+  apiErrorResponse,
+  type DataSourceId,
+} from "@/lib/data-source-policy";
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -83,6 +90,7 @@ function readSubtensorSnapshot(netuidFilter?: number): {
   subnets: SubnetDetailModel[];
   ageSeconds: number;
   isStale: boolean;
+  fetchedAt: string;
 } | null {
   try {
     const raw = readFileSync(SUBTENSOR_SNAPSHOT_PATH, "utf-8");
@@ -92,14 +100,15 @@ function readSubtensorSnapshot(netuidFilter?: number): {
       return null;
     }
 
-    // Use fetched_at from JSON metadata (reliable) instead of filesystem mtime
-    // (mtime is unreliable on Vercel serverless — often reflects build time, not data freshness)
     let ageMs: number;
+    let fetchedAt: string;
     if (payload._meta?.fetched_at) {
-      ageMs = Date.now() - new Date(payload._meta.fetched_at).getTime();
+      fetchedAt = payload._meta.fetched_at;
+      ageMs = Date.now() - new Date(fetchedAt).getTime();
     } else {
       const stat = statSync(SUBTENSOR_SNAPSHOT_PATH);
       ageMs = Date.now() - stat.mtimeMs;
+      fetchedAt = new Date(stat.mtimeMs).toISOString();
     }
 
     const ageSeconds = Math.round(ageMs / 1000);
@@ -115,7 +124,7 @@ function readSubtensorSnapshot(netuidFilter?: number): {
       ? payload.subnets.filter((s) => s.netuid === netuidFilter)
       : payload.subnets).map(hydrateSubnetMetadata);
 
-    return { subnets, ageSeconds, isStale };
+    return { subnets, ageSeconds, isStale, fetchedAt };
   } catch {
     return null;
   }
@@ -208,13 +217,10 @@ export async function GET(request: NextRequest) {
   const netuidFilter  = netuidParam != null ? Number(netuidParam) : undefined;
 
   if (!isAllowedInternalOrigin(request)) {
-    return NextResponse.json(
-      { error: "This endpoint is for Tyvera frontend use only." },
-      { status: 403, headers: { "Cache-Control": "no-store" } },
-    );
+    return apiErrorResponse("This endpoint is for Tyvera frontend use only.", 403);
   }
 
-  // ── Priority 0: In-memory cache from cron/sync-chain ───────────
+  // ── Priority 0: In-memory cache from cron/sync-chain (T2) ────────
   const chainCache = getSubnetCache();
   if (chainCache && isSubnetCacheFresh()) {
     let chainSubnets = chainCache.subnets
@@ -259,25 +265,28 @@ export async function GET(request: NextRequest) {
     if (netuidFilter != null) {
       chainSubnets = chainSubnets.filter((s) => s.netuid === netuidFilter);
     }
-    const cacheAgeSec = Math.round(getSubnetCacheAgeMs() / 1000);
     const enriched = enrichWithMarketData(chainSubnets);
 
-    return NextResponse.json(enriched, {
-      headers: {
-        "X-Data-Source":    "chain-cache",
-        "X-Subnet-Count":  String(enriched.length),
-        "X-Snapshot-Age":  String(cacheAgeSec),
-        "X-Snapshot-Stale": "false",
-        "X-Market-Enriched": String(isMarketCacheFresh()),
-        "Cache-Control":   "public, s-maxage=60",
+    return apiResponse(
+      { subnets: enriched },
+      {
+        source: DATA_SOURCES.CHAIN_CACHE,
+        fetchedAt: chainCache.fetchedAt,
+        blockHeight: chainCache.blockHeight,
+        snapshotAgeMs: getSubnetCacheAgeMs(),
       },
-    });
+      {
+        extraHeaders: {
+          "X-Subnet-Count": String(enriched.length),
+          "X-Market-Enriched": String(isMarketCacheFresh()),
+        },
+      },
+    );
   }
 
-  // ── Priority 1: Fresh subtensor snapshot (< 2h old) ───────────
+  // ── Priority 1: Fresh subtensor snapshot (< 2h old) (T3) ────────
   const snapshot = readSubtensorSnapshot(netuidFilter);
   if (snapshot && !snapshot.isStale) {
-    // Best-effort market enrichment
     if (!isMarketCacheFresh()) {
       await refreshMarketCache(
         snapshot.subnets.map((s) => ({
@@ -291,19 +300,23 @@ export async function GET(request: NextRequest) {
 
     const enriched = enrichWithMarketData(snapshot.subnets);
 
-    return NextResponse.json(enriched, {
-      headers: {
-        "X-Data-Source":    "subtensor-snapshot",
-        "X-Subnet-Count":  String(enriched.length),
-        "X-Snapshot-Age":  String(snapshot.ageSeconds),
-        "X-Snapshot-Stale": "false",
-        "X-Market-Enriched": String(isMarketCacheFresh()),
-        "Cache-Control":   "public, s-maxage=300",
+    return apiResponse(
+      { subnets: enriched },
+      {
+        source: DATA_SOURCES.SUBTENSOR_SNAPSHOT,
+        fetchedAt: snapshot.fetchedAt,
+        snapshotAgeMs: snapshot.ageSeconds * 1000,
       },
-    });
+      {
+        extraHeaders: {
+          "X-Subnet-Count": String(enriched.length),
+          "X-Market-Enriched": String(isMarketCacheFresh()),
+        },
+      },
+    );
   }
 
-  // ── Priority 2: TaoStats live API (preferred when snapshot is stale) ───────
+  // ── Priority 2: TaoStats live API (T1) ───────────────────────────
   const apiKey = process.env.TAOSTATS_API_KEY ?? "";
   if (apiKey) {
     try {
@@ -332,44 +345,55 @@ export async function GET(request: NextRequest) {
         .map(mapTaoStatsRow)
         .sort((a, b) => a.netuid - b.netuid);
 
-      return NextResponse.json(subnets, {
-        headers: {
-          "X-Data-Source":  "taostats-live",
-          "X-Subnet-Count": String(subnets.length),
-          "Cache-Control":  "public, s-maxage=60",
+      return apiResponse(
+        { subnets },
+        {
+          source: DATA_SOURCES.TAOSTATS_LIVE,
+          fetchedAt: new Date().toISOString(),
         },
-      });
+        {
+          extraHeaders: { "X-Subnet-Count": String(subnets.length) },
+        },
+      );
     } catch (err) {
       console.error("[/api/subnets] TaoStats fetch failed:", err);
     }
   }
 
-  // ── Priority 3: Stale snapshot (better than nothing) ───────────
+  // ── Priority 3: Stale snapshot (T3) ──────────────────────────────
   if (snapshot) {
     const enriched = enrichWithMarketData(snapshot.subnets);
-    return NextResponse.json(enriched, {
-      headers: {
-        "X-Data-Source":    "subtensor-snapshot-stale",
-        "X-Subnet-Count":  String(enriched.length),
-        "X-Snapshot-Age":  String(snapshot.ageSeconds),
-        "X-Snapshot-Stale": "true",
-        "X-Market-Enriched": String(isMarketCacheFresh()),
-        "Cache-Control":   "public, s-maxage=60",
+    return apiResponse(
+      { subnets: enriched },
+      {
+        source: DATA_SOURCES.SUBTENSOR_SNAPSHOT_STALE,
+        fetchedAt: snapshot.fetchedAt,
+        stale: true,
+        snapshotAgeMs: snapshot.ageSeconds * 1000,
       },
-    });
+      {
+        extraHeaders: {
+          "X-Subnet-Count": String(enriched.length),
+          "X-Market-Enriched": String(isMarketCacheFresh()),
+        },
+      },
+    );
   }
 
-  // ── Priority 4: Static TypeScript snapshot ───────────
+  // ── Priority 4: Static TypeScript snapshot (T4) ──────────────────
   const staticData = netuidFilter != null
     ? SUBNETS_REAL.filter((s) => s.netuid === netuidFilter)
     : SUBNETS_REAL;
 
-  const isApiKeySet = apiKey.length > 0;
-  return NextResponse.json(staticData, {
-    headers: {
-      "X-Data-Source":   isApiKeySet ? "static-snapshot-fallback" : "static-snapshot",
-      "X-Subnet-Count":  String(staticData.length),
-      "Cache-Control":   "public, s-maxage=300",
+  return apiResponse(
+    { subnets: staticData },
+    {
+      source: DATA_SOURCES.STATIC_SNAPSHOT,
+      fetchedAt: new Date(0).toISOString(),
+      note: "All dynamic sources unavailable — serving compiled static snapshot",
     },
-  });
+    {
+      extraHeaders: { "X-Subnet-Count": String(staticData.length) },
+    },
+  );
 }

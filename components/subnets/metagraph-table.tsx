@@ -63,7 +63,9 @@ export function MetagraphTable({ netuid }: MetagraphTableProps) {
         const response = await fetchWithTimeout(`/api/metagraph?netuid=${netuid}`, { timeoutMs: 12_000 });
         if (!response.ok) throw new Error("Failed to fetch metagraph");
         setDataSource(response.headers.get("X-Data-Source") ?? "");
-        const data = await response.json();
+        const raw = await response.json();
+        // Handle both flat array (legacy) and { neurons: [...], _meta: {...} } (v2)
+        const data = Array.isArray(raw) ? raw : (raw?.neurons ?? []);
         setNeurons(Array.isArray(data) ? data : []);
       } catch (error) {
         setNeurons([]);

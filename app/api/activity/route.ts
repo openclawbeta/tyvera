@@ -3,14 +3,21 @@
 /*                                                                     */
 /* GET /api/activity?address=5...&page=1&limit=50                     */
 /* Returns on-chain extrinsics for the given SS58 address.            */
+/*                                                                     */
+/* Data source: TaoStats only (T1). No fallback — returns empty       */
+/* gracefully when unavailable.                                        */
 /* ─────────────────────────────────────────────────────────────────── */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import type { ActivityEvent, ActivityType, ActivityStatus } from "@/lib/types/activity";
+import {
+  DATA_SOURCES,
+  apiResponse,
+  apiErrorResponse,
+} from "@/lib/data-source-policy";
 
 const TAOSTATS_API = "https://api.taostats.io/api/v1";
 
-/** Map Bittensor extrinsic module+call to our activity types */
 function classifyExtrinsic(module: string, call: string): ActivityType {
   const m = module.toLowerCase();
   const c = call.toLowerCase();
@@ -23,8 +30,6 @@ function classifyExtrinsic(module: string, call: string): ActivityType {
   if (m === "subtensormodule" && (c === "burned_register" || c === "register")) return "REGISTER";
   if (m === "subtensormodule" && c === "set_weights") return "SET_WEIGHTS";
   if (m === "subtensormodule" && (c === "claim" || c === "schedule_coldkey_swap")) return "CLAIM";
-
-  // Default to transfer for unknown extrinsics
   return "TRANSFER";
 }
 
@@ -34,16 +39,13 @@ function mapStatus(success: unknown): ActivityStatus {
   return "PENDING";
 }
 
-/** Parse a TaoStats extrinsic into our ActivityEvent format */
 function parseExtrinsic(ext: Record<string, unknown>): ActivityEvent {
   const module = String(ext.module ?? ext.call_module ?? "");
   const call = String(ext.call ?? ext.call_function ?? "");
   const type = classifyExtrinsic(module, call);
 
-  // Amount: TaoStats usually reports in rao (1e9 rao = 1 TAO)
   const rawAmount = Number(ext.amount ?? ext.value ?? 0);
-  const amountTao = rawAmount > 1e6 ? rawAmount / 1e9 : rawAmount; // Auto-detect rao vs TAO
-
+  const amountTao = rawAmount > 1e6 ? rawAmount / 1e9 : rawAmount;
   const fee = Number(ext.fee ?? 0) / 1e9;
   const blockNumber = Number(ext.block_num ?? ext.block_number ?? 0);
   const timestamp = String(ext.block_timestamp ?? ext.timestamp ?? new Date().toISOString());
@@ -70,55 +72,52 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(parseInt(searchParams.get("limit") ?? "50", 10), 100);
 
   if (!address || address.length < 46) {
-    return NextResponse.json({ events: [], total: 0, error: "Valid SS58 address required" }, { status: 400 });
+    return apiErrorResponse("Valid SS58 address required", 400);
   }
 
   try {
-    // Try TaoStats extrinsics endpoint
     const offset = (page - 1) * limit;
     const url = `${TAOSTATS_API}/extrinsic?address=${address}&limit=${limit}&offset=${offset}`;
 
     const resp = await fetch(url, {
       headers: { Accept: "application/json" },
       signal: AbortSignal.timeout(15_000),
-      next: { revalidate: 30 }, // Cache for 30s
+      next: { revalidate: 30 },
     });
 
     if (!resp.ok) {
-      // TaoStats may be down or rate limited — return empty gracefully
       console.warn(`[Activity] TaoStats returned ${resp.status}`);
-      return NextResponse.json({
-        events: [],
-        total: 0,
-        source: "taostats",
-        status: "unavailable",
-      });
+      return apiResponse(
+        { events: [] as ActivityEvent[], total: 0, page, limit },
+        {
+          source: DATA_SOURCES.TAOSTATS_LIVE,
+          fetchedAt: new Date().toISOString(),
+          note: `TaoStats returned ${resp.status} — empty result`,
+        },
+      );
     }
 
     const data = await resp.json();
-
-    // TaoStats may return { data: [...] } or just [...]
     const extrinsics = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
-
     const events: ActivityEvent[] = extrinsics.map(parseExtrinsic);
-
-    // Try to get total count from response
     const total = typeof data?.total === "number" ? data.total : events.length;
 
-    return NextResponse.json({
-      events,
-      total,
-      page,
-      limit,
-      source: "taostats",
-    });
+    return apiResponse(
+      { events, total, page, limit },
+      {
+        source: DATA_SOURCES.TAOSTATS_LIVE,
+        fetchedAt: new Date().toISOString(),
+      },
+    );
   } catch (err) {
     console.error("[Activity] Failed to fetch:", err);
-    return NextResponse.json({
-      events: [],
-      total: 0,
-      source: "taostats",
-      status: "error",
-    });
+    return apiResponse(
+      { events: [] as ActivityEvent[], total: 0, page, limit },
+      {
+        source: DATA_SOURCES.TAOSTATS_LIVE,
+        fetchedAt: new Date().toISOString(),
+        note: "TaoStats unreachable — empty result",
+      },
+    );
   }
 }

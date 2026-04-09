@@ -4,16 +4,21 @@
  * TAO/USD price endpoint with multi-source fallback.
  *
  * Priority:
- *   1. CoinGecko (free, no key required)
- *   2. CoinMarketCap (free tier, requires CMC_API_KEY)
- *   3. Stale in-memory cache (if any previous fetch succeeded)
- *   4. Hard-coded fallback constants
+ *   1. CoinGecko (free, no key required)            → T1
+ *   2. CoinMarketCap (free tier, requires CMC_API_KEY) → T1
+ *   3. Stale in-memory cache (if any prior fetch)    → T3
+ *   4. Hard-coded fallback constants                 → T4
  *
  * In-memory cache TTL: 5 minutes.
  */
 
 import { NextResponse } from "next/server";
 import { TAO_RATE_CACHE_TTL_MS } from "@/lib/config";
+import {
+  DATA_SOURCES,
+  apiResponse,
+  type DataSourceId,
+} from "@/lib/data-source-policy";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* In-memory cache (5-minute TTL)                                       */
@@ -25,7 +30,7 @@ interface CachedRate {
   marketCap: number;
   volume24h: number;
   fetchedAt: string;
-  source: string;
+  source: DataSourceId;
 }
 
 let cache: CachedRate | null = null;
@@ -66,7 +71,7 @@ async function fetchCoinGecko(): Promise<CachedRate | null> {
       marketCap: data?.bittensor?.usd_market_cap ?? FALLBACK_MARKET_CAP,
       volume24h: data?.bittensor?.usd_24h_vol ?? FALLBACK_VOLUME,
       fetchedAt: new Date().toISOString(),
-      source: "coingecko",
+      source: DATA_SOURCES.COINGECKO_LIVE,
     };
   } catch {
     return null;
@@ -120,7 +125,7 @@ async function fetchCoinMarketCap(): Promise<CachedRate | null> {
       marketCap: usd.market_cap ?? FALLBACK_MARKET_CAP,
       volume24h: usd.volume_24h ?? FALLBACK_VOLUME,
       fetchedAt: new Date().toISOString(),
-      source: "coinmarketcap",
+      source: DATA_SOURCES.COINMARKETCAP_LIVE,
     };
   } catch {
     return null;
@@ -134,66 +139,66 @@ async function fetchCoinMarketCap(): Promise<CachedRate | null> {
 export async function GET() {
   const now = Date.now();
 
+  // ── Tier 2: warm in-memory cache ──────────────────────────────────
   if (cache && now - cacheTimestamp < TTL_MS) {
-    return NextResponse.json(
+    return apiResponse(
       {
         taoUsd: cache.taoUsd,
         change24h: cache.change24h,
         marketCap: cache.marketCap,
         volume24h: cache.volume24h,
-        fetchedAt: cache.fetchedAt,
-        source: cache.source,
-        fallback: false,
       },
-      { headers: { "Cache-Control": "public, max-age=300, s-maxage=300" } },
+      { source: DATA_SOURCES.RATE_CACHE, fetchedAt: cache.fetchedAt },
     );
   }
 
+  // ── Tier 1: fresh fetch ───────────────────────────────────────────
   const fresh = (await fetchCoinGecko()) ?? (await fetchCoinMarketCap());
 
   if (fresh) {
     cache = fresh;
     cacheTimestamp = now;
-    return NextResponse.json(
+    return apiResponse(
       {
         taoUsd: fresh.taoUsd,
         change24h: fresh.change24h,
         marketCap: fresh.marketCap,
         volume24h: fresh.volume24h,
-        fetchedAt: fresh.fetchedAt,
-        source: fresh.source,
-        fallback: false,
       },
-      { headers: { "Cache-Control": "public, max-age=300, s-maxage=300" } },
+      { source: fresh.source, fetchedAt: fresh.fetchedAt },
     );
   }
 
+  // ── Tier 3: stale cache ───────────────────────────────────────────
   if (cache) {
-    return NextResponse.json(
+    return apiResponse(
       {
         taoUsd: cache.taoUsd,
         change24h: cache.change24h,
         marketCap: cache.marketCap,
         volume24h: cache.volume24h,
-        fetchedAt: cache.fetchedAt,
-        source: cache.source,
-        fallback: false,
-        stale: true,
       },
-      { headers: { "Cache-Control": "public, max-age=60, s-maxage=60" } },
+      {
+        source: DATA_SOURCES.RATE_STALE,
+        fetchedAt: cache.fetchedAt,
+        stale: true,
+        snapshotAgeMs: now - cacheTimestamp,
+      },
     );
   }
 
-  return NextResponse.json(
+  // ── Tier 4: hard-coded fallback ───────────────────────────────────
+  return apiResponse(
     {
       taoUsd: FALLBACK_RATE,
       change24h: FALLBACK_CHANGE,
       marketCap: FALLBACK_MARKET_CAP,
       volume24h: FALLBACK_VOLUME,
-      fetchedAt: null,
-      source: "fallback",
-      fallback: true,
     },
-    { headers: { "Cache-Control": "public, max-age=60, s-maxage=60" } },
+    {
+      source: DATA_SOURCES.FALLBACK_CONSTANT,
+      fetchedAt: new Date(0).toISOString(),
+      note: "All live sources unavailable — using hard-coded fallback values",
+    },
   );
 }

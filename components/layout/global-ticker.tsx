@@ -56,7 +56,8 @@ export function GlobalTicker() {
       try {
         const res = await fetchWithTimeout("/api/subnets", { timeoutMs: 10_000 });
         if (!res.ok) throw new Error("Failed to fetch subnets");
-        const data: SubnetData[] = await res.json();
+        const raw = await res.json();
+        const data: SubnetData[] = Array.isArray(raw) ? raw : (raw?.subnets ?? []);
         setSubnetCount(data.length);
       } catch (err) {
         /* subnet count fetch failed — ticker renders without it */

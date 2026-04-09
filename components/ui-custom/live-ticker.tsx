@@ -65,7 +65,8 @@ export function LiveTicker() {
         const source = res.headers.get("X-Data-Source");
         setDataSource(source);
 
-        const data: unknown = await res.json();
+        const raw: unknown = await res.json();
+        const data = Array.isArray(raw) ? raw : ((raw as Record<string, unknown>)?.subnets ?? []) as unknown[];
         if (!Array.isArray(data) || data.length === 0) return;
 
         // Take top 32 by yield so the scroll loop is long enough to

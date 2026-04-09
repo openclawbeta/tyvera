@@ -96,7 +96,8 @@ export default function HomePage() {
   useEffect(() => {
     fetchWithTimeout("/api/subnets", { timeoutMs: 10_000 })
       .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
+      .then((raw) => {
+        const data = Array.isArray(raw) ? raw : (raw?.subnets ?? []);
         if (!Array.isArray(data) || data.length === 0) return;
 
         // Ticker: top 10 by yield, positive = up

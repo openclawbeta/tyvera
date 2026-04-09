@@ -186,8 +186,14 @@ export async function fetchSubnetsFromApi(): Promise<SubnetFetchResult> {
     const ageRaw = resp.headers.get("X-Snapshot-Age");
     const snapshotAgeSec = ageRaw ? Number(ageRaw) : null;
     const data: unknown = await resp.json();
-    if (!Array.isArray(data) || data.length === 0) return { subnets: getSubnets(), dataSource: "static-snapshot", snapshotAgeSec: null };
-    const subnets = (data as SubnetDetailModel[]).map((subnet) => ({
+    // Handle both flat array (legacy) and { subnets: [...], _meta: {...} } (v2)
+    const rawList = Array.isArray(data)
+      ? data
+      : Array.isArray((data as Record<string, unknown>)?.subnets)
+        ? (data as Record<string, unknown>).subnets as unknown[]
+        : null;
+    if (!rawList || rawList.length === 0) return { subnets: getSubnets(), dataSource: "static-snapshot", snapshotAgeSec: null };
+    const subnets = (rawList as SubnetDetailModel[]).map((subnet) => ({
       ...subnet,
       ...deriveTableFields(subnet),
     }));
@@ -213,7 +219,12 @@ export async function fetchSubnetByNetuid(netuid: number): Promise<SingleSubnetF
     if (!resp.ok) return { subnet: getSubnetByNetuid(netuid), dataSource: "static-snapshot" };
     const dataSource = resp.headers.get("X-Data-Source") ?? "unknown";
     const data: unknown = await resp.json();
-    const first = Array.isArray(data) ? (data as SubnetDetailModel[])[0] : undefined;
+    const rawList = Array.isArray(data)
+      ? data
+      : Array.isArray((data as Record<string, unknown>)?.subnets)
+        ? (data as Record<string, unknown>).subnets as unknown[]
+        : [];
+    const first = (rawList as SubnetDetailModel[])[0];
     if (!first) return { subnet: getSubnetByNetuid(netuid), dataSource: "static-snapshot" };
     return {
       subnet: { ...first, ...deriveTableFields(first) },
