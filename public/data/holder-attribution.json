@@ -1,15 +1,15 @@
 {
   "positions": [],
-  "fetchedAt": "2026-04-09T02:01:21.104Z",
+  "fetchedAt": "2026-04-09T02:04:16.498Z",
   "source": "unavailable",
-  "notes": "No positions found from partial extraction across 12 coldkeys (110 alpha queries).",
+  "notes": "No positions found from partial extraction across 12 coldkeys (103 alpha queries).",
   "_meta": {
-    "generated_at": "2026-04-09T02:01:21.105Z",
-    "duration_ms": 37769,
+    "generated_at": "2026-04-09T02:04:16.499Z",
+    "duration_ms": 16306,
     "extraction": {
       "method": "bounded-chain-scan",
       "limit": 250,
-      "notes": "No positions found from partial extraction across 12 coldkeys (110 alpha queries)."
+      "notes": "No positions found from partial extraction across 12 coldkeys (103 alpha queries)."
     }
   }
 }

@@ -54,11 +54,25 @@ async function getActiveNetuids(api: ApiPromise): Promise<number[]> {
 }
 
 async function getColdkeysToScan(api: ApiPromise): Promise<string[]> {
-  const entries = await (api.query.subtensorModule as any).stakingColdkeysByIndex.entries();
-  return entries
-    .map(([, value]) => String(value))
-    .filter(Boolean)
-    .slice(0, MAX_COLDKEYS_TO_SCAN);
+  const coldkeys: string[] = [];
+
+  for (let i = 0; i < MAX_COLDKEYS_TO_SCAN; i++) {
+    try {
+      const coldkey = await withTimeout(
+        (api.query.subtensorModule as any).stakingColdkeysByIndex(i),
+        2_000,
+        `stakingColdkeysByIndex(${i})`,
+      );
+      const value = String(coldkey);
+      if (value && value !== "null" && value !== "undefined") {
+        coldkeys.push(value);
+      }
+    } catch {
+      break;
+    }
+  }
+
+  return coldkeys;
 }
 
 export async function fetchHolderAttributionFromChain(limit = 250): Promise<HolderAttributionSnapshot> {
