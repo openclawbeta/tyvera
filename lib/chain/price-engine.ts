@@ -1,26 +1,27 @@
 /**
  * lib/chain/price-engine.ts
  *
- * On-chain price derivation for TAO and alpha tokens.
+ * Hybrid price engine for TAO and alpha tokens.
  *
- * Replaces CoinGecko / CoinMarketCap / TaoStats market data with
- * direct Subtensor chain queries. Every price comes from pool ratios
- * on the Bittensor network itself.
- *
- * ── Alpha token prices ──────────────────────────────────────────────
+ * ── Alpha token prices (100% on-chain) ──────────────────────────────
  * Each subnet has a TAO/alpha pool. The exchange rate is:
  *   alphaPrice (in TAO) = SubnetAlphaIn[netuid] / SubnetAlphaOut[netuid]
+ * This is FULLY on-chain — no external API needed.
  *
- * ── TAO/USD price ───────────────────────────────────────────────────
+ * ── TAO/USD price (external feed) ───────────────────────────────────
  * TAO/USD is NOT on-chain — it's determined by external exchanges.
- * We maintain a rolling price buffer that can be seeded by:
- *   1. On-chain TotalIssuance + TotalStake for relative valuation
- *   2. A minimal price feed (kept as thin as possible)
- *   3. Manual price seed via admin API
+ * We use a minimal external feed:
+ *   1. CoinGecko (free, no key required)  — primary
+ *   2. CoinMarketCap (free tier, CMC_API_KEY) — fallback
+ *   3. Bootstrap constant ($350) — last resort
+ *
+ * The rest of the pipeline (metagraph, subnets, validators, activity)
+ * is fully chain-native with zero external dependencies.
  *
  * ── Price history ───────────────────────────────────────────────────
  * Built from periodic snapshots stored in the rolling buffer.
- * No external historical API needed.
+ * The cron job calls syncPricesFromChain() every 5 minutes,
+ * which fetches TAO/USD and records it + all alpha prices.
  */
 
 import { ApiPromise, WsProvider } from "@polkadot/api";
@@ -78,7 +79,13 @@ export interface TaoPricePoint {
   /** Timestamp */
   timestamp: string;
   /** Where this price came from */
-  source: "chain-derived" | "admin-seed" | "bootstrap";
+  source: "coingecko" | "coinmarketcap" | "chain-derived" | "admin-seed" | "bootstrap";
+  /** 24h change percentage (from exchange API) */
+  change24h?: number;
+  /** Market cap from exchange API */
+  marketCap?: number;
+  /** 24h volume from exchange API */
+  volume24h?: number;
 }
 
 export interface PriceSnapshot {
@@ -132,6 +139,118 @@ export function getTaoPriceHistory(count?: number): TaoPricePoint[] {
 /** Get the latest full snapshot. */
 export function getLatestPriceSnapshot(): PriceSnapshot | null {
   return latestSnapshot;
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* TAO/USD external feed (minimal — only thing that needs external)     */
+/* ─────────────────────────────────────────────────────────────────── */
+
+interface FiatPriceResult {
+  taoUsd: number;
+  change24h: number;
+  marketCap: number;
+  volume24h: number;
+  source: "coingecko" | "coinmarketcap";
+}
+
+/**
+ * Fetch TAO/USD from CoinGecko (free, no key required).
+ */
+async function fetchTaoUsdFromCoinGecko(): Promise<FiatPriceResult | null> {
+  try {
+    const res = await fetch(
+      "https://api.coingecko.com/api/v3/simple/price?ids=bittensor&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true",
+      { signal: AbortSignal.timeout(5000) },
+    );
+    if (!res.ok) return null;
+
+    const data = (await res.json()) as {
+      bittensor?: {
+        usd?: number;
+        usd_24h_change?: number;
+        usd_market_cap?: number;
+        usd_24h_vol?: number;
+      };
+    };
+    const rate = data?.bittensor?.usd;
+    if (typeof rate !== "number" || rate <= 0) return null;
+
+    return {
+      taoUsd: rate,
+      change24h: data.bittensor?.usd_24h_change ?? 0,
+      marketCap: data.bittensor?.usd_market_cap ?? 0,
+      volume24h: data.bittensor?.usd_24h_vol ?? 0,
+      source: "coingecko",
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch TAO/USD from CoinMarketCap (requires CMC_API_KEY env var).
+ */
+async function fetchTaoUsdFromCmc(): Promise<FiatPriceResult | null> {
+  const apiKey = process.env.CMC_API_KEY ?? "";
+  if (!apiKey) return null;
+
+  try {
+    const res = await fetch(
+      "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?slug=bittensor&convert=USD",
+      {
+        headers: {
+          "X-CMC_PRO_API_KEY": apiKey,
+          Accept: "application/json",
+        },
+        signal: AbortSignal.timeout(5000),
+      },
+    );
+    if (!res.ok) return null;
+
+    const body = (await res.json()) as {
+      data?: Record<
+        string,
+        {
+          quote?: {
+            USD?: {
+              price?: number;
+              percent_change_24h?: number;
+              market_cap?: number;
+              volume_24h?: number;
+            };
+          };
+        }
+      >;
+    };
+
+    const entries = Object.values(body?.data ?? {});
+    const usd = entries[0]?.quote?.USD;
+    if (!usd || typeof usd.price !== "number" || usd.price <= 0) return null;
+
+    return {
+      taoUsd: usd.price,
+      change24h: usd.percent_change_24h ?? 0,
+      marketCap: usd.market_cap ?? 0,
+      volume24h: usd.volume_24h ?? 0,
+      source: "coinmarketcap",
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch TAO/USD price from external feeds.
+ * CoinGecko primary → CMC fallback → null.
+ */
+async function fetchTaoUsdPrice(): Promise<FiatPriceResult | null> {
+  const cg = await fetchTaoUsdFromCoinGecko();
+  if (cg) return cg;
+
+  const cmc = await fetchTaoUsdFromCmc();
+  if (cmc) return cmc;
+
+  return null;
 }
 
 /* ─────────────────────────────────────────────────────────────────── */
@@ -272,13 +391,14 @@ async function tryQuery(
 /* ─────────────────────────────────────────────────────────────────── */
 
 /**
- * Run a full price sync from the Bittensor chain.
+ * Run a full price sync.
  *
- * 1. Connects to Subtensor
- * 2. Queries network stats (TotalIssuance, TotalStake)
- * 3. Gets all subnet pool ratios (alpha prices)
- * 4. Records a price point in the rolling buffer
- * 5. Returns the full snapshot
+ * 1. Fetch TAO/USD from CoinGecko → CMC → stale buffer → bootstrap
+ * 2. Connect to Subtensor chain
+ * 3. Query network stats (TotalIssuance, TotalStake)
+ * 4. Query all subnet pool ratios (alpha prices — 100% on-chain)
+ * 5. Record price point in rolling buffer
+ * 6. Return the full snapshot
  *
  * Call this from the cron job every 5 minutes.
  */
@@ -286,37 +406,72 @@ export async function syncPricesFromChain(): Promise<PriceSnapshot | null> {
   let api: ApiPromise | null = null;
 
   try {
+    // Step 1: Get TAO/USD from external feed
+    const fiatPrice = await fetchTaoUsdPrice();
+    let taoUsd: number;
+    let priceSource: TaoPricePoint["source"];
+    let change24h = 0;
+    let marketCap = 0;
+    let volume24h = 0;
+
+    if (fiatPrice) {
+      taoUsd = fiatPrice.taoUsd;
+      priceSource = fiatPrice.source;
+      change24h = fiatPrice.change24h;
+      marketCap = fiatPrice.marketCap;
+      volume24h = fiatPrice.volume24h;
+      console.log(`[price-engine] TAO/USD = $${taoUsd} from ${fiatPrice.source}`);
+    } else {
+      // Fall back to last known price from buffer
+      const lastKnown = getLatestTaoPrice();
+      taoUsd = lastKnown.taoUsd;
+      priceSource = lastKnown.source === "bootstrap" ? "bootstrap" : "chain-derived";
+      console.warn(`[price-engine] External feeds unavailable — using buffer price $${taoUsd}`);
+    }
+
+    // Step 2: Connect to chain
     console.log("[price-engine] Connecting to Subtensor...");
     api = await connect();
 
-    // 1. Network stats
+    // Step 3: Network stats
     const network = await withTimeout(queryNetworkStats(api), QUERY_TIMEOUT_MS, "networkStats");
 
-    // 2. Enumerate subnets
+    // Step 4: Enumerate subnets
     const entries = await api.query.subtensorModule.subnetworkN.entries();
     const netuids = entries
       .map(([key]) => toNumber(key.args[0]))
       .filter((n) => n > 0)
       .sort((a, b) => a - b);
 
-    // 3. Get current TAO price (from buffer or bootstrap)
-    const currentPrice = getLatestTaoPrice();
-    const taoUsd = currentPrice.taoUsd;
-
-    // 4. Query all alpha token prices from pool ratios
+    // Step 5: Query all alpha token prices from pool ratios (100% on-chain)
     const alphaTokens = await withTimeout(
       queryAlphaTokenPrices(api, netuids, taoUsd),
       QUERY_TIMEOUT_MS,
       "alphaTokenPrices",
     );
 
-    // 5. Compute total pooled TAO
+    // Step 6: Compute total pooled TAO
     network.totalPooledTao = alphaTokens.reduce((sum, a) => sum + a.taoIn, 0);
 
-    // 6. Record price point
-    seedTaoPrice(taoUsd, "chain-derived");
+    // Use real market cap from exchange if available, else derive from issuance
+    if (marketCap <= 0) {
+      marketCap = +(taoUsd * network.totalIssuance).toFixed(0);
+    }
 
-    // 7. Build snapshot
+    // Step 7: Record price point in rolling buffer
+    priceHistory.push({
+      taoUsd,
+      timestamp: new Date().toISOString(),
+      source: priceSource,
+      change24h,
+      marketCap,
+      volume24h,
+    });
+    if (priceHistory.length > MAX_PRICE_HISTORY) {
+      priceHistory.splice(0, priceHistory.length - MAX_PRICE_HISTORY);
+    }
+
+    // Step 8: Build snapshot
     const snapshot: PriceSnapshot = {
       taoUsd,
       network,
@@ -327,8 +482,8 @@ export async function syncPricesFromChain(): Promise<PriceSnapshot | null> {
     latestSnapshot = snapshot;
 
     console.log(
-      `[price-engine] Sync complete: ${alphaTokens.length} alpha prices, ` +
-      `block ${network.blockHeight}, TAO=$${taoUsd}`,
+      `[price-engine] Sync complete: TAO=$${taoUsd} (${priceSource}), ` +
+      `${alphaTokens.length} alpha prices, block ${network.blockHeight}`,
     );
 
     return snapshot;
@@ -352,6 +507,10 @@ export function derivePriceChanges(): {
   change7d: number;
   change30d: number;
 } {
+  // If the latest point has a change24h from the exchange API, use it
+  const latest = priceHistory.length > 0 ? priceHistory[priceHistory.length - 1] : null;
+  const exchangeChange24h = latest?.change24h ?? 0;
+
   const now = Date.now();
   const current = getLatestTaoPrice().taoUsd;
 
@@ -381,7 +540,10 @@ export function derivePriceChanges(): {
 
   return {
     change1h: pctChange(findPriceAtAge(60 * 60 * 1000)),
-    change24h: pctChange(findPriceAtAge(24 * 60 * 60 * 1000)),
+    // Prefer exchange-reported 24h change if available (more accurate)
+    change24h: exchangeChange24h !== 0
+      ? +exchangeChange24h.toFixed(2)
+      : pctChange(findPriceAtAge(24 * 60 * 60 * 1000)),
     change7d: pctChange(findPriceAtAge(7 * 24 * 60 * 60 * 1000)),
     change30d: pctChange(findPriceAtAge(30 * 24 * 60 * 60 * 1000)),
   };

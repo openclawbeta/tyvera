@@ -1,15 +1,15 @@
 /**
  * app/api/tao-rate/route.ts
  *
- * TAO/USD price endpoint — chain-only data source.
+ * TAO/USD price endpoint.
  *
  * Priority:
- *   1. Price-engine rolling buffer (warm cache)      → T2
- *   2. Price-engine live sync from chain             → T1
- *   3. Hard-coded fallback constants                 → T4
+ *   1. Price-engine (CoinGecko → CMC → buffer) with chain data → T1/T2
+ *   2. Stale in-memory cache                                    → T3
+ *   3. Hard-coded fallback constants                            → T4
  *
- * No external API dependencies (no CoinGecko, no CMC).
- * TAO/USD is seeded via the price-engine and updated by the cron job.
+ * TAO/USD comes from a minimal external feed (CoinGecko primary, CMC fallback).
+ * Everything else (alpha prices, network stats) is chain-native.
  */
 
 import { TAO_RATE_CACHE_TTL_MS } from "@/lib/config";
@@ -66,19 +66,21 @@ export async function GET() {
     );
   }
 
-  // ── Tier 1/2: Price-engine buffer ─────────────────────────────────
+  // ── Check price-engine buffer for recent data ─────────────────────
   const latestPrice = getLatestTaoPrice();
-  const priceChanges = derivePriceChanges();
 
   if (latestPrice.source !== "bootstrap") {
-    // We have a real price from the engine
-    const snapshot = {
+    // We have a real price from the engine (exchange-sourced or admin-seeded)
+    const priceChanges = derivePriceChanges();
+    const snapshot: CachedRate = {
       taoUsd: latestPrice.taoUsd,
-      change24h: priceChanges.change24h,
-      marketCap: +(latestPrice.taoUsd * 21_000_000).toFixed(0), // Approximate: price * max supply
-      volume24h: 0, // No volume data from chain
+      change24h: latestPrice.change24h ?? priceChanges.change24h,
+      marketCap: latestPrice.marketCap ?? +(latestPrice.taoUsd * 21_000_000).toFixed(0),
+      volume24h: latestPrice.volume24h ?? 0,
       fetchedAt: latestPrice.timestamp,
-      source: DATA_SOURCES.CHAIN_CACHE as DataSourceId,
+      source: (latestPrice.source === "coingecko" || latestPrice.source === "coinmarketcap")
+        ? DATA_SOURCES.CHAIN_LIVE
+        : DATA_SOURCES.CHAIN_CACHE,
     };
 
     cache = snapshot;
@@ -91,11 +93,11 @@ export async function GET() {
         marketCap: snapshot.marketCap,
         volume24h: snapshot.volume24h,
       },
-      { source: DATA_SOURCES.CHAIN_CACHE, fetchedAt: snapshot.fetchedAt },
+      { source: snapshot.source, fetchedAt: snapshot.fetchedAt },
     );
   }
 
-  // ── Tier 1: Try live chain sync ───────────────────────────────────
+  // ── Tier 1: Live sync (fetches TAO/USD + chain data) ──────────────
   try {
     const syncResult = await syncPricesFromChain();
     if (syncResult) {
@@ -104,9 +106,9 @@ export async function GET() {
 
       const fresh: CachedRate = {
         taoUsd: updatedPrice.taoUsd,
-        change24h: updatedChanges.change24h,
-        marketCap: +(updatedPrice.taoUsd * syncResult.network.totalIssuance).toFixed(0),
-        volume24h: 0,
+        change24h: updatedPrice.change24h ?? updatedChanges.change24h,
+        marketCap: updatedPrice.marketCap ?? +(updatedPrice.taoUsd * syncResult.network.totalIssuance).toFixed(0),
+        volume24h: updatedPrice.volume24h ?? 0,
         fetchedAt: updatedPrice.timestamp,
         source: DATA_SOURCES.CHAIN_LIVE,
       };
@@ -125,7 +127,7 @@ export async function GET() {
       );
     }
   } catch (err) {
-    console.error("[tao-rate] Chain sync failed:", err);
+    console.error("[tao-rate] Price sync failed:", err);
   }
 
   // ── Tier 3: stale cache ───────────────────────────────────────────
@@ -157,7 +159,7 @@ export async function GET() {
     {
       source: DATA_SOURCES.FALLBACK_CONSTANT,
       fetchedAt: new Date(0).toISOString(),
-      note: "Price engine has no data — using hard-coded fallback. Seed via admin or wait for cron sync.",
+      note: "All sources unavailable — using hard-coded fallback",
     },
   );
 }
