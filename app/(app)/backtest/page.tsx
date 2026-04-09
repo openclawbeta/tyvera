@@ -132,7 +132,7 @@ export default function BacktestPage() {
     <div className="min-h-screen pb-12">
       <PageHeader
         title="Strategy Backtester"
-        subtitle="Test staking strategies against historical data"
+        subtitle="Test staking strategies against modeled yield scenarios"
       />
 
       <div className="max-w-7xl mx-auto px-4 lg:px-0 space-y-6">
@@ -464,8 +464,8 @@ export default function BacktestPage() {
               }}
             >
               <p className="text-xs text-amber-700 leading-relaxed">
-                Based on historical yield extrapolation. Past performance does not
-                guarantee future results.
+                Simulated results based on modeled yield scenarios — not actual historical returns.
+                Past performance does not guarantee future results. Use for strategy comparison only.
               </p>
             </div>
           </motion.div>

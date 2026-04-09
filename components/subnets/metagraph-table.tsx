@@ -51,6 +51,7 @@ export function MetagraphTable({ netuid }: MetagraphTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
   const [typeFilter, setTypeFilter] = useState<"all" | "validators" | "miners">("all");
+  const [dataSource, setDataSource] = useState<string>("");
 
   const ITEMS_PER_PAGE = 20;
 
@@ -61,6 +62,7 @@ export function MetagraphTable({ netuid }: MetagraphTableProps) {
         setLoading(true);
         const response = await fetchWithTimeout(`/api/metagraph?netuid=${netuid}`, { timeoutMs: 12_000 });
         if (!response.ok) throw new Error("Failed to fetch metagraph");
+        setDataSource(response.headers.get("X-Data-Source") ?? "");
         const data = await response.json();
         setNeurons(Array.isArray(data) ? data : []);
       } catch (error) {
@@ -145,6 +147,13 @@ export function MetagraphTable({ netuid }: MetagraphTableProps) {
 
   return (
     <div className="space-y-4">
+      {/* Synthetic data notice */}
+      {dataSource === "synthetic" && (
+        <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-[11px] text-amber-300/80" style={{ background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.12)" }}>
+          Simulated metagraph data — live chain query unavailable. Figures are illustrative.
+        </div>
+      )}
+
       {/* Summary row */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-slate-400">

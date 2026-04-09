@@ -6,6 +6,8 @@ interface PriceHistoryResponse {
   change24h: number;
   change7d: number;
   change30d: number;
+  /** "coingecko" when live data was fetched, "synthetic" when generated fallback */
+  source: "coingecko" | "synthetic";
 }
 
 function generateSyntheticData(days: number): Array<{ date: string; price: number }> {
@@ -70,6 +72,7 @@ export async function GET(request: NextRequest) {
     const days = Math.min(Math.max(parseInt(daysParam) || 30, 1), 365);
 
     let prices: Array<{ date: string; price: number }> = [];
+    let source: "coingecko" | "synthetic" = "synthetic";
 
     try {
       // Try to fetch from CoinGecko
@@ -93,10 +96,12 @@ export async function GET(request: NextRequest) {
         date: new Date(timestamp).toISOString().split("T")[0],
         price: Math.round(price * 100) / 100,
       }));
+      source = "coingecko";
     } catch (error) {
       // Fallback to synthetic data
       console.warn("CoinGecko fetch failed, using synthetic data:", error);
       prices = generateSyntheticData(days);
+      source = "synthetic";
     }
 
     // Calculate changes
@@ -104,6 +109,7 @@ export async function GET(request: NextRequest) {
 
     const result: PriceHistoryResponse = {
       prices,
+      source,
       ...changes,
     };
 
@@ -126,6 +132,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         prices,
+        source: "synthetic" as const,
         ...changes,
       },
       {

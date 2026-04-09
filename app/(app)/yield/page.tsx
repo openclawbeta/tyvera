@@ -255,7 +255,7 @@ export default function YieldPage() {
 
             {/* 30-Day Projection Chart */}
             <GlassCard padding="lg" glow="amber">
-              <SectionTitle title="30-Day Cumulative Projection" />
+              <SectionTitle title="30-Day Cumulative Projection" subtitle="Assumes constant yield — actual returns will vary" />
               <div className="mt-6">
                 <SimpleLineChart
                   data={calculations.projectionData}
@@ -266,6 +266,9 @@ export default function YieldPage() {
                   gradientId="projectionGrad"
                 />
               </div>
+              <p className="text-[10px] text-slate-600 mt-2 text-right">
+                Linear estimate only. Yields fluctuate with network conditions.
+              </p>
             </GlassCard>
           </div>
         </FadeIn>

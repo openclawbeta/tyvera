@@ -56,6 +56,7 @@ export default function ValidatorsPage() {
   const [validators, setValidators] = useState<ValidatorInfo[]>([]);
   const [summary, setSummary] = useState<ValidatorSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [usingFallback, setUsingFallback] = useState(true);
   const [sortField, setSortField] = useState<SortField>("totalWeight");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [searchTerm, setSearchTerm] = useState("");
@@ -77,9 +78,10 @@ export default function ValidatorsPage() {
       .then((data) => {
         setValidators(data);
         setSummary(getValidatorSummary(data));
+        setUsingFallback(false);
       })
       .catch(() => {
-        /* keep fallback data */
+        /* keep fallback data — usingFallback stays true */
       })
       .finally(() => setLoading(false));
   }, []);
@@ -226,6 +228,13 @@ export default function ValidatorsPage() {
           </div>
         </div>
       </PageHeader>
+
+      {/* Fallback notice — shown when live delegate registry fetch fails */}
+      {!loading && usingFallback && (
+        <div className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-[11px] text-amber-300/80" style={{ background: "rgba(251,191,36,0.05)", border: "1px solid rgba(251,191,36,0.12)" }}>
+          Showing cached validator list — live registry unavailable. Data may be outdated.
+        </div>
+      )}
 
       {/* Summary stats */}
       {summary && (
