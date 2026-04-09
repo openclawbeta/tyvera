@@ -15,6 +15,16 @@ async function main() {
   await run("python3", ["scripts/fetch_subnets_subtensor.py"]);
   await run("node", ["scripts/build-validator-snapshot.mjs"]);
   await run("node", ["scripts/build-holder-attribution.mjs"]);
+
+  if (process.env.TAO_APP_API_KEY) {
+    try {
+      await run("node", ["scripts/build-holder-snapshot-from-tao-app.mjs"]);
+      return;
+    } catch (err) {
+      console.warn("[refresh-intel] TAO.app holder snapshot failed, falling back to default builder:", err?.message ?? err);
+    }
+  }
+
   await run("node", ["scripts/build-holder-snapshot.mjs"]);
 }
 

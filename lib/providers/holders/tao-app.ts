@@ -18,6 +18,14 @@ interface TaoAppHolderEntry {
   [key: string]: unknown;
 }
 
+interface TaoAppExtrinsic {
+  timestamp?: string;
+  call_function?: string;
+  call_module?: string;
+  extrinsic_hash?: string;
+  call_args?: Array<{ name?: string; value?: string | number }>;
+}
+
 let cached: HolderProviderResult | null = null;
 let cachedAt = 0;
 const TTL_MS = 30 * 60 * 1000;
@@ -114,10 +122,30 @@ export const taoAppHolderProvider: HolderProvider = {
         }
       }
 
-      const topHolders = Array.from(walletMap.values())
+      const rankedWallets = Array.from(walletMap.values())
         .sort((a, b) => b.totalTao - a.totalTao)
-        .slice(0, 100)
-        .map((wallet, index) => {
+        .slice(0, 100);
+
+      const extrinsicResponses = await Promise.all(
+        rankedWallets.slice(0, 20).map(async (wallet) => {
+          try {
+            const res = await fetch(`${TAO_APP_BASE}/api/beta/address/extrinsics?address=${wallet.coldkey}&page=1&page_size=3`, {
+              headers,
+              signal: AbortSignal.timeout(10000),
+            });
+            if (!res.ok) return { coldkey: wallet.coldkey, rows: [] as TaoAppExtrinsic[] };
+            const json = await res.json();
+            const rows: TaoAppExtrinsic[] = Array.isArray(json?.data) ? json.data : Array.isArray(json) ? json : [];
+            return { coldkey: wallet.coldkey, rows };
+          } catch {
+            return { coldkey: wallet.coldkey, rows: [] as TaoAppExtrinsic[] };
+          }
+        })
+      );
+
+      const extrinsicMap = new Map(extrinsicResponses.map((item) => [item.coldkey, item.rows]));
+
+      const topHolders = rankedWallets.map((wallet, index) => {
           const total = wallet.totalTao || 1;
           const allocations = wallet.allocations
             .sort((a, b) => b.amountTao - a.amountTao)
@@ -126,6 +154,16 @@ export const taoAppHolderProvider: HolderProvider = {
               percentage: +((allocation.amountTao / total) * 100).toFixed(1),
             }));
           const dominant = allocations[0];
+          const extrinsics = extrinsicMap.get(wallet.coldkey) ?? [];
+          const enrichedMoves = [
+            ...wallet.recentMoves,
+            ...extrinsics.slice(0, 2).map((xt) => ({
+              type: "subnet_rotation" as const,
+              summary: `${xt.call_module ?? "Chain"}.${xt.call_function ?? "extrinsic"} ${xt.timestamp ? `at ${xt.timestamp}` : "recently"}`,
+              amountTao: 0,
+              timeframe: "24h" as const,
+            })),
+          ];
           return {
             rank: index + 1,
             wallet: `${wallet.coldkey.slice(0, 10)}...${wallet.coldkey.slice(-4)}`,
@@ -136,7 +174,7 @@ export const taoAppHolderProvider: HolderProvider = {
             dominantSubnetNetuid: dominant?.netuid,
             dominantSubnetName: dominant?.subnetName,
             allocationMix: allocations,
-            recentMoves: wallet.recentMoves.slice(0, 3),
+            recentMoves: enrichedMoves.slice(0, 3),
             strategyTag: (allocations.length > 2 ? "rotating" : "subnet-heavy") as "rotating" | "subnet-heavy",
           };
         });
