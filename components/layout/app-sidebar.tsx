@@ -33,6 +33,7 @@ const NAV_ITEMS = [
   { label: "AI Intel",        href: "/chat",            icon: MessageSquare },
   { label: "Subnets",         href: "/subnets",         icon: Network },
   { label: "Validators",      href: "/validators",      icon: Users },
+  { label: "Holders",         href: "/holders",         icon: Wallet },
   { label: "Yield",           href: "/yield",           icon: TrendingUp },
   { label: "Portfolio",       href: "/portfolio",       icon: Wallet },
   { label: "Activity",        href: "/activity",        icon: Activity },
