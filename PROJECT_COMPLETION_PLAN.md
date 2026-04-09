@@ -68,25 +68,24 @@ Tyvera should only be considered complete when all of the following are true:
 ## P0 — Finish the holder data architecture
 
 ### P0.1 Build `holder-attribution.json` generator
-Goal: generate real extracted wallet attribution data in a bounded, honest way.
+Status: implemented, but still needs stronger real-yield discovery.
 
-Needed:
-- new script: `scripts/build-holder-attribution.mjs` (or TS equivalent)
-- output: `public/data/holder-attribution.json`
-- initial bounded scope:
-  - limited coldkey universe
-  - limited hotkeys per coldkey
-  - limited subnet universe
-- record metadata:
-  - generated timestamp
-  - extraction limits used
-  - source status (`chain-live`, `partial`, `unavailable`)
-  - notes about scan coverage
+Current state:
+- script exists: `scripts/build-holder-attribution.mjs`
+- output exists: `public/data/holder-attribution.json`
+- bounded extraction metadata is written honestly
+- runtime now completes cleanly
+
+Remaining work:
+- improve real-yield discovery so the extractor returns actual attributed positions instead of mostly empty results
+- widen candidate strategy using owned hotkeys, metagraph-derived candidates, and subnet-biased probing
+- keep runtime bounded while increasing attribution hit rate
 
 Success criteria:
 - script completes reliably
 - output file is produced
 - output schema matches hybrid snapshot pipeline expectations
+- extractor returns meaningful non-empty attributed positions often enough to be useful
 
 ### P0.2 Make holder pipeline two-stage and explicit
 Goal: separate raw extraction from product shaping.
@@ -231,6 +230,12 @@ Refresh sequence:
 
 ## Immediate Next Task
 
-**Harden and optimize `build-holder-attribution` so it completes reliably enough for repeated use and produces meaningful real extracted positions.**
+**Improve holder-attribution hit rate by changing candidate discovery, not just runtime limits.**
+
+Most likely next practical options:
+1. use `ownedHotkeys(coldkey)` aggressively instead of relying only on `stakingHotkeys(coldkey)`
+2. derive candidate hotkeys from high-signal metagraph subnets
+3. bias alpha probing toward netuids with real observed activity/liquidity
+4. if direct RPC probing remains low-yield, move real attribution generation to a richer snapshot/indexer path
 
 That is still the main bridge between the now-working holder UI/snapshot pipeline and a genuinely data-backed product.
