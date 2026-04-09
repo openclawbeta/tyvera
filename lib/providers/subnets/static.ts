@@ -4,8 +4,8 @@ import { getSubnets, getSubnetByNetuid } from "@/lib/api/subnets";
 export const staticSubnetProvider: SubnetProvider = {
   name: "static",
   async fetch(netuidFilter?: number): Promise<SubnetProviderResult | null> {
-    const subnets = netuidFilter != null
-      ? [getSubnetByNetuid(netuidFilter)].filter(Boolean)
+    const subnets: ReturnType<typeof getSubnets> = netuidFilter != null
+      ? [getSubnetByNetuid(netuidFilter)].filter((value): value is NonNullable<typeof value> => Boolean(value))
       : getSubnets();
 
     if (!subnets || subnets.length === 0) return null;

@@ -1,9 +1,10 @@
 import { internalHolderProvider } from "@/lib/providers/holders/internal";
+import { taoAppHolderProvider } from "@/lib/providers/holders/tao-app";
 import { realAttributionHolderProvider } from "@/lib/providers/holders/real-attribution";
 import { modeledHolderProvider } from "@/lib/providers/holders/modeled";
 import type { HolderProviderResult } from "@/lib/providers/holders/types";
 
-const providers = [internalHolderProvider, realAttributionHolderProvider, modeledHolderProvider];
+const providers = [internalHolderProvider, taoAppHolderProvider, realAttributionHolderProvider, modeledHolderProvider];
 
 let cached: HolderProviderResult | null = null;
 let cachedAt = 0;

@@ -1,10 +1,12 @@
 import { internalValidatorProvider } from "@/lib/providers/validators/internal";
+import { taoAppValidatorProvider } from "@/lib/providers/validators/tao-app";
 import { taostatsValidatorProvider } from "@/lib/providers/validators/taostats";
 import { staticValidatorProvider } from "@/lib/providers/validators/static";
 import type { ValidatorProviderResult } from "@/lib/providers/validators/types";
 
 const providers = [
   internalValidatorProvider,
+  taoAppValidatorProvider,
   taostatsValidatorProvider,
   staticValidatorProvider,
 ];

@@ -23,6 +23,7 @@ export async function GET() {
       fallbackUsed: result.fallbackUsed,
       stale: result.stale ?? false,
       note: result.note,
+      attribution: result.source === "tao-app" ? "Powered by TAO.app API" : undefined,
     },
     {
       cacheControl: "public, s-maxage=300",

@@ -15,6 +15,7 @@ export async function GET() {
       stale: result.stale ?? false,
       servedAt,
       note: result.note,
+      attribution: result.source === "validator-tao-app" ? "Powered by TAO.app API" : undefined,
     },
   }, {
     headers: {

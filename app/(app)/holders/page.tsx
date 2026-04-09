@@ -25,6 +25,14 @@ interface RealAttributionResponse {
   };
 }
 
+interface HolderApiResponse extends HolderIntelSnapshot {
+  _meta?: {
+    source?: string;
+    attribution?: string;
+    note?: string;
+  };
+}
+
 function strategyTone(tag: string): string {
   if (tag === "root-heavy") return "text-cyan-300";
   if (tag === "subnet-heavy") return "text-violet-300";
@@ -36,6 +44,7 @@ export default function HoldersPage() {
   const [data, setData] = useState<HolderIntelSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [realAttribution, setRealAttribution] = useState<RealAttributionResponse | null>(null);
+  const [holderMeta, setHolderMeta] = useState<HolderApiResponse["_meta"] | null>(null);
   const { rate: taoUsdRate } = useTaoRate();
 
   useEffect(() => {
@@ -44,7 +53,9 @@ export default function HoldersPage() {
       fetch("/api/holders/real", { cache: "no-store" }).then((res) => res.json()).catch(() => null),
     ])
       .then(([json, real]) => {
-        setData(json as HolderIntelSnapshot);
+        const holderResponse = json as HolderApiResponse;
+        setData(holderResponse);
+        setHolderMeta(holderResponse._meta ?? null);
         setRealAttribution(real as RealAttributionResponse | null);
       })
       .finally(() => setLoading(false));
@@ -60,11 +71,13 @@ export default function HoldersPage() {
           <DataSourceBadge source="api" ageSec={null} />
           {data && (
             <span className={`inline-flex items-center rounded-lg border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${
-              data.source === "chain-partial"
+              holderMeta?.source === "tao-app"
+                ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"
+                : data.source === "chain-partial"
                 ? "border-cyan-400/20 bg-cyan-400/10 text-cyan-300"
                 : "border-amber-400/20 bg-amber-400/10 text-amber-300"
             }`}>
-              {data.source === "chain-partial" ? "Chain Partial" : "Modeled"}
+              {holderMeta?.source === "tao-app" ? "TAO.app" : data.source === "chain-partial" ? "Chain Partial" : "Modeled"}
             </span>
           )}
         </div>
@@ -74,15 +87,25 @@ export default function HoldersPage() {
         <div
           className="flex items-start gap-3 px-4 py-3.5 rounded-xl"
           style={{
-            background: "rgba(251,191,36,0.04)",
-            border: "1px solid rgba(251,191,36,0.12)",
+            background: holderMeta?.source === "tao-app" ? "rgba(16,185,129,0.05)" : "rgba(251,191,36,0.04)",
+            border: holderMeta?.source === "tao-app" ? "1px solid rgba(16,185,129,0.14)" : "1px solid rgba(251,191,36,0.12)",
           }}
         >
-          <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-300" />
+          <Info className={`w-4 h-4 flex-shrink-0 mt-0.5 ${holderMeta?.source === "tao-app" ? "text-emerald-300" : "text-amber-300"}`} />
           <div className="text-[12px] text-slate-300">
-            <span className="font-semibold text-amber-300">Modeled intelligence layer.</span> This first version is a structured
-            cohort view for product development: it distinguishes root-vs-subnet posture, dominant allocations, and rotation patterns,
-            but it is not yet sourced from live wallet-level chain attribution.
+            {holderMeta?.source === "tao-app" ? (
+              <>
+                <span className="font-semibold text-emerald-300">TAO.app-backed holder intelligence.</span> This view is using
+                external holder concentration and flow analytics as a live provider fallback.
+                <div className="mt-2 text-[11px] text-slate-400">Powered by TAO.app API</div>
+              </>
+            ) : (
+              <>
+                <span className="font-semibold text-amber-300">Modeled intelligence layer.</span> This first version is a structured
+                cohort view for product development: it distinguishes root-vs-subnet posture, dominant allocations, and rotation patterns,
+                but it is not yet sourced from live wallet-level chain attribution.
+              </>
+            )}
           </div>
         </div>
       </FadeIn>
