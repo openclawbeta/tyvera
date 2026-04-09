@@ -80,9 +80,10 @@ export async function fetchHolderAttributionFromChain(limit = 250): Promise<Hold
 
   try {
     api = await connect();
+    const connectedApi = api;
 
-    const coldkeys = await withTimeout(getColdkeysToScan(api), QUERY_TIMEOUT_MS, "stakingColdkeysByIndex");
-    const netuids = (await withTimeout(getActiveNetuids(api), QUERY_TIMEOUT_MS, "activeNetuids")).slice(0, MAX_NETUIDS_TO_SCAN);
+    const coldkeys = await withTimeout(getColdkeysToScan(connectedApi), QUERY_TIMEOUT_MS, "stakingColdkeysByIndex");
+    const netuids = (await withTimeout(getActiveNetuids(connectedApi), QUERY_TIMEOUT_MS, "activeNetuids")).slice(0, MAX_NETUIDS_TO_SCAN);
 
     const positions: ChainHolderPosition[] = [];
     let alphaQueries = 0;
@@ -104,7 +105,7 @@ export async function fetchHolderAttributionFromChain(limit = 250): Promise<Hold
             alphaQueries += 1;
             try {
               const alpha = await withTimeout(
-                (api.query.subtensorModule as any).alpha(hotkey, coldkey, netuid),
+                (connectedApi.query.subtensorModule as any).alpha(hotkey, coldkey, netuid),
                 1_500,
                 `alpha(${netuid})`,
               );
