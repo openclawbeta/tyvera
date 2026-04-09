@@ -1,15 +1,15 @@
 /* ─────────────────────────────────────────────────────────────────── */
 /* /api/activity — Wallet transaction history from chain events        */
 /*                                                                     */
-/* GET /api/activity?address=5...&page=1&limit=50                     */
-/* Returns on-chain events for the given SS58 address.                */
+/* GET /api/activity?address=5...&page=1&limit=50                      */
+/* Returns on-chain events for the given SS58 address.                 */
 /*                                                                     */
 /* Data source: ON-CHAIN ONLY via transfer-scanner event buffer.       */
 /* No external API dependencies (no TaoStats).                         */
 /*                                                                     */
 /* Limitations:                                                        */
-/*   - History depth depends on how long the cron has been running    */
-/*   - Buffer holds up to 2000 events (rolling window)                */
+/*   - History depth depends on how long the cron has been running     */
+/*   - Buffer holds up to 2000 events (rolling window)                 */
 /*   - Returns empty gracefully when buffer is cold                    */
 /* ─────────────────────────────────────────────────────────────────── */
 
@@ -65,6 +65,7 @@ export async function GET(request: NextRequest) {
         source: bufferSize > 0 ? DATA_SOURCES.CHAIN_CACHE : DATA_SOURCES.SYNTHETIC,
         fetchedAt: new Date().toISOString(),
         blockHeight: lastBlock > 0 ? lastBlock : undefined,
+        fallbackUsed: bufferSize === 0,
         ...(bufferSize === 0
           ? { note: "Event buffer is empty — chain scanner has not run yet. History builds over time via cron." }
           : { note: `${bufferSize} events in buffer, last scanned block ${lastBlock}` }),
@@ -77,6 +78,7 @@ export async function GET(request: NextRequest) {
       {
         source: DATA_SOURCES.CHAIN_CACHE,
         fetchedAt: new Date().toISOString(),
+        fallbackUsed: true,
         note: "Error reading event buffer — returning empty",
       },
     );
