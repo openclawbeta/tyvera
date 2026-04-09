@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Wallet, Shield, CheckCircle, AlertCircle, Copy, ExternalLink,
   LogOut, Bell, Lock, Eye, ChevronRight, Loader2,
@@ -449,16 +449,51 @@ function NotificationsSection() {
 function GuardrailsSection() {
   const [blockSpeculative, setBlockSpeculative] = useState(false);
   const [enableRecs, setEnableRecs] = useState(true);
-  const [saved, setSaved] = useState(false);
+  const [minScoreThreshold, setMinScoreThreshold] = useState("0.15");
+  const [maxMoveSize, setMaxMoveSize] = useState("25%");
+  const [cooldownPeriod, setCooldownPeriod] = useState("24 hours");
+  const [savedState, setSavedState] = useState<"idle" | "saved">("idle");
 
-  const handleSave = () => {
-    // Persist to localStorage so settings survive page reloads
+  useEffect(() => {
     try {
-      localStorage.setItem("tyvera_guardrails", JSON.stringify({ blockSpeculative, enableRecs }));
-    } catch { /* localStorage unavailable */ }
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
+      const raw = window.localStorage.getItem("tyvera.guardrails");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        blockSpeculative?: boolean;
+        enableRecs?: boolean;
+        minScoreThreshold?: string;
+        maxMoveSize?: string;
+        cooldownPeriod?: string;
+      };
+      if (typeof parsed.blockSpeculative === "boolean") setBlockSpeculative(parsed.blockSpeculative);
+      if (typeof parsed.enableRecs === "boolean") setEnableRecs(parsed.enableRecs);
+      if (typeof parsed.minScoreThreshold === "string") setMinScoreThreshold(parsed.minScoreThreshold);
+      if (typeof parsed.maxMoveSize === "string") setMaxMoveSize(parsed.maxMoveSize);
+      if (typeof parsed.cooldownPeriod === "string") setCooldownPeriod(parsed.cooldownPeriod);
+    } catch {
+      // ignore malformed local state
+    }
+  }, []);
+
+  function saveGuardrails() {
+    try {
+      window.localStorage.setItem(
+        "tyvera.guardrails",
+        JSON.stringify({
+          blockSpeculative,
+          enableRecs,
+          minScoreThreshold,
+          maxMoveSize,
+          cooldownPeriod,
+          savedAt: new Date().toISOString(),
+        }),
+      );
+      setSavedState("saved");
+      window.setTimeout(() => setSavedState("idle"), 1800);
+    } catch {
+      setSavedState("idle");
+    }
+  }
 
   return (
     <Panel>
@@ -469,7 +504,12 @@ function GuardrailsSection() {
         </SettingRow>
         <SettingRow label="Minimum score threshold" description="Only show recommendations above this score.">
           <input
-            type="number" defaultValue="0.15" step="0.01" min="0.1" max="0.5"
+            type="number"
+            value={minScoreThreshold}
+            onChange={(e) => setMinScoreThreshold(e.target.value)}
+            step="0.01"
+            min="0.1"
+            max="0.5"
             className="w-20 px-2.5 py-1.5 rounded-lg text-xs text-white text-center focus:outline-none transition-colors"
             style={{
               background: "rgba(255,255,255,0.04)",
@@ -479,6 +519,8 @@ function GuardrailsSection() {
         </SettingRow>
         <SettingRow label="Maximum single move size" description="Cap any recommended move as % of source stake.">
           <select
+            value={maxMoveSize}
+            onChange={(e) => setMaxMoveSize(e.target.value)}
             className="px-3 py-1.5 rounded-lg text-xs text-slate-300 focus:outline-none"
             style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
           >
@@ -493,6 +535,8 @@ function GuardrailsSection() {
         </SettingRow>
         <SettingRow label="Cooldown period" description="Minimum hours between moves on the same subnet pair." last>
           <select
+            value={cooldownPeriod}
+            onChange={(e) => setCooldownPeriod(e.target.value)}
             className="px-3 py-1.5 rounded-lg text-xs text-slate-300 focus:outline-none"
             style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
           >
@@ -502,20 +546,23 @@ function GuardrailsSection() {
           </select>
         </SettingRow>
       </div>
-      <button
-        onClick={handleSave}
-        className="flex items-center gap-2 font-semibold text-[12px] px-4 py-2.5 rounded-xl transition-all duration-200"
-        style={{
-          background: saved
-            ? "linear-gradient(135deg, #34d399 0%, #10b981 100%)"
-            : "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
-          color: "#04060d",
-          boxShadow: "0 0 0 1px rgba(34,211,238,0.4), 0 4px 12px rgba(34,211,238,0.18), inset 0 1px 0 rgba(255,255,255,0.2)",
-        }}
-      >
-        <Save className="w-3.5 h-3.5" />
-        {saved ? "Saved!" : "Save Guardrails"}
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={saveGuardrails}
+          className="flex items-center gap-2 font-semibold text-[12px] px-4 py-2.5 rounded-xl transition-all duration-200"
+          style={{
+            background: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
+            color: "#04060d",
+            boxShadow: "0 0 0 1px rgba(34,211,238,0.4), 0 4px 12px rgba(34,211,238,0.18), inset 0 1px 0 rgba(255,255,255,0.2)",
+          }}
+        >
+          <Save className="w-3.5 h-3.5" />
+          Save Guardrails
+        </button>
+        <span className="text-[11px] text-slate-500">
+          {savedState === "saved" ? "Saved locally in this browser." : "Stored locally until server-backed preferences land."}
+        </span>
+      </div>
     </Panel>
   );
 }
