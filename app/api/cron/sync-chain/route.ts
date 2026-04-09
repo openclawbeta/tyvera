@@ -1,26 +1,29 @@
 /**
  * app/api/cron/sync-chain/route.ts
  *
- * Vercel Cron Job — syncs subnet data from Subtensor every 5 minutes.
+ * Vercel Cron Job — comprehensive chain-only data ingestion.
  *
- * This is Tyvera's primary data source. It connects directly to the
- * Bittensor blockchain, pulls all subnet metrics, and stores them
- * in an in-memory cache that the /api/subnets and /api/metagraph
- * routes read from.
+ * Runs every 5 minutes and performs ALL data collection from the
+ * Bittensor Subtensor chain. No external API dependencies.
+ *
+ * Pipeline:
+ *   1. Subnet data from Subtensor (fetchSubnetsFromChain)
+ *   2. Price sync from pool ratios (syncPricesFromChain)
+ *   3. Market cache refresh from chain pool data (refreshMarketCache)
+ *   4. Transfer/event scanning (scanRecentTransfers)
  *
  * Authentication:
  *   Requires CRON_SECRET in the Authorization header to prevent
  *   unauthorized triggers. Vercel Cron automatically sends this.
  *
  * Cron schedule: every 5 minutes (configured in vercel.json)
- *
- * Fallback: If chain sync fails, the API routes fall through to
- * TaoStats → static snapshot (no user impact).
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { fetchSubnetsFromChain, setSubnetCache } from "@/lib/chain";
 import { refreshMarketCache } from "@/lib/chain/market-cache";
+import { syncPricesFromChain } from "@/lib/chain/price-engine";
+import { scanRecentTransfers } from "@/lib/chain/transfer-scanner";
 import { timingSafeEqual } from "crypto";
 
 export const maxDuration = 60; // Vercel Pro allows up to 60s
@@ -48,35 +51,77 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // ── Sync ────────────────────────────────────────────────────────
+  // ── Comprehensive chain sync ───────────────────────────────────
+  const results: Record<string, unknown> = {
+    ok: true,
+    timestamp: new Date().toISOString(),
+  };
+
   try {
+    // Step 1: Subnet data from Subtensor
     const snapshot = await fetchSubnetsFromChain();
 
     if (!snapshot || snapshot.subnets.length === 0) {
       return NextResponse.json(
         {
           ok: false,
-          error: "Chain sync returned no data",
+          error: "Chain sync returned no subnet data",
           timestamp: new Date().toISOString(),
         },
         { status: 502 },
       );
     }
 
-    // Store in cache for other routes to read
     setSubnetCache(snapshot);
+    results.subnets = snapshot.subnets.length;
+    results.blockHeight = snapshot.blockHeight;
+    results.syncDurationMs = snapshot.syncDurationMs;
+    results.fetchedAt = snapshot.fetchedAt;
 
-    // Best-effort: enrich with TaoStats market data (non-blocking)
-    const marketOk = await refreshMarketCache().catch(() => false);
+    // Step 2: Price sync from chain pool ratios (best-effort)
+    try {
+      const priceResult = await syncPricesFromChain();
+      results.priceSync = priceResult
+        ? { alphaTokens: priceResult.alphaTokens.length, taoUsd: priceResult.taoUsd }
+        : false;
+    } catch (err) {
+      console.warn("[cron/sync-chain] Price sync failed:", err);
+      results.priceSync = false;
+    }
 
-    return NextResponse.json({
-      ok: true,
-      subnets: snapshot.subnets.length,
-      blockHeight: snapshot.blockHeight,
-      syncDurationMs: snapshot.syncDurationMs,
-      fetchedAt: snapshot.fetchedAt,
-      marketEnriched: marketOk,
-    });
+    // Step 3: Market cache refresh from chain pool data (best-effort)
+    try {
+      const marketOk = await refreshMarketCache(
+        snapshot.subnets.map((s) => ({
+          netuid: s.netuid,
+          tao_in: s.taoIn,
+          alpha_in: 0, // Will be derived from pool ratios
+          liquidity: s.taoIn,
+        })),
+      );
+      results.marketEnriched = marketOk;
+    } catch (err) {
+      console.warn("[cron/sync-chain] Market cache refresh failed:", err);
+      results.marketEnriched = false;
+    }
+
+    // Step 4: Transfer/event scanning (best-effort)
+    try {
+      const transferResult = await scanRecentTransfers();
+      results.transferScan = transferResult
+        ? {
+            scannedBlocks: transferResult.scannedBlocks,
+            eventsFound: transferResult.events.length,
+            fromBlock: transferResult.fromBlock,
+            toBlock: transferResult.toBlock,
+          }
+        : false;
+    } catch (err) {
+      console.warn("[cron/sync-chain] Transfer scan failed:", err);
+      results.transferScan = false;
+    }
+
+    return NextResponse.json(results);
   } catch (err) {
     console.error("[cron/sync-chain] Fatal error:", err);
     return NextResponse.json(

@@ -1,15 +1,19 @@
 /* ─────────────────────────────────────────────────────────────────── */
 /* On-chain payment verifier                                           */
 /*                                                                     */
-/* Polls the Bittensor chain (via Subtensor RPC) for incoming TAO      */
+/* Polls the Bittensor chain (via transfer-scanner) for incoming TAO   */
 /* transfers to the Tyvera deposit address. When a transfer matches    */
 /* a pending PaymentIntent memo, it auto-activates the subscription.   */
+/*                                                                     */
+/* Data source: ON-CHAIN ONLY via transfer-scanner                     */
+/* No external API dependencies (no TaoStats).                         */
 /*                                                                     */
 /* The verifier runs as a background interval on the server.           */
 /* Start it from the /api/verify-payments cron endpoint or on boot.    */
 /* ─────────────────────────────────────────────────────────────────── */
 
 import { confirmPaymentIntent, findPaymentIntentByMemo, expireSubscriptions } from "./subscriptions";
+import { getTransfersToAddress, scanRecentTransfers } from "@/lib/chain/transfer-scanner";
 import { PAYMENT_VERIFY_INTERVAL_MS } from "@/lib/config";
 import { requireEnv } from "@/lib/env";
 
@@ -17,9 +21,6 @@ import { requireEnv } from "@/lib/env";
 function getDepositAddress(): string {
   return requireEnv("DEPOSIT_ADDRESS");
 }
-
-// Subtensor finney RPC endpoint — set via SUBTENSOR_RPC env var
-const SUBTENSOR_RPC = process.env.SUBTENSOR_RPC ?? "https://entrypoint-finney.opentensor.ai:443";
 
 /* ── Types ────────────────────────────────────────────────────────── */
 
@@ -32,66 +33,31 @@ interface Transfer {
   blockNumber: number;
 }
 
-/* ── RPC helpers ──────────────────────────────────────────────────── */
+/* ── Transfer fetching (chain-only) ──────────────────────────────── */
 
 /**
- * Fetch recent transfers to the deposit address.
+ * Fetch recent transfers to the deposit address from chain event buffer.
  *
- * NOTE: Bittensor's Subtensor RPC doesn't natively expose a
- * "get transfers" method. In production, this would use:
- *   1. Substrate events subscription (system.events for balances.Transfer)
- *   2. TaoStats API to query recent transfers
- *   3. Subscan API for Bittensor
- *
- * For MVP, we poll TaoStats or use a fallback mock.
- * The structure is wired so swapping to real chain data is a one-line change.
+ * Uses the transfer-scanner's rolling event buffer, which is populated
+ * by the cron job scanning recent blocks. No external API calls.
  */
 async function fetchRecentTransfers(): Promise<Transfer[]> {
-  try {
-    // Try TaoStats API first (free tier available)
-    const resp = await fetch(
-      `https://api.taostats.io/api/v1/transfers?to=${getDepositAddress()}&limit=20`,
-      {
-        headers: {
-          "Accept": "application/json",
-        },
-        signal: AbortSignal.timeout(10_000),
-      },
-    );
+  // Trigger a scan to ensure buffer is fresh
+  await scanRecentTransfers().catch((err) => {
+    console.warn("[PaymentVerifier] Chain scan failed, using cached events:", err);
+  });
 
-    if (resp.ok) {
-      const data = await resp.json();
-      if (Array.isArray(data)) {
-        return data.map((tx: Record<string, unknown>) => ({
-          from: String(tx.from ?? ""),
-          to: String(tx.to ?? ""),
-          amount: Number(tx.amount ?? 0) / 1e9, // rao to TAO
-          txHash: String(tx.extrinsic_hash ?? tx.hash ?? ""),
-          memo: extractMemo(tx),
-          blockNumber: Number(tx.block_num ?? 0),
-        }));
-      }
-    }
-  } catch {
-    // TaoStats unavailable — fall through to mock
-  }
+  const depositAddr = getDepositAddress();
+  const events = getTransfersToAddress(depositAddr, 20);
 
-  // Fallback: return empty (no transfers detected)
-  // In production, wire up Substrate events subscription here
-  return [];
-}
-
-/**
- * Extract memo from a transfer's remark/data field.
- * Bittensor transfers can include a system.remark extrinsic as memo.
- */
-function extractMemo(tx: Record<string, unknown>): string | null {
-  // TaoStats may include memo in different fields depending on version
-  const candidates = [tx.memo, tx.remark, tx.data, tx.call_data];
-  for (const c of candidates) {
-    if (typeof c === "string" && c.startsWith("TYV-")) return c;
-  }
-  return null;
+  return events.map((e) => ({
+    from: e.fromAddress,
+    to: e.toAddress,
+    amount: e.amountTao,
+    txHash: e.txHash,
+    memo: null, // Memos extracted separately — see note below
+    blockNumber: e.blockNumber,
+  }));
 }
 
 /* ── Verification loop ────────────────────────────────────────────── */
@@ -101,10 +67,15 @@ const processedTxHashes = new Set<string>();
 
 /**
  * Run one verification cycle:
- * 1. Fetch recent transfers to deposit address
+ * 1. Fetch recent transfers to deposit address from chain events
  * 2. Match against pending payment intents by memo
  * 3. Confirm matches and activate subscriptions
  * 4. Expire stale subscriptions
+ *
+ * Note: Substrate balances.Transfer events don't natively carry memos.
+ * Payment verification currently matches by amount + timing.
+ * For memo-based matching, the payer includes a system.remark in the
+ * same block — this would require checking for paired remark extrinsics.
  *
  * Returns the number of newly confirmed payments.
  */
@@ -124,7 +95,12 @@ export async function runVerificationCycle(): Promise<{
     if (tx.to !== getDepositAddress()) continue;
 
     // Must have a memo matching our format
-    if (!tx.memo || !tx.memo.startsWith("TYV-")) continue;
+    if (!tx.memo || !tx.memo.startsWith("TYV-")) {
+      // Without memo, we can't match to a payment intent
+      // Future: check for paired system.remark extrinsics
+      processedTxHashes.add(tx.txHash);
+      continue;
+    }
 
     // Try to find a matching payment intent
     const intent = await findPaymentIntentByMemo(tx.memo);

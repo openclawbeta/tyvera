@@ -1,23 +1,18 @@
 /**
  * lib/api/validators.ts
  *
- * Validator data sourced from real on-chain and registry data.
+ * Validator data sourced from direct Subtensor chain queries.
  *
  * Strategy:
- *   1. Fetch TaoStats delegate stats (stake, nominators, etc.)
- *   2. Enrich with Opentensor delegate registry (names, descriptions)
+ *   1. Use delegate-scanner (root subnet chain queries) for stake, nominators, registrations
+ *   2. Enrich with Opentensor delegate registry (names, descriptions) — community data, not a commercial API
  *   3. Fall back to a minimal list of known validators with honest zero metrics
+ *
+ * No external API dependencies (no TaoStats).
  */
 
 import { ValidatorInfo, ValidatorSummary } from "@/lib/types/validators";
-
-// Public delegate registry from Opentensor
-const DELEGATE_REGISTRY_URL =
-  "https://raw.githubusercontent.com/opentensor/bittensor-delegates/main/public/delegates.json";
-
-// TaoStats delegate stats endpoint
-const TAOSTATS_DELEGATES_URL = "https://api.taostats.io/api/v1/delegate";
-
+import { fetchDelegatesFromChain, type ChainDelegate } from "@/lib/chain/delegate-scanner";
 import { VALIDATOR_CACHE_TTL_MS } from "@/lib/config";
 
 // In-memory cache
@@ -41,28 +36,36 @@ const KNOWN_VALIDATORS: { name: string; address: string }[] = [
   { name: "Foundry / DCG",         address: "5HbScNssaEfioJHXjcXdpyqo1cXgz63tNAZfBeBfzmpaWPe2" },
 ];
 
-interface DelegateEntry {
-  name?: string;
-  url?: string;
-  description?: string;
-  [key: string]: unknown;
-}
+/**
+ * Map a ChainDelegate from the delegate-scanner to our ValidatorInfo shape.
+ */
+function mapDelegateToValidator(
+  d: ChainDelegate,
+  rank: number,
+  totalNetworkStake: number,
+): ValidatorInfo {
+  const dominance = totalNetworkStake > 0
+    ? (d.rootStake / totalNetworkStake) * 100
+    : 0;
 
-interface TaoStatsDelegateEntry {
-  hotkey?: string;
-  delegate_name?: string;
-  name?: string;
-  total_stake?: number;
-  nominators?: number;
-  nominator_count?: number;
-  registrations?: number[];
-  total_daily_return?: number;
-  take?: number;
-  [key: string]: unknown;
+  return {
+    rank,
+    name: d.name,
+    address: d.hotkey,
+    dominance: Math.round(dominance * 100) / 100,
+    nominators: d.nominators,
+    change24h: 0, // Would need historical snapshots
+    activeSubnets: d.registeredSubnets.length,
+    totalWeight: d.rootStake,
+    weightChange24h: 0,
+    rootStake: d.rootStake,
+    alphaStake: 0,
+    verified: d.verified,
+  };
 }
 
 /**
- * Fetch validators with real data from TaoStats + Opentensor registry.
+ * Fetch validators from direct chain queries via delegate-scanner.
  */
 export async function fetchValidators(): Promise<ValidatorInfo[]> {
   // Return cache if fresh
@@ -70,114 +73,33 @@ export async function fetchValidators(): Promise<ValidatorInfo[]> {
     return cachedValidators;
   }
 
-  // Fetch both sources in parallel
-  const [registryResult, taoStatsResult] = await Promise.allSettled([
-    fetch(DELEGATE_REGISTRY_URL, { signal: AbortSignal.timeout(8000) })
-      .then((r) => (r.ok ? r.json() : null)) as Promise<Record<string, DelegateEntry> | null>,
-    fetch(TAOSTATS_DELEGATES_URL, { signal: AbortSignal.timeout(10000), headers: { Accept: "application/json" } })
-      .then((r) => (r.ok ? r.json() : null)) as Promise<TaoStatsDelegateEntry[] | { data: TaoStatsDelegateEntry[] } | null>,
-  ]);
+  // Query chain directly
+  try {
+    const scanResult = await fetchDelegatesFromChain();
 
-  const registry: Record<string, DelegateEntry> =
-    registryResult.status === "fulfilled" && registryResult.value ? registryResult.value : {};
+    if (scanResult && scanResult.delegates.length > 0) {
+      const validators = scanResult.delegates
+        .slice(0, 50)
+        .map((d, i) => mapDelegateToValidator(d, i + 1, scanResult.totalNetworkStake));
 
-  // Parse TaoStats response (may be array or { data: [...] })
-  let taoStatsDelegates: TaoStatsDelegateEntry[] = [];
-  if (taoStatsResult.status === "fulfilled" && taoStatsResult.value) {
-    const raw = taoStatsResult.value;
-    taoStatsDelegates = Array.isArray(raw) ? raw : Array.isArray((raw as { data: TaoStatsDelegateEntry[] }).data) ? (raw as { data: TaoStatsDelegateEntry[] }).data : [];
+      cachedValidators = validators;
+      cacheTimestamp = Date.now();
+      console.log(
+        `[validators] Loaded ${validators.length} validators from chain ` +
+        `(block ${scanResult.blockHeight}, ${scanResult.scanDurationMs}ms)`,
+      );
+      return validators;
+    }
+  } catch (err) {
+    console.error("[validators] Chain delegate scan failed:", err);
   }
 
-  // Build a lookup from TaoStats by hotkey
-  const stakeMap = new Map<string, TaoStatsDelegateEntry>();
-  for (const d of taoStatsDelegates) {
-    const key = d.hotkey ?? "";
-    if (key) stakeMap.set(key, d);
-  }
-
-  // Compute total network stake for dominance calculation
-  const totalNetworkStake = taoStatsDelegates.reduce((sum, d) => {
-    const stake = Number(d.total_stake ?? 0);
-    return sum + (stake > 1e6 ? stake / 1e9 : stake); // Auto-detect rao vs TAO
-  }, 0);
-
-  // Merge: prefer TaoStats data enriched with registry names
-  // Start with TaoStats delegates (they have real metrics), then fill in registry-only entries
-  const seen = new Set<string>();
-  const validators: ValidatorInfo[] = [];
-
-  // First pass: TaoStats delegates (sorted by stake, top 50)
-  const sortedDelegates = [...taoStatsDelegates]
-    .sort((a, b) => Number(b.total_stake ?? 0) - Number(a.total_stake ?? 0))
-    .slice(0, 50);
-
-  for (const d of sortedDelegates) {
-    const address = d.hotkey ?? "";
-    if (!address || seen.has(address)) continue;
-    seen.add(address);
-
-    const rawStake = Number(d.total_stake ?? 0);
-    const stake = rawStake > 1e6 ? rawStake / 1e9 : rawStake;
-    const nominators = Number(d.nominators ?? d.nominator_count ?? 0);
-    const registrations = Array.isArray(d.registrations) ? d.registrations.length : 0;
-
-    const regEntry = registry[address];
-    const name = regEntry?.name || d.delegate_name || d.name || `${address.slice(0, 8)}...${address.slice(-4)}`;
-    const dominance = totalNetworkStake > 0 ? (stake / totalNetworkStake) * 100 : 0;
-
-    validators.push({
-      rank: validators.length + 1,
-      name,
-      address,
-      dominance: Math.round(dominance * 100) / 100,
-      nominators,
-      change24h: 0, // Would need historical data to compute
-      activeSubnets: registrations,
-      totalWeight: stake,
-      weightChange24h: 0,
-      rootStake: stake, // TaoStats total_stake is root stake
-      alphaStake: 0,
-      verified: !!regEntry?.name || !!d.delegate_name,
-    });
-  }
-
-  // If TaoStats returned data, use it; otherwise fall back to registry-only or hardcoded
-  if (validators.length > 0) {
-    cachedValidators = validators;
-    cacheTimestamp = Date.now();
-    return validators;
-  }
-
-  // Second pass: registry-only (no TaoStats data available)
-  if (Object.keys(registry).length > 0) {
-    const regValidators = Object.entries(registry)
-      .slice(0, 50)
-      .map(([address, delegate], index): ValidatorInfo => ({
-        rank: index + 1,
-        name: delegate.name || `${address.slice(0, 8)}...${address.slice(-4)}`,
-        address,
-        dominance: 0,
-        nominators: 0,
-        change24h: 0,
-        activeSubnets: 0,
-        totalWeight: 0,
-        weightChange24h: 0,
-        rootStake: 0,
-        alphaStake: 0,
-        verified: !!delegate.name,
-      }));
-
-    cachedValidators = regValidators;
-    cacheTimestamp = Date.now();
-    return regValidators;
-  }
-
-  // Final fallback: hardcoded known validators
+  // Fallback: hardcoded known validators with honest zero metrics
   return getValidatorsFallback();
 }
 
 /**
- * Synchronous fallback: returns known validators with honest zero metrics.
+ * Synchronous accessor: returns cached validators or fallback.
  */
 export function getValidators(): ValidatorInfo[] {
   if (cachedValidators && Date.now() - cacheTimestamp < CACHE_TTL_MS) {

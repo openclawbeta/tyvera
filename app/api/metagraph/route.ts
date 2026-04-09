@@ -4,9 +4,11 @@
  * Metagraph data gateway for validators and miners on a subnet.
  *
  * Data source priority (highest → lowest):
- *   0. Chain cache / live chain query       → T1/T2
- *   1. TaoStats API                         → T1
+ *   0. Chain cache (warm in-memory)         → T2
+ *   1. Live chain query (Subtensor RPC)     → T1
  *   2. Synthetic fallback                   → T4
+ *
+ * No external API dependencies (no TaoStats).
  *
  * Query params:
  *   ?netuid=N  → return metagraph for that subnet
@@ -39,8 +41,6 @@ interface MetagraphNeuron {
   dividends: number;
   emissionPerDay: number;
 }
-
-const TAOSTATS_BASE = "https://api.taostats.io/api";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Helpers                                                              */
@@ -121,42 +121,6 @@ function mapChainNeurons(
   }));
 }
 
-async function fetchFromTaoStats(netuid: number): Promise<MetagraphNeuron[] | null> {
-  const apiKey = process.env.TAOSTATS_API_KEY;
-  if (!apiKey) return null;
-
-  try {
-    const url = new URL(`${TAOSTATS_BASE}/metagraph/latest/v1`);
-    url.searchParams.set("netuid", String(netuid));
-    url.searchParams.set("limit", "256");
-
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    if (!Array.isArray(data)) return null;
-
-    return data
-      .map((neuron: Record<string, unknown>) => ({
-        uid: neuron.uid as number,
-        hotkey: (neuron.hotkey as string) || `0x${neuron.uid}`,
-        type: (neuron.type === 1 ? "validator" : "miner") as "validator" | "miner",
-        stake: Number(neuron.stake ?? 0),
-        trust: Number(neuron.trust ?? 0),
-        consensus: Number(neuron.consensus ?? 0),
-        incentive: Number(neuron.incentive ?? 0),
-        dividends: Number(neuron.dividends ?? 0),
-        emissionPerDay: Number(neuron.emission ?? 0),
-      }))
-      .filter((n) => typeof n.uid === "number");
-  } catch (error) {
-    console.error("TaoStats metagraph fetch failed:", error);
-    return null;
-  }
-}
-
 /* ─────────────────────────────────────────────────────────────────── */
 /* Route handler                                                        */
 /* ─────────────────────────────────────────────────────────────────── */
@@ -206,19 +170,6 @@ export async function GET(request: NextRequest) {
     }
   } catch (err) {
     console.error(`[metagraph] Chain query failed for SN${netuidNum}:`, err);
-  }
-
-  // ── Tier 1: TaoStats API ──────────────────────────────────────────
-  const taoStatsNeurons = await fetchFromTaoStats(netuidNum);
-  if (taoStatsNeurons) {
-    return apiResponse(
-      { neurons: taoStatsNeurons, neuronCount: taoStatsNeurons.length },
-      {
-        source: DATA_SOURCES.TAOSTATS_LIVE,
-        fetchedAt: new Date().toISOString(),
-      },
-      { extraHeaders },
-    );
   }
 
   // ── Tier 4: Synthetic fallback ────────────────────────────────────

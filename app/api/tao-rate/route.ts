@@ -1,24 +1,28 @@
 /**
  * app/api/tao-rate/route.ts
  *
- * TAO/USD price endpoint with multi-source fallback.
+ * TAO/USD price endpoint — chain-only data source.
  *
  * Priority:
- *   1. CoinGecko (free, no key required)            → T1
- *   2. CoinMarketCap (free tier, requires CMC_API_KEY) → T1
- *   3. Stale in-memory cache (if any prior fetch)    → T3
- *   4. Hard-coded fallback constants                 → T4
+ *   1. Price-engine rolling buffer (warm cache)      → T2
+ *   2. Price-engine live sync from chain             → T1
+ *   3. Hard-coded fallback constants                 → T4
  *
- * In-memory cache TTL: 5 minutes.
+ * No external API dependencies (no CoinGecko, no CMC).
+ * TAO/USD is seeded via the price-engine and updated by the cron job.
  */
 
-import { NextResponse } from "next/server";
 import { TAO_RATE_CACHE_TTL_MS } from "@/lib/config";
 import {
   DATA_SOURCES,
   apiResponse,
   type DataSourceId,
 } from "@/lib/data-source-policy";
+import {
+  getLatestTaoPrice,
+  derivePriceChanges,
+  syncPricesFromChain,
+} from "@/lib/chain/price-engine";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* In-memory cache (5-minute TTL)                                       */
@@ -43,96 +47,6 @@ const FALLBACK_MARKET_CAP = 12_600_000_000; // 600 * 21M
 const FALLBACK_VOLUME = 305_520_000;
 
 /* ─────────────────────────────────────────────────────────────────── */
-/* Source 1: CoinGecko                                                  */
-/* ─────────────────────────────────────────────────────────────────── */
-
-async function fetchCoinGecko(): Promise<CachedRate | null> {
-  try {
-    const res = await fetch(
-      "https://api.coingecko.com/api/v3/simple/price?ids=bittensor&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true",
-      { signal: AbortSignal.timeout(5000) },
-    );
-    if (!res.ok) throw new Error(`CoinGecko ${res.status}`);
-
-    const data = (await res.json()) as {
-      bittensor?: {
-        usd?: number;
-        usd_24h_change?: number;
-        usd_market_cap?: number;
-        usd_24h_vol?: number;
-      };
-    };
-    const rate = data?.bittensor?.usd;
-    if (typeof rate !== "number" || rate <= 0) return null;
-
-    return {
-      taoUsd: rate,
-      change24h: data?.bittensor?.usd_24h_change ?? 0,
-      marketCap: data?.bittensor?.usd_market_cap ?? FALLBACK_MARKET_CAP,
-      volume24h: data?.bittensor?.usd_24h_vol ?? FALLBACK_VOLUME,
-      fetchedAt: new Date().toISOString(),
-      source: DATA_SOURCES.COINGECKO_LIVE,
-    };
-  } catch {
-    return null;
-  }
-}
-
-/* ─────────────────────────────────────────────────────────────────── */
-/* Source 2: CoinMarketCap                                              */
-/* ─────────────────────────────────────────────────────────────────── */
-
-async function fetchCoinMarketCap(): Promise<CachedRate | null> {
-  const apiKey = process.env.CMC_API_KEY ?? "";
-  if (!apiKey) return null;
-
-  try {
-    const res = await fetch(
-      "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?slug=bittensor&convert=USD",
-      {
-        headers: {
-          "X-CMC_PRO_API_KEY": apiKey,
-          Accept: "application/json",
-        },
-        signal: AbortSignal.timeout(5000),
-      },
-    );
-    if (!res.ok) throw new Error(`CMC ${res.status}`);
-
-    const body = (await res.json()) as {
-      data?: Record<
-        string,
-        {
-          quote?: {
-            USD?: {
-              price?: number;
-              percent_change_24h?: number;
-              market_cap?: number;
-              volume_24h?: number;
-            };
-          };
-        }
-      >;
-    };
-
-    const entries = Object.values(body?.data ?? {});
-    const usd = entries[0]?.quote?.USD;
-    if (!usd || typeof usd.price !== "number" || usd.price <= 0) return null;
-
-    return {
-      taoUsd: usd.price,
-      change24h: usd.percent_change_24h ?? 0,
-      marketCap: usd.market_cap ?? FALLBACK_MARKET_CAP,
-      volume24h: usd.volume_24h ?? FALLBACK_VOLUME,
-      fetchedAt: new Date().toISOString(),
-      source: DATA_SOURCES.COINMARKETCAP_LIVE,
-    };
-  } catch {
-    return null;
-  }
-}
-
-/* ─────────────────────────────────────────────────────────────────── */
 /* Route handler                                                        */
 /* ─────────────────────────────────────────────────────────────────── */
 
@@ -152,21 +66,66 @@ export async function GET() {
     );
   }
 
-  // ── Tier 1: fresh fetch ───────────────────────────────────────────
-  const fresh = (await fetchCoinGecko()) ?? (await fetchCoinMarketCap());
+  // ── Tier 1/2: Price-engine buffer ─────────────────────────────────
+  const latestPrice = getLatestTaoPrice();
+  const priceChanges = derivePriceChanges();
 
-  if (fresh) {
-    cache = fresh;
+  if (latestPrice.source !== "bootstrap") {
+    // We have a real price from the engine
+    const snapshot = {
+      taoUsd: latestPrice.taoUsd,
+      change24h: priceChanges.change24h,
+      marketCap: +(latestPrice.taoUsd * 21_000_000).toFixed(0), // Approximate: price * max supply
+      volume24h: 0, // No volume data from chain
+      fetchedAt: latestPrice.timestamp,
+      source: DATA_SOURCES.CHAIN_CACHE as DataSourceId,
+    };
+
+    cache = snapshot;
     cacheTimestamp = now;
+
     return apiResponse(
       {
-        taoUsd: fresh.taoUsd,
-        change24h: fresh.change24h,
-        marketCap: fresh.marketCap,
-        volume24h: fresh.volume24h,
+        taoUsd: snapshot.taoUsd,
+        change24h: snapshot.change24h,
+        marketCap: snapshot.marketCap,
+        volume24h: snapshot.volume24h,
       },
-      { source: fresh.source, fetchedAt: fresh.fetchedAt },
+      { source: DATA_SOURCES.CHAIN_CACHE, fetchedAt: snapshot.fetchedAt },
     );
+  }
+
+  // ── Tier 1: Try live chain sync ───────────────────────────────────
+  try {
+    const syncResult = await syncPricesFromChain();
+    if (syncResult) {
+      const updatedPrice = getLatestTaoPrice();
+      const updatedChanges = derivePriceChanges();
+
+      const fresh: CachedRate = {
+        taoUsd: updatedPrice.taoUsd,
+        change24h: updatedChanges.change24h,
+        marketCap: +(updatedPrice.taoUsd * syncResult.network.totalIssuance).toFixed(0),
+        volume24h: 0,
+        fetchedAt: updatedPrice.timestamp,
+        source: DATA_SOURCES.CHAIN_LIVE,
+      };
+
+      cache = fresh;
+      cacheTimestamp = now;
+
+      return apiResponse(
+        {
+          taoUsd: fresh.taoUsd,
+          change24h: fresh.change24h,
+          marketCap: fresh.marketCap,
+          volume24h: fresh.volume24h,
+        },
+        { source: fresh.source, fetchedAt: fresh.fetchedAt },
+      );
+    }
+  } catch (err) {
+    console.error("[tao-rate] Chain sync failed:", err);
   }
 
   // ── Tier 3: stale cache ───────────────────────────────────────────
@@ -198,7 +157,7 @@ export async function GET() {
     {
       source: DATA_SOURCES.FALLBACK_CONSTANT,
       fetchedAt: new Date(0).toISOString(),
-      note: "All live sources unavailable — using hard-coded fallback values",
+      note: "Price engine has no data — using hard-coded fallback. Seed via admin or wait for cron sync.",
     },
   );
 }

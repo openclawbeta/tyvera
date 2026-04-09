@@ -3,17 +3,23 @@
  *
  * In-memory market-data enrichment cache for subnet alpha tokens.
  *
- * Data source priority:
- *   1. CoinMarketCap (CMC_API_KEY) -- primary, free tier
- *   2. TaoStats dtao/subnet/latest/v1 -- secondary fallback
+ * Data source: ON-CHAIN ONLY
+ *   - TAO/USD price from the price-engine rolling buffer
+ *   - Alpha token prices derived from on-chain pool ratios
+ *     (SubnetAlphaIn / SubnetAlphaOut)
  *
- * Populated by calling refreshMarketCache() (typically from the chain
- * sync cron or on-demand when the cache is stale).  Individual subnet
- * market data is merged into chain-live responses via getMarketData(netuid).
+ * No external API dependencies (no CMC, no TaoStats).
  *
- * TTL: 10 minutes.  If both sources fail the stale cache is served
+ * Populated by calling refreshMarketCache() from the cron sync job.
+ * Individual subnet market data is merged into chain-live responses
+ * via getMarketData(netuid).
+ *
+ * TTL: 10 minutes. If refresh fails the stale cache is served
  * until the next successful refresh.
  */
+
+import { getLatestTaoPrice, getLatestPriceSnapshot, derivePriceChanges } from "./price-engine";
+import { MARKET_DATA_CACHE_TTL_MS } from "@/lib/config";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -34,133 +40,22 @@ export interface SubnetMarketData {
 
 const cache = new Map<number, SubnetMarketData>();
 let lastRefresh = 0;
-import { MARKET_DATA_CACHE_TTL_MS } from "@/lib/config";
 const TTL_MS = MARKET_DATA_CACHE_TTL_MS;
-
-// ── Source 1: CoinMarketCap ──────────────────────────────────────────────────
-
-interface CmcTaoQuote {
-  price: number;
-  volume_24h: number;
-  percent_change_1h: number;
-  percent_change_24h: number;
-  percent_change_7d: number;
-  percent_change_30d: number;
-  market_cap: number;
-}
-
-async function fetchCmcTaoQuote(): Promise<CmcTaoQuote | null> {
-  const apiKey = process.env.CMC_API_KEY ?? "";
-  if (!apiKey) return null;
-
-  try {
-    const res = await fetch(
-      "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?slug=bittensor&convert=USD",
-      {
-        headers: {
-          "X-CMC_PRO_API_KEY": apiKey,
-          Accept: "application/json",
-        },
-        signal: AbortSignal.timeout(8000),
-      },
-    );
-    if (!res.ok) return null;
-
-    const body = (await res.json()) as {
-      data?: Record<
-        string,
-        { quote?: { USD?: Record<string, number> } }
-      >;
-    };
-
-    const entries = Object.values(body?.data ?? {});
-    const usd = entries[0]?.quote?.USD;
-    if (!usd || typeof usd.price !== "number" || usd.price <= 0) return null;
-
-    return {
-      price: usd.price,
-      volume_24h: usd.volume_24h ?? 0,
-      percent_change_1h: usd.percent_change_1h ?? 0,
-      percent_change_24h: usd.percent_change_24h ?? 0,
-      percent_change_7d: usd.percent_change_7d ?? 0,
-      percent_change_30d: usd.percent_change_30d ?? 0,
-      market_cap: usd.market_cap ?? 0,
-    };
-  } catch {
-    return null;
-  }
-}
-
-// ── Source 2: TaoStats (secondary) ───────────────────────────────────────────
-
-interface TaoStatsSubnet {
-  netuid: number;
-  price?: number;
-  alpha_price?: number;
-  market_cap?: number;
-  volume_24h?: number;
-  price_change_1h?: number;
-  price_change_24h?: number;
-  price_change_7d?: number;
-  price_change_30d?: number;
-  tao_in_24h_change?: number;
-  tao_in_7d_change?: number;
-  tao_in_30d_change?: number;
-}
-
-async function fetchTaoStatsMarket(): Promise<Map<number, SubnetMarketData> | null> {
-  const apiKey = process.env.TAOSTATS_API_KEY ?? "";
-  if (!apiKey) return null;
-
-  try {
-    const res = await fetch(
-      "https://api.taostats.io/api/dtao/subnet/latest/v1?limit=256",
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          Accept: "application/json",
-          "User-Agent": "tao-navigator/3.0",
-        },
-        signal: AbortSignal.timeout(8000),
-      },
-    );
-    if (!res.ok) return null;
-
-    const body = await res.json();
-    const rows: TaoStatsSubnet[] = Array.isArray(body) ? body : (body.data ?? []);
-    const result = new Map<number, SubnetMarketData>();
-
-    for (const row of rows) {
-      const netuid = Number(row.netuid);
-      if (netuid === 0) continue;
-
-      result.set(netuid, {
-        alphaPrice: Number(row.alpha_price ?? row.price ?? 0),
-        marketCap: Number(row.market_cap ?? 0),
-        volume24h: Number(row.volume_24h ?? 0),
-        change1h: row.price_change_1h != null ? Number(row.price_change_1h) : undefined,
-        change24h: row.price_change_24h != null ? Number(row.price_change_24h) : undefined,
-        change1w: row.price_change_7d != null ? Number(row.price_change_7d) : undefined,
-        change1m: row.price_change_30d != null ? Number(row.price_change_30d) : undefined,
-        flow24h: row.tao_in_24h_change != null ? Number(row.tao_in_24h_change) : undefined,
-        flow1w: row.tao_in_7d_change != null ? Number(row.tao_in_7d_change) : undefined,
-        flow1m: row.tao_in_30d_change != null ? Number(row.tao_in_30d_change) : undefined,
-      });
-    }
-
-    return result.size > 0 ? result : null;
-  } catch {
-    return null;
-  }
-}
 
 // ── Public API ───────────────────────────────────────────────────────────────
 
+/**
+ * Compute alpha token prices from on-chain pool ratios and the
+ * TAO/USD price from the price-engine buffer.
+ *
+ * This is the ONLY source of alpha pricing — no external APIs.
+ */
 export function computeAlphaPrices(
   chainSubnets: Array<{ netuid: number; tao_in?: number; alpha_in?: number; liquidity?: number }>,
   taoUsd: number,
 ): Map<number, SubnetMarketData> {
   const result = new Map<number, SubnetMarketData>();
+  const priceChanges = derivePriceChanges();
 
   for (const s of chainSubnets) {
     const taoIn = Number(s.tao_in ?? s.liquidity ?? 0);
@@ -173,51 +68,71 @@ export function computeAlphaPrices(
     result.set(s.netuid, {
       alphaPrice: +alphaPriceTao.toFixed(6),
       marketCap: +(alphaPriceUsd * alphaIn).toFixed(2),
-      volume24h: 0,
+      volume24h: 0, // No volume data from chain — would need historical tracking
+      // Use TAO-level price changes as proxy for alpha changes
+      // (individual alpha tracking requires historical snapshots)
+      change1h: priceChanges.change1h || undefined,
+      change24h: priceChanges.change24h || undefined,
+      change1w: priceChanges.change7d || undefined,
+      change1m: priceChanges.change30d || undefined,
     });
   }
 
   return result;
 }
 
+/**
+ * Refresh the market cache from on-chain data only.
+ *
+ * Strategy:
+ *   1. Get TAO/USD from price-engine rolling buffer
+ *   2. Compute alpha prices from chain pool ratios
+ *
+ * If chainSubnets aren't provided, try the latest price-engine snapshot.
+ */
 export async function refreshMarketCache(
   chainSubnets?: Array<{ netuid: number; tao_in?: number; alpha_in?: number; liquidity?: number }>,
 ): Promise<boolean> {
-  // Strategy A: CMC TAO quote + chain pool ratios
-  const cmcQuote = await fetchCmcTaoQuote();
-  if (cmcQuote && chainSubnets && chainSubnets.length > 0) {
-    const alphaPrices = computeAlphaPrices(chainSubnets, cmcQuote.price);
-    for (const [netuid, data] of alphaPrices) {
-      data.change1h = cmcQuote.percent_change_1h;
-      data.change24h = cmcQuote.percent_change_24h;
-      data.change1w = cmcQuote.percent_change_7d;
-      data.change1m = cmcQuote.percent_change_30d;
-      cache.set(netuid, data);
-    }
-    lastRefresh = Date.now();
-    console.log("[market-cache] Refreshed " + alphaPrices.size + " subnets from CMC + chain pools");
-    return true;
-  }
+  const taoPrice = getLatestTaoPrice();
+  const taoUsd = taoPrice.taoUsd;
 
-  // Strategy B: TaoStats full market data
-  const taoStatsData = await fetchTaoStatsMarket();
-  if (taoStatsData) {
-    cache.clear();
-    for (const [netuid, data] of taoStatsData) {
-      cache.set(netuid, data);
-    }
-    lastRefresh = Date.now();
-    console.log("[market-cache] Refreshed " + taoStatsData.size + " subnets from TaoStats");
-    return true;
-  }
-
-  if (cmcQuote) {
-    lastRefresh = Date.now();
-    console.log("[market-cache] CMC quote available but no chain data for alpha price derivation");
+  if (taoUsd <= 0) {
+    console.log("[market-cache] No TAO/USD price available — cannot compute alpha prices");
     return false;
   }
 
-  console.log("[market-cache] All sources failed -- serving stale cache");
+  // Strategy A: Use provided chain subnet data + price-engine TAO/USD
+  if (chainSubnets && chainSubnets.length > 0) {
+    const alphaPrices = computeAlphaPrices(chainSubnets, taoUsd);
+    for (const [netuid, data] of alphaPrices) {
+      cache.set(netuid, data);
+    }
+    lastRefresh = Date.now();
+    console.log(
+      `[market-cache] Refreshed ${alphaPrices.size} subnets from chain pools + ` +
+      `TAO=$${taoUsd} (source: ${taoPrice.source})`,
+    );
+    return true;
+  }
+
+  // Strategy B: Use latest price-engine snapshot (if available)
+  const snapshot = getLatestPriceSnapshot();
+  if (snapshot && snapshot.alphaTokens.length > 0) {
+    for (const alpha of snapshot.alphaTokens) {
+      cache.set(alpha.netuid, {
+        alphaPrice: alpha.alphaPriceTao,
+        marketCap: alpha.marketCapUsd,
+        volume24h: 0,
+      });
+    }
+    lastRefresh = Date.now();
+    console.log(
+      `[market-cache] Refreshed ${snapshot.alphaTokens.length} subnets from price-engine snapshot`,
+    );
+    return true;
+  }
+
+  console.log("[market-cache] No chain data available for alpha price computation");
   return false;
 }
 

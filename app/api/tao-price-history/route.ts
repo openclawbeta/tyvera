@@ -1,11 +1,14 @@
 /**
  * app/api/tao-price-history/route.ts
  *
- * TAO price history endpoint.
+ * TAO price history endpoint — chain-only data source.
  *
  * Priority:
- *   1. CoinGecko market_chart API  → T1
- *   2. Synthetic random walk       → T4
+ *   1. Price-engine rolling buffer (up to 7 days at 5-min intervals) → T2
+ *   2. Synthetic random walk fallback                                 → T4
+ *
+ * No external API dependencies (no CoinGecko).
+ * History is built from the price-engine rolling buffer, populated by cron.
  */
 
 import { NextRequest } from "next/server";
@@ -15,20 +18,30 @@ import {
   apiResponse,
   type DataSourceId,
 } from "@/lib/data-source-policy";
+import { getTaoPriceHistory, getLatestTaoPrice } from "@/lib/chain/price-engine";
 
 /* ─────────────────────────────────────────────────────────────────── */
-/* Synthetic fallback                                                   */
+/* Synthetic fallback (deterministic)                                   */
 /* ─────────────────────────────────────────────────────────────────── */
+
+function seededRandom(seed: number): () => number {
+  let s = seed;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
 
 function generateSyntheticData(days: number): Array<{ date: string; price: number }> {
   const data: Array<{ date: string; price: number }> = [];
   const now = new Date();
+  const rng = seededRandom(42); // Deterministic seed
   let price = 320;
 
   for (let i = days; i >= 0; i--) {
     const date = new Date(now);
     date.setDate(date.getDate() - i);
-    const randomChange = (Math.random() - 0.48) * 8;
+    const randomChange = (rng() - 0.48) * 8;
     price = Math.max(250, Math.min(400, price + randomChange));
     data.push({
       date: date.toISOString().split("T")[0],
@@ -78,27 +91,51 @@ export async function GET(request: NextRequest) {
   let source: DataSourceId = DATA_SOURCES.SYNTHETIC;
   let fetchedAt = new Date().toISOString();
 
-  // ── Tier 1: CoinGecko ─────────────────────────────────────────────
-  try {
-    const response = await fetch(
-      `https://api.coingecko.com/api/v3/coins/bittensor/market_chart?vs_currency=usd&days=${days}`,
-      { next: { revalidate: 900 } },
-    );
-    if (!response.ok) throw new Error(`CoinGecko API returned ${response.status}`);
+  // ── Tier 2: Price-engine rolling buffer ───────────────────────────
+  const history = getTaoPriceHistory();
 
-    const data = await response.json();
-    if (!Array.isArray(data.prices)) throw new Error("Invalid CoinGecko response structure");
+  if (history.length > 1) {
+    // Convert price points to daily format
+    // Group by date, take latest price per day
+    const dailyMap = new Map<string, number>();
+    for (const point of history) {
+      const date = point.timestamp.split("T")[0];
+      dailyMap.set(date, point.taoUsd);
+    }
 
-    prices = data.prices.map(([timestamp, price]: [number, number]) => ({
-      date: new Date(timestamp).toISOString().split("T")[0],
-      price: Math.round(price * 100) / 100,
-    }));
-    source = DATA_SOURCES.COINGECKO_LIVE;
-    fetchedAt = new Date().toISOString();
-  } catch (error) {
-    // ── Tier 4: Synthetic fallback ──────────────────────────────────
-    console.warn("CoinGecko fetch failed, using synthetic data:", error);
-    prices = generateSyntheticData(days);
+    // Sort by date and take last N days
+    const sortedDays = [...dailyMap.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-days);
+
+    if (sortedDays.length > 0) {
+      prices = sortedDays.map(([date, price]) => ({
+        date,
+        price: Math.round(price * 100) / 100,
+      }));
+      source = DATA_SOURCES.CHAIN_CACHE;
+      fetchedAt = history[history.length - 1].timestamp;
+    }
+  }
+
+  // ── Tier 4: Synthetic fallback ────────────────────────────────────
+  if (prices.length === 0) {
+    // If we have a current price from the engine, anchor the synthetic data to it
+    const currentPrice = getLatestTaoPrice();
+    const syntheticData = generateSyntheticData(days);
+
+    if (currentPrice.source !== "bootstrap") {
+      // Anchor synthetic to actual current price
+      const lastSynthetic = syntheticData[syntheticData.length - 1].price;
+      const ratio = currentPrice.taoUsd / lastSynthetic;
+      prices = syntheticData.map((p) => ({
+        date: p.date,
+        price: Math.round(p.price * ratio * 100) / 100,
+      }));
+    } else {
+      prices = syntheticData;
+    }
+
     source = DATA_SOURCES.SYNTHETIC;
   }
 
@@ -111,8 +148,8 @@ export async function GET(request: NextRequest) {
       source,
       fetchedAt,
       ...(source === DATA_SOURCES.SYNTHETIC
-        ? { note: "Live price API unavailable — synthetic random walk" }
-        : {}),
+        ? { note: "Price history from synthetic random walk — engine buffer has insufficient data" }
+        : { note: `${prices.length} daily prices from price-engine rolling buffer` }),
     },
     {
       cacheControl: `public, s-maxage=${cacheMaxAge}, stale-while-revalidate=3600`,

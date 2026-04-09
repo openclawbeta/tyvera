@@ -6,16 +6,16 @@
  * Data source priority (highest to lowest):
  *   0. In-memory cache from cron/sync-chain   → T2 (chain-cache)
  *   1. public/data/subnets.json               → T3 (subtensor-snapshot)
- *   2. TaoStats REST API                      → T1 (taostats-live)
- *   3. Stale subtensor snapshot               → T3 (subtensor-snapshot-stale)
- *   4. lib/data/subnets-real.ts               → T4 (static-snapshot)
+ *   2. Stale subtensor snapshot               → T3 (subtensor-snapshot-stale)
+ *   3. lib/data/subnets-real.ts               → T4 (static-snapshot)
  *
  * Market enrichment (best-effort):
- *   CoinMarketCap TAO/USD + on-chain pool ratios → per-subnet alpha prices,
- *   falling back to TaoStats dtao/subnet market data.
+ *   Price-engine TAO/USD + on-chain pool ratios → per-subnet alpha prices.
+ *
+ * No external API dependencies (no TaoStats, no CMC).
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { readFileSync, statSync } from "fs";
 import { join } from "path";
 import type { SubnetDetailModel } from "@/lib/types/subnets";
@@ -53,7 +53,6 @@ import {
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
-const TAOSTATS_BASE = "https://api.taostats.io/api";
 const SNAPSHOT_MAX_AGE_HOURS = 2;
 const SUBTENSOR_SNAPSHOT_PATH = join(process.cwd(), "public", "data", "subnets.json");
 
@@ -128,64 +127,6 @@ function readSubtensorSnapshot(netuidFilter?: number): {
   } catch {
     return null;
   }
-}
-
-// ── Source 2: TaoStats live API ───────────────────────────────────────────────
-
-function mapTaoStatsRow(s: Record<string, unknown>): SubnetDetailModel {
-  const netuid = Number(s.netuid ?? 0);
-
-  const sourceName   = String(s.subnet_name ?? s.name ?? "");
-  const sourceSymbol = String(s.alpha_token_symbol ?? s.symbol ?? "");
-  const meta = CURATED_METADATA[netuid] ?? buildFallbackMeta(netuid, sourceName, sourceSymbol);
-
-  let taoIn = Number(s.tao_in ?? s.total_tao_locked ?? s.total_stake ?? 0);
-  if (taoIn > 1e9) taoIn /= 1e9;
-
-  let emissionsPerDay = Number(s.emission_per_day ?? s.emission ?? 0);
-  if (emissionsPerDay > 1e6) emissionsPerDay /= 1e9;
-
-  const stakers       = Number(s.registered_neurons ?? s.active_keys ?? s.registered_keys ?? 0);
-  const validatorTake = s.max_take != null ? Math.round(Number(s.max_take) * 100) : 18;
-
-  const ageBlocks = Number(s.blocks_since_registration ?? s.created_at_block ?? 0);
-  const age       = ageBlocks > 0 ? Math.round(ageBlocks / 7200) : 180;
-
-  const rawYield = deriveYield(emissionsPerDay, taoIn);
-  const risk     = deriveRisk(taoIn, stakers, 0);
-  const confidence = deriveConfidence(taoIn, stakers, 0, age);
-  const yieldPct = deriveNormalizedYield(rawYield, taoIn, stakers, age, confidence);
-  const momentum = buildMomentum(yieldPct, 0);
-  const score    = deriveScore(taoIn, yieldPct, stakers, 0, age);
-
-  return {
-    id:            "sn" + netuid,
-    netuid,
-    name:          meta.name,
-    symbol:        meta.symbol,
-    score,
-    yield:         yieldPct,
-    rawYield:      rawYield,
-    yieldDelta7d:  0,
-    inflow:        0,
-    inflowPct:     0,
-    risk,
-    liquidity:     +taoIn.toFixed(1),
-    stakers,
-    emissions:     +emissionsPerDay.toFixed(3),
-    validatorTake,
-    description:   meta.description,
-    summary:       meta.summary,
-    thesis:        meta.thesis,
-    useCases:      meta.useCases,
-    links:         meta.links,
-    category:      meta.category,
-    confidence,
-    momentum,
-    isWatched:     false,
-    breakeven:     deriveBreakeven(yieldPct),
-    age,
-  };
 }
 
 // ── Market enrichment helper ─────────────────────────────────────────────────
@@ -316,51 +257,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // ── Priority 2: TaoStats live API (T1) ───────────────────────────
-  const apiKey = process.env.TAOSTATS_API_KEY ?? "";
-  if (apiKey) {
-    try {
-      const url = netuidFilter != null
-        ? TAOSTATS_BASE + "/dtao/subnet/latest/v1?netuid=" + netuidFilter
-        : TAOSTATS_BASE + "/dtao/subnet/latest/v1?limit=256";
-
-      const resp = await fetch(url, {
-        headers: {
-          Authorization: "Bearer " + apiKey,
-          Accept: "application/json",
-          "User-Agent": "tao-navigator/3.0",
-        },
-        next: { revalidate: 60 },
-      });
-
-      if (!resp.ok) throw new Error("TaoStats returned HTTP " + resp.status);
-
-      const body = await resp.json();
-      const rows: Record<string, unknown>[] = Array.isArray(body)
-        ? body
-        : (body.data ?? []);
-
-      const subnets: SubnetDetailModel[] = rows
-        .filter((r) => Number(r.netuid) !== 0)
-        .map(mapTaoStatsRow)
-        .sort((a, b) => a.netuid - b.netuid);
-
-      return apiResponse(
-        { subnets },
-        {
-          source: DATA_SOURCES.TAOSTATS_LIVE,
-          fetchedAt: new Date().toISOString(),
-        },
-        {
-          extraHeaders: { "X-Subnet-Count": String(subnets.length) },
-        },
-      );
-    } catch (err) {
-      console.error("[/api/subnets] TaoStats fetch failed:", err);
-    }
-  }
-
-  // ── Priority 3: Stale snapshot (T3) ──────────────────────────────
+  // ── Priority 2: Stale snapshot (T3) ──────────────────────────────
   if (snapshot) {
     const enriched = enrichWithMarketData(snapshot.subnets);
     return apiResponse(
@@ -380,7 +277,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // ── Priority 4: Static TypeScript snapshot (T4) ──────────────────
+  // ── Priority 3: Static TypeScript snapshot (T4) ──────────────────
   const staticData = netuidFilter != null
     ? SUBNETS_REAL.filter((s) => s.netuid === netuidFilter)
     : SUBNETS_REAL;
