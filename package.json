@@ -9,7 +9,8 @@
     "lint": "next lint",
     "clean": "rm -rf .next",
     "fetch-subnets": "node scripts/fetch-subnets.mjs",
-    "fetch-subnets-subtensor": "python scripts/fetch_subnets_subtensor.py"
+    "fetch-subnets-subtensor": "python scripts/fetch_subnets_subtensor.py",
+    "build-holder-snapshot": "node scripts/build-holder-snapshot.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.17.2",
