@@ -136,6 +136,8 @@ export default function HoldersPage() {
         </FadeIn>
       )}
 
+      <div className="border-b border-white/6 pb-6 mb-8" />
+
       {loading || !data ? (
         <GlassCard padding="lg">
           <div className="py-16 text-center text-slate-500 text-sm">Loading holder intelligence…</div>

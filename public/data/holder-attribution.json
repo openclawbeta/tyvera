@@ -1,15 +1,27 @@
 {
   "positions": [],
-  "fetchedAt": "2026-04-09T02:04:16.498Z",
+  "fetchedAt": "2026-04-09T06:53:43.600Z",
   "source": "unavailable",
-  "notes": "No positions found from partial extraction across 12 coldkeys (103 alpha queries).",
+  "notes": "No positions found from partial extraction across 10 coldkeys (37 hotkeys, 211 alpha queries).",
+  "coverage": {
+    "coldkeysScanned": 10,
+    "hotkeysScanned": 37,
+    "netuidsScanned": 12,
+    "alphaQueries": 211
+  },
   "_meta": {
-    "generated_at": "2026-04-09T02:04:16.499Z",
-    "duration_ms": 16306,
+    "generated_at": "2026-04-09T06:53:43.601Z",
+    "duration_ms": 37897,
     "extraction": {
       "method": "bounded-chain-scan",
       "limit": 250,
-      "notes": "No positions found from partial extraction across 12 coldkeys (103 alpha queries)."
+      "notes": "No positions found from partial extraction across 10 coldkeys (37 hotkeys, 211 alpha queries).",
+      "coverage": {
+        "coldkeysScanned": 10,
+        "hotkeysScanned": 37,
+        "netuidsScanned": 12,
+        "alphaQueries": 211
+      }
     }
   }
 }

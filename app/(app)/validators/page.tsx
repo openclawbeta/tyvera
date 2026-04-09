@@ -236,6 +236,8 @@ export default function ValidatorsPage() {
         </div>
       )}
 
+      <div className="border-b border-white/6 pb-6 mb-8" />
+
       {/* Summary stats */}
       {summary && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

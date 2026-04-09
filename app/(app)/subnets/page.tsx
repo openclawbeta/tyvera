@@ -172,6 +172,8 @@ export default function SubnetsPage() {
         </div>
       )}
 
+      <div className="border-b border-white/6 pb-6 mb-8" />
+
       {/* Summary cards */}
       {viewMode === "table" && <SubnetSummaryCards subnets={filtered} currency={currency} taoUsdRate={taoUsdRate} />}
 
