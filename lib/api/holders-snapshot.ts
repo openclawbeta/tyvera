@@ -34,7 +34,7 @@ export function readHolderSnapshot(): {
     return {
       data: {
         generatedAt: parsed.generatedAt ?? parsed._meta?.generated_at ?? new Date().toISOString(),
-        source: parsed.source ?? "modeled-demo",
+        source: parsed.source ?? parsed._meta?.source ?? "modeled-demo",
         topHolders: parsed.topHolders ?? [],
         subnetFlows: parsed.subnetFlows ?? [],
         summary: parsed.summary,

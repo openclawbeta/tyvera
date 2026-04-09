@@ -40,7 +40,7 @@ export interface HolderSubnetFlow {
 
 export interface HolderIntelSnapshot {
   generatedAt: string;
-  source: "modeled-demo";
+  source: "modeled-demo" | "chain-partial";
   topHolders: HolderProfile[];
   subnetFlows: HolderSubnetFlow[];
   summary: {
