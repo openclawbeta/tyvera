@@ -1,26 +1,39 @@
-import { NextResponse } from "next/server";
-import { buildSourceHeaders } from "@/lib/data-source-policy";
+import {
+  DATA_SOURCES,
+  apiResponse,
+  type DataSourceId,
+} from "@/lib/data-source-policy";
 import { resolveValidators } from "@/lib/services/validators";
 
 export async function GET() {
   const result = await resolveValidators();
-  const servedAt = new Date().toISOString();
 
-  return NextResponse.json({
-    validators: result.validators,
-    summary: result.summary,
-    _meta: {
-      source: result.source,
+  const source: DataSourceId =
+    result.source === "validator-tao-app"
+      ? DATA_SOURCES.TAOSTATS_LIVE
+      : result.source === "validator-static"
+      ? DATA_SOURCES.STATIC_SNAPSHOT
+      : result.source === "validator-taostats"
+      ? DATA_SOURCES.TAOSTATS_LIVE
+      : DATA_SOURCES.CHAIN_CACHE;
+
+  return apiResponse(
+    {
+      validators: result.validators,
+      summary: result.summary,
+    },
+    {
+      source,
+      fetchedAt: new Date().toISOString(),
       fallbackUsed: result.fallbackUsed,
       stale: result.stale ?? false,
-      servedAt,
-      note: result.note,
-      attribution: result.source === "validator-tao-app" ? "Powered by TAO.app API" : undefined,
+      note:
+        result.source === "validator-tao-app"
+          ? [result.note, "Powered by TAO.app API"].filter(Boolean).join(" · ")
+          : result.note,
     },
-  }, {
-    headers: {
-      "Cache-Control": "public, s-maxage=300",
-      ...buildSourceHeaders({ source: result.source, fallbackUsed: result.fallbackUsed, stale: result.stale, servedAt }),
+    {
+      cacheControl: "public, s-maxage=300",
     },
-  });
+  );
 }

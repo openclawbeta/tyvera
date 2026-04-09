@@ -22,8 +22,10 @@ export async function GET() {
       fetchedAt: result.generatedAt ?? result.data.generatedAt,
       fallbackUsed: result.fallbackUsed,
       stale: result.stale ?? false,
-      note: result.note,
-      attribution: result.source === "tao-app" ? "Powered by TAO.app API" : undefined,
+      note:
+        result.source === "tao-app"
+          ? [result.note, "Powered by TAO.app API"].filter(Boolean).join(" · ")
+          : result.note,
     },
     {
       cacheControl: "public, s-maxage=300",
