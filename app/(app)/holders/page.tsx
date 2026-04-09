@@ -140,10 +140,10 @@ export default function HoldersPage() {
               <GlassCard padding="lg">
                 <div className="mb-4">
                   <h3 className="text-sm font-semibold text-white">Top wallet cohort</h3>
-                  <p className="text-[11px] text-slate-600 mt-1">Top 20 of 100 tracked wallets</p>
+                  <p className="text-[11px] text-slate-600 mt-1">Showing all {data.topHolders.length} tracked wallets</p>
                 </div>
                 <div className="space-y-3 max-h-[840px] overflow-auto pr-1">
-                  {data.topHolders.slice(0, 20).map((holder) => (
+                  {data.topHolders.map((holder) => (
                     <div key={holder.wallet} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
                       <div className="flex items-start gap-3">
                         <div className="w-9 h-9 rounded-xl bg-cyan-400/10 border border-cyan-400/15 flex items-center justify-center text-xs font-bold text-cyan-300">

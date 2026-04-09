@@ -5,13 +5,15 @@ import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { TICKER_REFRESH_MS } from "@/lib/config";
 
 interface TickerData {
-  taoUsd: number;
+  taoUsd: number | null;
   change24h: number;
   marketCap: number;
   volume24h: number;
   blockHeight: number | null;
   fetchedAt: string | null;
   fallback: boolean;
+  awaiting?: boolean;
+  note?: string;
 }
 
 interface SubnetData {
@@ -33,9 +35,7 @@ export function GlobalTicker() {
         const res = await fetchWithTimeout("/api/tao-rate", { timeoutMs: 8_000 });
         if (!res.ok) throw new Error("Failed to fetch ticker");
         const data: TickerData = await res.json();
-        if (typeof data.taoUsd === "number" && data.taoUsd > 0) {
-          setTicker(data);
-        }
+        setTicker(data);
         setIsLoading(false);
       } catch {
         setIsLoading(false);
@@ -108,6 +108,23 @@ export function GlobalTicker() {
     );
   }
 
+  if (ticker.awaiting || typeof ticker.taoUsd !== "number" || ticker.taoUsd <= 0) {
+    return (
+      <div
+        className="fixed top-0 right-0 left-0 lg:left-60 h-8 z-30 flex items-center px-4 gap-3 font-mono text-xs text-white"
+        style={{
+          background: "rgba(0,0,0,0.85)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+        }}
+      >
+        <span className="text-sm font-semibold">τ</span>
+        <span className="text-sm font-semibold text-slate-300">Awaiting pricing source...</span>
+      </div>
+    );
+  }
+
   const isPositive = ticker.change24h >= 0;
   const changeColor = isPositive ? "#10b981" : "#ef4444";
   const changeArrow = isPositive ? "▲" : "▼";
@@ -145,13 +162,12 @@ export function GlobalTicker() {
           WebkitBackdropFilter: "blur(12px)",
         }}
       >
-        <span className="text-sm font-semibold">τ</span>
-        <span className="text-sm font-semibold">${ticker.taoUsd.toFixed(2)}</span>
+        <span className="text-sm font-semibold">τ ${ticker.taoUsd.toFixed(2)}</span>
         <span
-          className="font-mono text-xs flex items-center gap-1"
+          className="font-mono text-xs flex items-center gap-1 font-semibold"
           style={{ color: changeColor }}
         >
-          {changeArrow} {changeAbs.toFixed(2)}%
+          {isPositive ? "+" : "-"}{changeAbs.toFixed(2)}%
         </span>
       </div>
     );
@@ -170,18 +186,17 @@ export function GlobalTicker() {
     >
       {/* TAO Price + 24h Change */}
       <div className="flex items-center gap-2 whitespace-nowrap">
-        <span style={{ color: "#ffffff" }}>τ</span>
         <span
           className="font-semibold"
           style={{ color: "#ffffff", fontSize: "13px" }}
         >
-          ${ticker.taoUsd.toFixed(2)}
+          τ ${ticker.taoUsd.toFixed(2)}
         </span>
         <span
-          className="flex items-center gap-0.5"
+          className="flex items-center gap-0.5 font-semibold"
           style={{ color: changeColor, fontSize: "11px" }}
         >
-          {changeArrow} {changeAbs.toFixed(2)}%
+          {isPositive ? "+" : "-"}{changeAbs.toFixed(2)}%
         </span>
       </div>
 

@@ -13,62 +13,30 @@ interface SubnetSummaryCardsProps {
 
 export function SubnetSummaryCards({ subnets, currency, taoUsdRate }: SubnetSummaryCardsProps) {
   const stats = useMemo(() => {
-    let rootValue = 0;
-    let alphaValue = 0;
-    let rootStake = 0;
-    let alphaStake = 0;
-    let rootVolume = 0;
-    let alphaVolume = 0;
+    const totalValue = subnets.reduce((sum, subnet) => sum + (subnet.marketCap ?? 0), 0);
+    const totalStake = subnets.reduce((sum, subnet) => sum + (subnet.liquidity ?? 0), 0);
+    const totalVolume = subnets.reduce((sum, subnet) => sum + (subnet.volume24h ?? 0), 0);
+    const activeSubnets = subnets.filter((subnet) => subnet.netuid !== 0).length;
+    const avgYield = subnets.length > 0
+      ? subnets.reduce((sum, subnet) => sum + (subnet.yield ?? 0), 0) / subnets.length
+      : 0;
+    const avgScore = subnets.length > 0
+      ? subnets.reduce((sum, subnet) => sum + (subnet.score ?? 0), 0) / subnets.length
+      : 0;
 
-    subnets.forEach((subnet) => {
-      const isRoot = subnet.netuid === 0;
-      const value = subnet.marketCap ?? 0;
-      const stake = subnet.liquidity ?? 0;
-      const volume = subnet.volume24h ?? 0;
-
-      if (isRoot) {
-        rootValue += value;
-        rootStake += stake;
-        rootVolume += volume;
-      } else {
-        alphaValue += value;
-        alphaStake += stake;
-        alphaVolume += volume;
-      }
-    });
-
-    return {
-      totalValue: rootValue + alphaValue,
-      rootValue,
-      alphaValue,
-      rootValuePct: (rootValue / (rootValue + alphaValue)) * 100 || 0,
-      totalStake: rootStake + alphaStake,
-      rootStake,
-      alphaStake,
-      rootStakePct: (rootStake / (rootStake + alphaStake)) * 100 || 0,
-      totalVolume: rootVolume + alphaVolume,
-      rootVolume,
-      alphaVolume,
-      rootVolumePct: (rootVolume / (rootVolume + alphaVolume)) * 100 || 0,
-    };
+    return { totalValue, totalStake, totalVolume, activeSubnets, avgYield, avgScore };
   }, [subnets]);
 
   const Card = ({
     title,
     total,
-    rootLabel,
-    alphaLabel,
-    rootValue,
-    alphaValue,
-    rootPct,
+    helper,
+    detail,
   }: {
     title: string;
     total: number;
-    rootLabel: string;
-    alphaLabel: string;
-    rootValue: number;
-    alphaValue: number;
-    rootPct: number;
+    helper: string;
+    detail: string;
   }) => (
     <div className="glass rounded-xl p-4 flex flex-col gap-3">
       <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -77,67 +45,30 @@ export function SubnetSummaryCards({ subnets, currency, taoUsdRate }: SubnetSumm
       <div className="text-lg font-bold text-white font-mono">
         {formatCurrencyValue(total, currency, taoUsdRate)}
       </div>
-
-      {/* Progress bar */}
-      <div className="flex h-2 rounded-full overflow-hidden bg-white/[0.05]">
-        <div
-          className="bg-emerald-500 transition-all"
-          style={{ width: `${rootPct}%` }}
-        />
-        <div className="flex-1 bg-red-500/40" />
-      </div>
-
-      {/* Breakdown */}
-      <div className="flex items-center gap-4 text-[11px] text-slate-400">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-500" />
-          <div>
-            <span className="text-slate-300 font-mono">{formatCurrencyValue(rootValue, currency, taoUsdRate)}</span>
-            <span className="text-slate-600"> {rootLabel}</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-red-500" />
-          <div>
-            <span className="text-slate-300 font-mono">{formatCurrencyValue(alphaValue, currency, taoUsdRate)}</span>
-            <span className="text-slate-600"> {alphaLabel}</span>
-          </div>
-        </div>
-        <div className="ml-auto text-slate-500">
-          {rootPct.toFixed(0)}% Root
-        </div>
-      </div>
+      <div className="text-[11px] text-slate-400">{helper}</div>
+      <div className="text-[10px] text-slate-600">{detail}</div>
     </div>
   );
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <Card
-        title="Subnets Value"
+        title="Displayed Market Value"
         total={stats.totalValue}
-        rootLabel="Root"
-        alphaLabel="Alpha"
-        rootValue={stats.rootValue}
-        alphaValue={stats.alphaValue}
-        rootPct={stats.rootValuePct}
+        helper={`${stats.activeSubnets} active subnets in current results`}
+        detail={`Average score ${stats.avgScore.toFixed(2)}`}
       />
       <Card
-        title="Total Stake Split"
+        title="Displayed Liquidity"
         total={stats.totalStake}
-        rootLabel="Root"
-        alphaLabel="Alpha"
-        rootValue={stats.rootStake}
-        alphaValue={stats.alphaStake}
-        rootPct={stats.rootStakePct}
+        helper="Sum of liquidity across the displayed subnet set"
+        detail={`Average yield ${stats.avgYield.toFixed(2)}%`}
       />
       <Card
-        title="Total Volume (24H)"
+        title="Displayed 24H Volume"
         total={stats.totalVolume}
-        rootLabel="Root"
-        alphaLabel="Alpha"
-        rootValue={stats.rootVolume}
-        alphaValue={stats.alphaVolume}
-        rootPct={stats.rootVolumePct}
+        helper="Combined 24-hour volume for the displayed subnet set"
+        detail="No root/alpha split shown unless root data is actually present"
       />
     </div>
   );
