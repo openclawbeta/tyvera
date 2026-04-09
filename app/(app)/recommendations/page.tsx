@@ -149,6 +149,11 @@ function WalletBanner() {
 export default function RecommendationsPage() {
   const recommendations = getRecommendations();
   const [selected, setSelected] = useState<Recommendation | null>(recommendations[1] ?? recommendations[0] ?? null);
+  const [filterBand, setFilterBand] = useState<string>("all");
+
+  const filteredRecs = filterBand === "all"
+    ? recommendations
+    : recommendations.filter((r) => r.band.toLowerCase() === filterBand);
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">
@@ -175,10 +180,19 @@ export default function RecommendationsPage() {
               {recommendations.length} active
             </span>
           </div>
-          <button className="btn-ghost gap-1.5">
-            <Filter className="w-3.5 h-3.5" />
-            Filter
-          </button>
+          <div className="relative">
+            <select
+              value={filterBand}
+              onChange={(e) => setFilterBand(e.target.value)}
+              className="appearance-none btn-ghost gap-1.5 pr-7 cursor-pointer"
+            >
+              <option value="all">All Bands</option>
+              <option value="strong">Strong</option>
+              <option value="moderate">Moderate</option>
+              <option value="mild">Mild</option>
+            </select>
+            <Filter className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+          </div>
         </div>
       </div>
 
@@ -206,7 +220,7 @@ export default function RecommendationsPage() {
           </FadeIn>
 
           {/* Cards */}
-          {recommendations.map((rec, i) => (
+          {filteredRecs.map((rec, i) => (
             <RecommendationCard
               key={rec.id}
               rec={rec}
