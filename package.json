@@ -12,7 +12,7 @@
     "fetch-subnets-subtensor": "python scripts/fetch_subnets_subtensor.py",
     "build-holder-attribution": "node scripts/build-holder-attribution.mjs",
     "build-holder-snapshot": "node scripts/build-holder-snapshot.mjs",
-    "refresh-intel": "python scripts/fetch_subnets_subtensor.py && node scripts/build-holder-attribution.mjs && node scripts/build-holder-snapshot.mjs"
+    "refresh-intel": "node scripts/refresh-intel.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.17.2",
