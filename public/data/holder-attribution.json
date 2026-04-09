@@ -1,61 +1,15 @@
 {
-  "positions": [
-    {
-      "coldkey": "5FREALATTR0001AAAA",
-      "hotkey": "5HREALHOTKEY0001",
-      "netuid": 0,
-      "stakeTao": 18420.5
-    },
-    {
-      "coldkey": "5FREALATTR0001AAAA",
-      "hotkey": "5HREALHOTKEY0001",
-      "netuid": 13,
-      "stakeTao": 9221.25
-    },
-    {
-      "coldkey": "5FREALATTR0001AAAA",
-      "hotkey": "5HREALHOTKEY0001",
-      "netuid": 8,
-      "stakeTao": 6104.8
-    },
-    {
-      "coldkey": "5FREALATTR0002BBBB",
-      "hotkey": "5HREALHOTKEY0002",
-      "netuid": 0,
-      "stakeTao": 7310.2
-    },
-    {
-      "coldkey": "5FREALATTR0002BBBB",
-      "hotkey": "5HREALHOTKEY0002",
-      "netuid": 64,
-      "stakeTao": 11880.4
-    },
-    {
-      "coldkey": "5FREALATTR0002BBBB",
-      "hotkey": "5HREALHOTKEY0002",
-      "netuid": 27,
-      "stakeTao": 4488.9
-    },
-    {
-      "coldkey": "5FREALATTR0003CCCC",
-      "hotkey": "5HREALHOTKEY0003",
-      "netuid": 41,
-      "stakeTao": 9677.3
-    },
-    {
-      "coldkey": "5FREALATTR0003CCCC",
-      "hotkey": "5HREALHOTKEY0003",
-      "netuid": 30,
-      "stakeTao": 5322.6
-    },
-    {
-      "coldkey": "5FREALATTR0003CCCC",
-      "hotkey": "5HREALHOTKEY0003",
-      "netuid": 0,
-      "stakeTao": 2210.4
+  "positions": [],
+  "fetchedAt": "2026-04-09T02:01:21.104Z",
+  "source": "unavailable",
+  "notes": "No positions found from partial extraction across 12 coldkeys (110 alpha queries).",
+  "_meta": {
+    "generated_at": "2026-04-09T02:01:21.105Z",
+    "duration_ms": 37769,
+    "extraction": {
+      "method": "bounded-chain-scan",
+      "limit": 250,
+      "notes": "No positions found from partial extraction across 12 coldkeys (110 alpha queries)."
     }
-  ],
-  "fetchedAt": "2026-04-09T01:50:00.000Z",
-  "source": "chain-live",
-  "notes": "Seed real-attribution fixture to prove snapshot pipeline supports real extracted records when available."
+  }
 }

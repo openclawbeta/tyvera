@@ -245,7 +245,10 @@ export function RecommendationCard({ rec, selected, onSelect, index = 0 }: Recom
             color: "#04060d",
             boxShadow: "0 2px 8px rgba(34,211,238,0.12), inset 0 1px 0 rgba(255,255,255,0.18)",
           }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect?.();
+          }}
         >
           <Zap className="w-3.5 h-3.5" />
           Review & Submit
@@ -257,7 +260,9 @@ export function RecommendationCard({ rec, selected, onSelect, index = 0 }: Recom
             border: "1px solid rgba(255,255,255,0.08)",
             color: "#64748b",
           }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLElement).style.color = "#94a3b8";
             (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.14)";
