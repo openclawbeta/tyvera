@@ -13,8 +13,10 @@ import { confirmPaymentIntent, findPaymentIntentByMemo, expireSubscriptions } fr
 import { PAYMENT_VERIFY_INTERVAL_MS } from "@/lib/config";
 import { requireEnv } from "@/lib/env";
 
-// Tyvera deposit address — set via DEPOSIT_ADDRESS env var
-const DEPOSIT_ADDRESS = requireEnv("DEPOSIT_ADDRESS");
+// Tyvera deposit address — set via DEPOSIT_ADDRESS env var (lazy to avoid build-time crash)
+function getDepositAddress(): string {
+  return requireEnv("DEPOSIT_ADDRESS");
+}
 
 // Subtensor finney RPC endpoint — set via SUBTENSOR_RPC env var
 const SUBTENSOR_RPC = process.env.SUBTENSOR_RPC ?? "https://entrypoint-finney.opentensor.ai:443";
@@ -48,7 +50,7 @@ async function fetchRecentTransfers(): Promise<Transfer[]> {
   try {
     // Try TaoStats API first (free tier available)
     const resp = await fetch(
-      `https://api.taostats.io/api/v1/transfers?to=${DEPOSIT_ADDRESS}&limit=20`,
+      `https://api.taostats.io/api/v1/transfers?to=${getDepositAddress()}&limit=20`,
       {
         headers: {
           "Accept": "application/json",
@@ -119,7 +121,7 @@ export async function runVerificationCycle(): Promise<{
     if (processedTxHashes.has(tx.txHash)) continue;
 
     // Must be sent TO our deposit address
-    if (tx.to !== DEPOSIT_ADDRESS) continue;
+    if (tx.to !== getDepositAddress()) continue;
 
     // Must have a memo matching our format
     if (!tx.memo || !tx.memo.startsWith("TYV-")) continue;

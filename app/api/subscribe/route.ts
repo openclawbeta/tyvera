@@ -16,7 +16,9 @@ import { requireEnv } from "@/lib/env";
 /* The /api/verify-payments cron matches incoming transfers by memo.    */
 /* ─────────────────────────────────────────────────────────────────── */
 
-const DEPOSIT_ADDRESS = requireEnv("DEPOSIT_ADDRESS");
+function getDepositAddress(): string {
+  return requireEnv("DEPOSIT_ADDRESS");
+}
 
 /**
  * Compute TAO prices dynamically from USD tier prices and current TAO rate.
@@ -111,11 +113,11 @@ export async function POST(request: NextRequest) {
       billing,
       amount_tao: amountTao,
       duration_days: durationDays,
-      deposit_address: DEPOSIT_ADDRESS,
+      deposit_address: getDepositAddress(),
       memo,
       expires_at: expiresAt,
       instructions: [
-        `Send exactly ${amountTao} τ to ${DEPOSIT_ADDRESS}`,
+        `Send exactly ${amountTao} τ to ${getDepositAddress()}`,
         `Include memo: ${memo}`,
         "Payment will be verified automatically within 10 minutes",
         "Your subscription activates immediately on confirmation",
