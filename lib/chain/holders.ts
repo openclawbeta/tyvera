@@ -9,11 +9,12 @@ const SUBTENSOR_ENDPOINTS = [
 const CONNECT_TIMEOUT_MS = 15_000;
 const QUERY_TIMEOUT_MS = 45_000;
 const RAO_PER_TAO = 1_000_000_000;
-const MAX_COLDKEYS_TO_SCAN = 12;
+const MAX_COLDKEYS_TO_SCAN = 20;
 const MAX_HOTKEYS_PER_COLDKEY = 3;
-const MAX_NETUIDS_TO_SCAN = 10;
+const MAX_NETUIDS_TO_SCAN = 12;
 const MIN_POSITION_TAO = 5;
-const MAX_TOTAL_ALPHA_QUERIES = MAX_COLDKEYS_TO_SCAN * MAX_HOTKEYS_PER_COLDKEY * MAX_NETUIDS_TO_SCAN;
+const MAX_TOTAL_ALPHA_QUERIES = 360;
+const TOP_NEURONS_PER_SUBNET = 8;
 
 function toNumber(raw: unknown): number {
   if (raw === null || raw === undefined) return 0;
@@ -53,9 +54,12 @@ async function getActiveNetuids(api: ApiPromise): Promise<number[]> {
     .sort((a, b) => a - b);
 }
 
-async function getColdkeysToScan(api: ApiPromise): Promise<string[]> {
+/**
+ * Strategy 1 (legacy): Query stakingColdkeysByIndex if available.
+ * Low yield — this storage key is unreliable on many chains.
+ */
+async function getColdkeysByIndex(api: ApiPromise): Promise<string[]> {
   const coldkeys: string[] = [];
-
   for (let i = 0; i < MAX_COLDKEYS_TO_SCAN; i++) {
     try {
       const coldkey = await withTimeout(
@@ -64,15 +68,119 @@ async function getColdkeysToScan(api: ApiPromise): Promise<string[]> {
         `stakingColdkeysByIndex(${i})`,
       );
       const value = String(coldkey);
-      if (value && value !== "null" && value !== "undefined") {
+      if (value && value !== "null" && value !== "undefined" && value.length > 10) {
         coldkeys.push(value);
       }
     } catch {
       break;
     }
   }
-
   return coldkeys;
+}
+
+/**
+ * Strategy 2 (improved): Query metagraph for top subnets, collect top-stake
+ * hotkeys, then resolve coldkeys via Owner storage map.
+ * Much higher yield because we start from known high-value neurons.
+ */
+async function getColdkeysFromMetagraph(api: ApiPromise, netuids: number[]): Promise<string[]> {
+  const hotkeyStakeMap = new Map<string, number>();
+
+  // Query metagraph for top 3 subnets by staker count to find high-stake hotkeys
+  const sampleNetuids = netuids.slice(0, 3);
+  for (const netuid of sampleNetuids) {
+    try {
+      // Get UIDs in this subnet
+      const nRaw = await withTimeout(
+        api.query.subtensorModule.subnetworkN(netuid),
+        3_000,
+        `subnetworkN(${netuid})`,
+      );
+      const n = toNumber(nRaw);
+      const uids = Array.from({ length: Math.min(n, 64) }, (_, i) => i);
+
+      // Get hotkeys for these UIDs
+      const hotkeys = await Promise.all(
+        uids.map((uid) =>
+          withTimeout(
+            api.query.subtensorModule.keys(netuid, uid),
+            1_500,
+            `keys(${netuid},${uid})`,
+          ).then(String).catch(() => ""),
+        ),
+      );
+
+      // Get stakes for these UIDs
+      const stakes = await Promise.all(
+        uids.map((uid) =>
+          withTimeout(
+            (api.query.subtensorModule as any).S?.(netuid, uid) ??
+            (api.query.subtensorModule as any).stake?.(netuid, uid) ??
+            Promise.resolve(0),
+            1_500,
+            `stake(${netuid},${uid})`,
+          ).then(toNumber).catch(() => 0),
+        ),
+      );
+
+      for (let i = 0; i < hotkeys.length; i++) {
+        const hk = hotkeys[i];
+        if (hk && hk.length > 10) {
+          const existing = hotkeyStakeMap.get(hk) ?? 0;
+          hotkeyStakeMap.set(hk, existing + stakes[i]);
+        }
+      }
+    } catch {
+      // skip this subnet
+    }
+  }
+
+  // Sort by total stake and take top candidates
+  const topHotkeys = Array.from(hotkeyStakeMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, MAX_COLDKEYS_TO_SCAN * 2)
+    .map(([hk]) => hk);
+
+  // Resolve hotkeys → coldkeys via Owner storage
+  const coldkeySet = new Set<string>();
+  for (const hotkey of topHotkeys) {
+    try {
+      const owner = await withTimeout(
+        (api.query.subtensorModule as any).owner(hotkey),
+        1_500,
+        `owner(${hotkey.slice(0, 10)})`,
+      );
+      const ck = String(owner);
+      if (ck && ck.length > 10 && ck !== "null" && ck !== "undefined") {
+        coldkeySet.add(ck);
+      }
+    } catch {
+      // skip
+    }
+    if (coldkeySet.size >= MAX_COLDKEYS_TO_SCAN) break;
+  }
+
+  return Array.from(coldkeySet);
+}
+
+/**
+ * Combined strategy: try metagraph-based extraction first (higher yield),
+ * fall back to index-based if that returns few results.
+ */
+async function getColdkeysToScan(api: ApiPromise, netuids: number[]): Promise<string[]> {
+  // Strategy 2: metagraph-based (preferred)
+  const metagraphColdkeys = await getColdkeysFromMetagraph(api, netuids).catch(() => [] as string[]);
+
+  if (metagraphColdkeys.length >= 5) {
+    return metagraphColdkeys;
+  }
+
+  // Strategy 1: index-based (fallback)
+  const indexColdkeys = await getColdkeysByIndex(api).catch(() => [] as string[]);
+
+  // Merge both sets
+  const merged = new Set([...metagraphColdkeys, ...indexColdkeys]);
+  return Array.from(merged).slice(0, MAX_COLDKEYS_TO_SCAN);
 }
 
 export async function fetchHolderAttributionFromChain(limit = 250): Promise<HolderAttributionSnapshot> {
@@ -82,8 +190,8 @@ export async function fetchHolderAttributionFromChain(limit = 250): Promise<Hold
     api = await connect();
     const connectedApi = api;
 
-    const coldkeys = await withTimeout(getColdkeysToScan(connectedApi), QUERY_TIMEOUT_MS, "stakingColdkeysByIndex");
     const netuids = (await withTimeout(getActiveNetuids(connectedApi), QUERY_TIMEOUT_MS, "activeNetuids")).slice(0, MAX_NETUIDS_TO_SCAN);
+    const coldkeys = await withTimeout(getColdkeysToScan(connectedApi, netuids), QUERY_TIMEOUT_MS, "getColdkeysToScan");
 
     const positions: ChainHolderPosition[] = [];
     let alphaQueries = 0;
