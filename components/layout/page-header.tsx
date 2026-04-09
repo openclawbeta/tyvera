@@ -10,13 +10,15 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, children, className }: PageHeaderProps) {
   return (
-    <div className={cn("mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between", className)}>
-      <div>
-        <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500 font-semibold mb-2">Tyvera Workspace</div>
-        <h1 className="text-3xl lg:text-4xl font-semibold tracking-tight leading-tight">{title}</h1>
-        {subtitle && <p className="mt-3 max-w-3xl text-sm lg:text-base text-slate-400 leading-relaxed">{subtitle}</p>}
+    <div className={cn("mb-8 border-b border-white/6 pb-6", className)}>
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.18em] text-slate-500 font-semibold mb-2">Tyvera Workspace</div>
+          <h1 className="text-3xl lg:text-4xl font-semibold tracking-tight leading-tight">{title}</h1>
+          {subtitle ? <p className="mt-3 max-w-3xl text-sm lg:text-base text-slate-400 leading-relaxed">{subtitle}</p> : null}
+        </div>
+        {children ? <div className="flex items-center gap-2 flex-wrap">{children}</div> : null}
       </div>
-      {children ? <div className="flex items-center gap-2 flex-wrap">{children}</div> : null}
     </div>
   );
 }

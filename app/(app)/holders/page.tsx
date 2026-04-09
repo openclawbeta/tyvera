@@ -67,7 +67,10 @@ export default function HoldersPage() {
         title="Holder Intelligence"
         subtitle="Top 100 wallet cohort tracking across root stake and subnet rotations"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+          <div className="inline-flex items-center rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-slate-400">
+            Cohort monitoring surface
+          </div>
           <DataSourceBadge source="api" ageSec={null} />
           {data && (
             <span className={`inline-flex items-center rounded-lg border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${
@@ -82,6 +85,36 @@ export default function HoldersPage() {
           )}
         </div>
       </PageHeader>
+
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold">
+        Holder intelligence workflow
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-3">
+        {[
+          {
+            label: "Cohort monitor",
+            title: "Track concentration across the top wallet layer.",
+            detail: "This page is for understanding who controls size, where stake is concentrated, and how the dominant cohort is positioned.",
+          },
+          {
+            label: "Flow intelligence",
+            title: "Map wallet rotation into subnet-level movement.",
+            detail: "The valuable output here is not raw wallet lists — it is directional flow, posture shifts, and exposure changes across subnets.",
+          },
+          {
+            label: "Truthfulness first",
+            title: "Provider quality must remain explicit.",
+            detail: "Modeled, chain-partial, and TAO.app-backed states stay visible so users know whether this is real attribution or staged intelligence.",
+          },
+        ].map((item) => (
+          <div key={item.label} className="rounded-2xl border border-white/8 bg-white/[0.025] p-5">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold">{item.label}</div>
+            <div className="mt-3 text-lg font-semibold tracking-tight text-white">{item.title}</div>
+            <p className="mt-2 text-sm leading-relaxed text-slate-400">{item.detail}</p>
+          </div>
+        ))}
+      </div>
 
       <FadeIn>
         <div
@@ -144,6 +177,10 @@ export default function HoldersPage() {
         </GlassCard>
       ) : (
         <>
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold">
+            Holder cohort overview
+          </div>
+
           <FadeIn delay={0.05}>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {[
@@ -159,6 +196,10 @@ export default function HoldersPage() {
               ))}
             </div>
           </FadeIn>
+
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold">
+            Wallet ranking, flow, and coverage
+          </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
             <FadeIn delay={0.08}>

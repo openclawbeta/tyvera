@@ -44,19 +44,52 @@ export default function DashboardPage() {
   return (
     <div className="max-w-[1400px] mx-auto space-y-7">
 
-      {/* ── Header ── */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <PageHeader
-          title="Dashboard"
-          subtitle="Your Bittensor portfolio at a glance"
-        />
-        <div className="flex flex-wrap items-center gap-3">
+      <PageHeader
+        title="Dashboard"
+        subtitle="Your Bittensor portfolio at a glance"
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-slate-400">
+            Personal command surface
+          </div>
           <button onClick={handleRefresh} className="btn-ghost gap-1.5">
             <RefreshCw className={cn("w-3.5 h-3.5", refreshing && "animate-spin")} />
             Refresh
           </button>
         </div>
+      </PageHeader>
+
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold">
+        Portfolio context and decision framing
       </div>
+
+      <FadeIn delay={0.03}>
+        <div className="grid gap-4 xl:grid-cols-3">
+          {[
+            {
+              label: "Portfolio command",
+              title: "Track value, stake posture, and realized yield.",
+              detail: "This surface is for allocation monitoring — not generic analytics. The main chart should answer what your TAO exposure is doing now.",
+            },
+            {
+              label: "Network readthrough",
+              title: "Use subnet momentum to contextualize portfolio moves.",
+              detail: "Yield and trend cards here work as market context around your positions, not as isolated decoration.",
+            },
+            {
+              label: "Decision layer",
+              title: "Recommendations should map to action, not filler.",
+              detail: "Allocation, recent activity, and recommendation modules are meant to support rebalance decisions quickly.",
+            },
+          ].map((item) => (
+            <div key={item.label} className="rounded-2xl border border-white/8 bg-white/[0.025] p-5">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold">{item.label}</div>
+              <div className="mt-3 text-lg font-semibold tracking-tight text-white">{item.title}</div>
+              <p className="mt-2 text-sm leading-relaxed text-slate-400">{item.detail}</p>
+            </div>
+          ))}
+        </div>
+      </FadeIn>
 
       {/* ── Primary metric zone ── */}
       <FadeIn delay={0.05}>
@@ -66,6 +99,10 @@ export default function DashboardPage() {
             {/* Portfolio Value + chart — dominant */}
             <div className="col-span-12 lg:col-span-9">
               <GlassCard padding="lg">
+                <div className="mb-5 flex items-center justify-between gap-3 border-b border-white/[0.06] pb-4">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Core portfolio signal</div>
+                  <div className="text-[11px] text-slate-500">Value trend · selected horizon</div>
+                </div>
                 <div className="flex items-start justify-between mb-5">
                   <div>
                     <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">
@@ -107,6 +144,9 @@ export default function DashboardPage() {
 
             {/* Secondary stats — quiet */}
             <div className="col-span-12 lg:col-span-3 flex flex-col gap-3">
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold">
+                Supporting portfolio stats
+              </div>
               {[
                 { label: "Total Staked",   value: `${portfolioStats.totalStakedTao.toFixed(2)} τ` },
                 { label: "Weighted Yield", value: `${portfolioStats.weightedYield.toFixed(1)}%` },

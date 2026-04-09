@@ -135,13 +135,46 @@ export default function SubnetsPage() {
         title="Subnet Explorer"
         subtitle={`${totalSubnets} subnets · scored, ranked, and filtered`}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+          <div className="inline-flex items-center rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-slate-400">
+            Network discovery surface
+          </div>
           <DataSourceBadge source={dataSource} ageSec={snapshotAge} />
           <div className="text-xs text-slate-500">
             Showing <span className="text-white font-semibold">{filtered.length}</span> of {totalSubnets}
           </div>
         </div>
       </PageHeader>
+
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold">
+        Subnet discovery workflow
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-3">
+        {[
+          {
+            label: "Discovery engine",
+            title: "Screen the network by score, yield, liquidity, and risk.",
+            detail: "This page is the subnet decision surface — filters and ranking are the core product, not just page furniture.",
+          },
+          {
+            label: "Comparison workflow",
+            title: "Move from scan to compare without losing context.",
+            detail: "Table, cards, heatmap, and compare states should all support shortlist creation and faster subnet selection.",
+          },
+          {
+            label: "Live posture",
+            title: "Source age and alert context stay visible.",
+            detail: "Snapshot age, source badge, and network alerts help users judge freshness before acting on subnet data.",
+          },
+        ].map((item) => (
+          <div key={item.label} className="rounded-2xl border border-white/8 bg-white/[0.025] p-5">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold">{item.label}</div>
+            <div className="mt-3 text-lg font-semibold tracking-tight text-white">{item.title}</div>
+            <p className="mt-2 text-sm leading-relaxed text-slate-400">{item.detail}</p>
+          </div>
+        ))}
+      </div>
 
       {compareSubnets.length > 0 && (
         <div className="rounded-xl border border-cyan-400/15 bg-cyan-400/[0.03] p-4">
@@ -174,8 +207,16 @@ export default function SubnetsPage() {
 
       <div className="border-b border-white/6 pb-6 mb-8" />
 
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold">
+        Subnet market overview
+      </div>
+
       {/* Summary cards */}
       {viewMode === "table" && <SubnetSummaryCards subnets={filtered} currency={currency} taoUsdRate={taoUsdRate} />}
+
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold">
+        Ranking and filter controls
+      </div>
 
       {/* Category quick-filter pills */}
       <div className="flex flex-wrap items-center gap-2">
