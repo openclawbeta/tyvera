@@ -47,9 +47,11 @@ function seededRandom(netuid: number, index: number = 0): number {
 /**
  * Fill in market data fields that the API didn't provide.
  *
- * When TaoStats is the data source, most of these fields arrive pre-filled.
+ * When TaoStats or CoinMarketCap enrichment is the data source, most of
+ * these fields arrive pre-filled with real market data.
  * When chain data is the source, market fields are absent — we fill them
- * with seeded deterministic values so the table isn't empty.
+ * with seeded deterministic estimates so the table isn't empty.
+ * The `marketEstimated` flag is set to true when any field uses estimates.
  *
  * Rule: if the field already has a real value (not undefined/null/0), keep it.
  */
@@ -77,6 +79,9 @@ function deriveTableFields(subnet: SubnetDetailModel): Partial<SubnetDetailModel
   const dailyChainBuys = keep(subnet.dailyChainBuys, Math.floor(seededRandom(netuid, 10) * 300));
   const incentivePct   = keep(subnet.incentivePct,   seededRandom(netuid, 11) * 100);
 
+  // Flag if any market fields were estimated (not from real API data)
+  const marketEstimated = !subnet.alphaPrice || !subnet.marketCap || !subnet.volume24h;
+
   return {
     alphaPrice,
     marketCap,
@@ -91,6 +96,7 @@ function deriveTableFields(subnet: SubnetDetailModel): Partial<SubnetDetailModel
     flow1m,
     dailyChainBuys,
     incentivePct,
+    marketEstimated,
   };
 }
 

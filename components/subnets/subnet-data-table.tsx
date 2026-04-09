@@ -241,6 +241,13 @@ export function SubnetDataTable({ subnets, onSelect, taoUsd = 600 }: SubnetDataT
         </div>
       </div>
 
+      {/* Estimated market data note */}
+      {paginatedSubnets.some((s) => s.marketEstimated) && (
+        <p className="text-[10px] text-slate-600 px-1">
+          Market fields (price, volume, % changes) marked with estimates where live API data is unavailable.
+        </p>
+      )}
+
       {/* Table */}
       <div className="glass rounded-xl overflow-hidden">
         {paginatedSubnets.length === 0 ? (

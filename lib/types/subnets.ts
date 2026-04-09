@@ -56,6 +56,8 @@ export interface SubnetDetailModel extends SubnetCardModel {
   flow1m?: number;
   dailyChainBuys?: number;
   incentivePct?: number;
+  /** True when market fields (price, volume, changes) are model estimates, not live API data */
+  marketEstimated?: boolean;
 }
 
 export interface TimeSeriesPoint {

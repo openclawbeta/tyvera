@@ -53,10 +53,11 @@ export function deriveRisk(
  * Derive composite score 0–100.
  *
  * Weights:
- *   Liquidity   40 %   (normalised against 15 000 τ ceiling)
- *   Yield       30 %   (normalised against 35 % APR ceiling)
- *   Stakers     20 %   (normalised against 2 000 ceiling)
- *   Stability   10 %   (penalises high yield volatility)
+ *   Liquidity    34 %   (normalised against 2 500 000 τ ceiling)
+ *   Yield        22 %   (normalised against 3.2 % ceiling)
+ *   Stakers      20 %   (normalised against 256 ceiling)
+ *   Stability    14 %   (penalises high yield volatility)
+ *   Maturity     10 %   (age up to 365 days)
  *
  * ESTIMATED — replace with real scoring model in Phase 2.
  */

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight, RefreshCw, Wallet } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
@@ -15,8 +16,10 @@ import { cn, subnetGradient, formatDate } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet-context";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { walletState, openModal } = useWallet();
   const [refreshing, setRefreshing] = useState(false);
+  const [dashPeriod, setDashPeriod] = useState("14d");
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -79,10 +82,11 @@ export default function DashboardPage() {
                     {["7d", "14d", "30d"].map((p) => (
                       <button
                         key={p}
+                        onClick={() => setDashPeriod(p)}
                         className="px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-150"
                         style={{
-                          color: p === "14d" ? "#22d3ee" : "#475569",
-                          background: p === "14d" ? "rgba(34,211,238,0.08)" : "transparent",
+                          color: p === dashPeriod ? "#22d3ee" : "#475569",
+                          background: p === dashPeriod ? "rgba(34,211,238,0.08)" : "transparent",
                         }}
                       >
                         {p}
@@ -302,7 +306,8 @@ export default function DashboardPage() {
                 </p>
 
                 <button
-                  className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-semibold text-cyan-400 transition-all duration-150"
+                  onClick={() => router.push("/recommendations")}
+                  className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-semibold text-cyan-400 transition-all duration-150 hover:bg-cyan-400/10"
                   style={{
                     background: "rgba(34,211,238,0.06)",
                     border: "1px solid rgba(34,211,238,0.15)",

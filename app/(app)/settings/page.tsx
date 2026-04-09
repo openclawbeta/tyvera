@@ -449,6 +449,16 @@ function NotificationsSection() {
 function GuardrailsSection() {
   const [blockSpeculative, setBlockSpeculative] = useState(false);
   const [enableRecs, setEnableRecs] = useState(true);
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    // Persist to localStorage so settings survive page reloads
+    try {
+      localStorage.setItem("tyvera_guardrails", JSON.stringify({ blockSpeculative, enableRecs }));
+    } catch { /* localStorage unavailable */ }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
 
   return (
     <Panel>
@@ -493,15 +503,18 @@ function GuardrailsSection() {
         </SettingRow>
       </div>
       <button
+        onClick={handleSave}
         className="flex items-center gap-2 font-semibold text-[12px] px-4 py-2.5 rounded-xl transition-all duration-200"
         style={{
-          background: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
+          background: saved
+            ? "linear-gradient(135deg, #34d399 0%, #10b981 100%)"
+            : "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
           color: "#04060d",
           boxShadow: "0 0 0 1px rgba(34,211,238,0.4), 0 4px 12px rgba(34,211,238,0.18), inset 0 1px 0 rgba(255,255,255,0.2)",
         }}
       >
         <Save className="w-3.5 h-3.5" />
-        Save Guardrails
+        {saved ? "Saved!" : "Save Guardrails"}
       </button>
     </Panel>
   );

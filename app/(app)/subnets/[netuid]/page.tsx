@@ -619,7 +619,7 @@ export default function SubnetDetailPage() {
           <div className="col-span-12 lg:col-span-8">
             <ChartPanel
               title="Yield History"
-              label="30-day trend"
+              label="30-day modeled trend"
               data={yieldData}
               color={isUp ? "#22d3ee" : "#f87171"}
               gradientId={`yield-detail-${subnet.netuid}`}
@@ -632,7 +632,7 @@ export default function SubnetDetailPage() {
           <div className="col-span-12 lg:col-span-4 flex flex-col gap-5">
             <ChartPanel
               title="Daily Emissions"
-              label="30d avg"
+              label="30d modeled"
               data={emissionsData}
               color="#8b5cf6"
               gradientId={`ems-${subnet.netuid}`}
@@ -641,7 +641,7 @@ export default function SubnetDetailPage() {
             />
             <ChartPanel
               title="Stake Inflow"
-              label="30d rolling"
+              label="30d modeled"
               data={inflowData}
               color={inflowTrend >= 0 ? "#34d399" : "#f87171"}
               gradientId={`inflow-${subnet.netuid}`}
@@ -650,6 +650,9 @@ export default function SubnetDetailPage() {
             />
           </div>
         </div>
+        <p className="text-[10px] text-slate-600 mt-2 text-right">
+          Charts show modeled trends derived from current on-chain metrics. Historical indexing coming soon.
+        </p>
       </FadeIn>
 
       {/* ── Metagraph table ── */}

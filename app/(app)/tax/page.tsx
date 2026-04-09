@@ -106,31 +106,20 @@ export default function TaxReportPage() {
         </div>
       </PageHeader>
 
-      {/* Data source disclosure */}
+      {/* Data source disclosure — always shown prominently since data is simulated */}
       <div
         className="flex items-start gap-3 rounded-xl px-4 py-3 text-sm"
         style={{
-          background: walletAddress ? "rgba(34, 211, 238, 0.04)" : "rgba(251, 191, 36, 0.06)",
-          border: `1px solid ${walletAddress ? "rgba(34, 211, 238, 0.14)" : "rgba(251, 191, 36, 0.18)"}`,
+          background: "rgba(251, 191, 36, 0.06)",
+          border: "1px solid rgba(251, 191, 36, 0.18)",
         }}
       >
-        {walletAddress ? (
-          <>
-            <FileText className="w-4 h-4 mt-0.5 shrink-0 text-cyan-400" />
-            <p className="text-slate-300 leading-relaxed">
-              <span className="font-semibold text-cyan-300">Estimated Report.</span>{" "}
-              Tax events are derived from subnet snapshot data for your connected wallet. On-chain transaction indexing via Bittensor RPC will provide exact figures in a future update. Always verify with your own records.
-            </p>
-          </>
-        ) : (
-          <>
-            <WalletCards className="w-4 h-4 mt-0.5 shrink-0 text-amber-400" />
-            <p className="text-amber-200/90 leading-relaxed">
-              <span className="font-semibold text-amber-300">Sample Data.</span>{" "}
-              Connect your wallet to generate a personalized tax report. The figures below are illustrative examples only.
-            </p>
-          </>
-        )}
+        <WalletCards className="w-4 h-4 mt-0.5 shrink-0 text-amber-400" />
+        <p className="text-amber-200/90 leading-relaxed">
+          <span className="font-semibold text-amber-300">Simulated Data — Not Tax Advice.</span>{" "}
+          All figures below are illustrative examples generated for demonstration purposes only. They do not reflect your actual staking activity or tax obligations. On-chain transaction indexing is coming in a future update.{" "}
+          <span className="text-amber-300/80 font-medium">Always consult a qualified tax professional for your filing.</span>
+        </p>
       </div>
 
       {/* Summary cards */}
