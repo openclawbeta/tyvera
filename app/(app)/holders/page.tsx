@@ -56,7 +56,18 @@ export default function HoldersPage() {
         title="Holder Intelligence"
         subtitle="Top 100 wallet cohort tracking across root stake and subnet rotations"
       >
-        <DataSourceBadge source="api" ageSec={null} />
+        <div className="flex items-center gap-2">
+          <DataSourceBadge source="api" ageSec={null} />
+          {data && (
+            <span className={`inline-flex items-center rounded-lg border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${
+              data.source === "chain-partial"
+                ? "border-cyan-400/20 bg-cyan-400/10 text-cyan-300"
+                : "border-amber-400/20 bg-amber-400/10 text-amber-300"
+            }`}>
+              {data.source === "chain-partial" ? "Chain Partial" : "Modeled"}
+            </span>
+          )}
+        </div>
       </PageHeader>
 
       <FadeIn>
@@ -93,6 +104,10 @@ export default function HoldersPage() {
               {realAttribution.summary.available
                 ? `Tracking ${realAttribution.summary.trackedWallets} wallets across ${realAttribution.summary.trackedPositions} positions from chain data.`
                 : (realAttribution.summary.notes ?? "Live holder attribution is not yet wired; this endpoint is the honest staging point for real chain-backed ingestion.")}
+              <div className="mt-2 text-[10px] text-slate-500">
+                Snapshot source: <span className="font-semibold text-slate-300">{realAttribution.snapshot.source}</span>
+                {realAttribution.snapshot.fetchedAt ? <> · fetched {new Date(realAttribution.snapshot.fetchedAt).toLocaleString()}</> : null}
+              </div>
             </div>
           </div>
         </FadeIn>
