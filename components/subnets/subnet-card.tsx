@@ -3,11 +3,13 @@
 import { memo } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Bookmark, BookmarkCheck, GitCompare } from "lucide-react";
+import { Bookmark, BookmarkCheck, GitCompare, Globe, FileText, ExternalLink, MessageSquare } from "lucide-react";
 import { cn, subnetGradient, scoreBg, riskBg } from "@/lib/utils";
 import { MetricPill } from "@/components/ui-custom/metric-pill";
 import { YieldOutlierTag } from "@/components/subnets/subnet-risk-banner";
-import type { SubnetCardModel as Subnet } from "@/lib/types/subnets";
+import type { SubnetDetailModel as Subnet } from "@/lib/types/subnets";
+import type { CurrencyMode } from "@/lib/currency";
+import { formatCurrencyValue, formatPriceValue } from "@/lib/currency";
 
 interface SubnetCardProps {
   subnet: Subnet;
@@ -17,6 +19,8 @@ interface SubnetCardProps {
   compareActive?: boolean;
   index?: number;
   linkOnClick?: boolean;    // default true — navigate to detail page on click
+  currency?: CurrencyMode;
+  taoUsdRate?: number | null;
 }
 
 function Sparkline({ data, color }: { data: number[]; color: string }) {
@@ -82,6 +86,8 @@ export const SubnetCard = memo(function SubnetCard({
   compareActive,
   index = 0,
   linkOnClick = true,
+  currency = "tau",
+  taoUsdRate = null,
 }: SubnetCardProps) {
   const router = useRouter();
   const isUp = subnet.yieldDelta7d >= 0;
@@ -91,6 +97,13 @@ export const SubnetCard = memo(function SubnetCard({
     if (onSelect) onSelect();
     if (linkOnClick) router.push(`/subnets/${subnet.netuid}`);
   }
+
+  const researchLinks = [
+    subnet.links?.website ? { href: subnet.links.website, label: "Website", icon: Globe } : null,
+    subnet.links?.x ? { href: subnet.links.x, label: "X", icon: MessageSquare } : null,
+    subnet.links?.docs ? { href: subnet.links.docs, label: "Docs", icon: FileText } : null,
+    subnet.links?.explorer ? { href: subnet.links.explorer, label: "Explorer", icon: ExternalLink } : null,
+  ].filter(Boolean) as Array<{ href: string; label: string; icon: typeof Globe }>;
 
   const idleStyle = {
     background: "linear-gradient(145deg, rgba(255,255,255,0.028) 0%, rgba(255,255,255,0.014) 100%)",
@@ -205,27 +218,52 @@ export const SubnetCard = memo(function SubnetCard({
         </button>
       )}
 
+      {/* Quick research links */}
+      {researchLinks.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {researchLinks.map(({ href, label, icon: Icon }) => (
+            <a
+              key={`${subnet.netuid}-${label}`}
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2 py-1 text-[10px] font-medium text-slate-300 hover:bg-white/[0.06] hover:text-white transition-colors"
+            >
+              <Icon className="w-3 h-3" />
+              {label}
+            </a>
+          ))}
+        </div>
+      )}
+
       {/* Footer stats */}
       <div
-        className="flex items-center justify-between pt-3"
+        className="grid grid-cols-2 gap-3 pt-3"
         style={{ borderTop: "1px solid rgba(255,255,255,0.045)" }}
       >
         <div>
           <div className="text-[9.5px] text-slate-600 uppercase tracking-wider mb-0.5">Liquidity</div>
           <div className="text-xs font-semibold text-slate-300 tabular-nums">
-            {subnet.liquidity.toLocaleString()} τ
+            {formatCurrencyValue(subnet.liquidity, currency, taoUsdRate)}
           </div>
         </div>
-        <div className="text-center">
+        <div className="text-right">
+          <div className="text-[9.5px] text-slate-600 uppercase tracking-wider mb-0.5">Alpha Price</div>
+          <div className="text-xs font-semibold text-slate-300 tabular-nums">
+            {formatPriceValue(subnet.alphaPrice ?? 0, currency, taoUsdRate, 6)}
+          </div>
+        </div>
+        <div>
           <div className="text-[9.5px] text-slate-600 uppercase tracking-wider mb-0.5">Stakers</div>
           <div className="text-xs font-semibold text-slate-300 tabular-nums">
             {subnet.stakers.toLocaleString()}
           </div>
         </div>
         <div className="text-right">
-          <div className="text-[9.5px] text-slate-600 uppercase tracking-wider mb-0.5">Take</div>
-          <div className="text-xs font-semibold text-slate-300 tabular-nums">
-            {subnet.validatorTake}%
+          <div className="text-[9.5px] text-slate-600 uppercase tracking-wider mb-0.5">7D Flow</div>
+          <div className="text-xs font-semibold tabular-nums" style={{ color: (subnet.flow1w ?? subnet.inflow) >= 0 ? "#6ee7b7" : "#fda4af" }}>
+            {(subnet.flow1w ?? subnet.inflow) >= 0 ? "+" : ""}{formatCurrencyValue(Math.abs(subnet.flow1w ?? subnet.inflow ?? 0), currency, taoUsdRate)}
           </div>
         </div>
       </div>

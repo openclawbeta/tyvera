@@ -5,11 +5,15 @@ import { Search, ChevronDown, ChevronUp, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { YieldOutlierTag } from "@/components/subnets/subnet-risk-banner";
 import type { SubnetDetailModel } from "@/lib/types/subnets";
+import type { CurrencyMode } from "@/lib/currency";
+import { formatCurrencyValue, formatPriceValue } from "@/lib/currency";
 
 interface SubnetDataTableProps {
   subnets: SubnetDetailModel[];
   onSelect: (netuid: number) => void;
-  taoUsd?: number;
+  currency: CurrencyMode;
+  onCurrencyChange: (currency: CurrencyMode) => void;
+  taoUsdRate: number | null;
 }
 
 type SortKey =
@@ -35,16 +39,6 @@ interface SortState {
   direction: "asc" | "desc";
 }
 
-function formatCompact(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
-  return value.toFixed(0);
-}
-
-function formatPrice(value: number): string {
-  return value.toFixed(6);
-}
-
 function formatPercent(value: number): string {
   const sign = value >= 0 ? "+" : "";
   return `${sign}${value.toFixed(2)}%`;
@@ -55,21 +49,11 @@ function getChangeColor(value: number): string {
   return "text-red-400";
 }
 
-function formatValue(value: number, currency: "tau" | "usd", taoUsd: number): string {
-  const adjusted = currency === "usd" ? value * taoUsd : value;
-  const suffix = currency === "usd" ? "$" : "τ";
-
-  if (Math.abs(adjusted) >= 1_000_000) return `${currency === "usd" ? "$" : ""}${(adjusted / 1_000_000).toFixed(1)}M${currency === "tau" ? " τ" : ""}`;
-  if (Math.abs(adjusted) >= 1_000) return `${currency === "usd" ? "$" : ""}${(adjusted / 1_000).toFixed(1)}K${currency === "tau" ? " τ" : ""}`;
-  return `${currency === "usd" ? "$" : ""}${adjusted.toFixed(currency === "usd" ? 0 : 0)}${currency === "tau" ? " τ" : ""}`;
-}
-
-export function SubnetDataTable({ subnets, onSelect, taoUsd = 600 }: SubnetDataTableProps) {
+export function SubnetDataTable({ subnets, onSelect, currency, onCurrencyChange, taoUsdRate }: SubnetDataTableProps) {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortState>({ key: "emissions", direction: "desc" });
   const [includeRoot, setIncludeRoot] = useState(false);
   const [includeInactive, setIncludeInactive] = useState(false);
-  const [currency, setCurrency] = useState<"tau" | "usd">("tau");
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(0);
 
@@ -172,7 +156,7 @@ export function SubnetDataTable({ subnets, onSelect, taoUsd = 600 }: SubnetDataT
 
           <div className="flex items-center gap-1.5 bg-white/[0.03] rounded-lg p-1 border border-white/[0.07]" role="group" aria-label="Currency toggle">
             <button
-              onClick={() => setCurrency("tau")}
+              onClick={() => onCurrencyChange("tau")}
               aria-pressed={currency === "tau"}
               className={cn(
                 "px-3 py-1.5 rounded text-xs font-medium transition-all",
@@ -184,7 +168,7 @@ export function SubnetDataTable({ subnets, onSelect, taoUsd = 600 }: SubnetDataT
               TAO
             </button>
             <button
-              onClick={() => setCurrency("usd")}
+              onClick={() => onCurrencyChange("usd")}
               aria-pressed={currency === "usd"}
               className={cn(
                 "px-3 py-1.5 rounded text-xs font-medium transition-all",
@@ -346,12 +330,12 @@ export function SubnetDataTable({ subnets, onSelect, taoUsd = 600 }: SubnetDataT
 
                     {/* Emission / Day */}
                     <td className="px-3 py-2 text-right font-mono text-slate-300">
-                      {subnet.emissions.toFixed(1)} τ
+                      {formatCurrencyValue(subnet.emissions, currency, taoUsdRate, 1)}
                     </td>
 
                     {/* Price τ */}
                     <td className="px-3 py-2 text-right font-mono text-slate-300">
-                      {formatPrice(subnet.alphaPrice ?? 0)}
+                      {formatPriceValue(subnet.alphaPrice ?? 0, currency, taoUsdRate, 6)}
                     </td>
 
                     {/* 1H change */}
@@ -396,12 +380,12 @@ export function SubnetDataTable({ subnets, onSelect, taoUsd = 600 }: SubnetDataT
 
                     {/* Market Cap */}
                     <td className="px-3 py-2 text-right font-mono text-slate-300">
-                      {formatValue(subnet.marketCap ?? 0, currency, taoUsd)}
+                      {formatCurrencyValue(subnet.marketCap ?? 0, currency, taoUsdRate)}
                     </td>
 
                     {/* Volume 24H */}
                     <td className="px-3 py-2 text-right font-mono text-slate-300">
-                      {formatValue(subnet.volume24h ?? 0, currency, taoUsd)}
+                      {formatCurrencyValue(subnet.volume24h ?? 0, currency, taoUsdRate)}
                     </td>
 
                     {/* Vol/Cap Ratio */}
@@ -416,7 +400,7 @@ export function SubnetDataTable({ subnets, onSelect, taoUsd = 600 }: SubnetDataT
                         getChangeColor(subnet.flow24h ?? 0),
                       )}
                     >
-                      {formatValue(Math.abs(subnet.flow24h ?? 0), currency, taoUsd)}
+                      {formatCurrencyValue(Math.abs(subnet.flow24h ?? 0), currency, taoUsdRate)}
                     </td>
 
                     {/* Flow 1W */}
@@ -426,7 +410,7 @@ export function SubnetDataTable({ subnets, onSelect, taoUsd = 600 }: SubnetDataT
                         getChangeColor(subnet.flow1w ?? 0),
                       )}
                     >
-                      {formatValue(Math.abs(subnet.flow1w ?? 0), currency, taoUsd)}
+                      {formatCurrencyValue(Math.abs(subnet.flow1w ?? 0), currency, taoUsdRate)}
                     </td>
 
                     {/* Flow 1M */}
@@ -436,7 +420,7 @@ export function SubnetDataTable({ subnets, onSelect, taoUsd = 600 }: SubnetDataT
                         getChangeColor(subnet.flow1m ?? 0),
                       )}
                     >
-                      {formatValue(Math.abs(subnet.flow1m ?? 0), currency, taoUsd)}
+                      {formatCurrencyValue(Math.abs(subnet.flow1m ?? 0), currency, taoUsdRate)}
                     </td>
 
                     {/* Daily Chain Buys */}
@@ -451,7 +435,7 @@ export function SubnetDataTable({ subnets, onSelect, taoUsd = 600 }: SubnetDataT
 
                     {/* Liquidity */}
                     <td className="px-3 py-2 text-right font-mono text-slate-300">
-                      {formatValue(subnet.liquidity, currency, taoUsd)}
+                      {formatCurrencyValue(subnet.liquidity, currency, taoUsdRate)}
                     </td>
                   </tr>
                 ))}

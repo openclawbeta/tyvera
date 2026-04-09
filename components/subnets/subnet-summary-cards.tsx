@@ -2,18 +2,16 @@
 
 import { useMemo } from "react";
 import type { SubnetDetailModel } from "@/lib/types/subnets";
+import type { CurrencyMode } from "@/lib/currency";
+import { formatCurrencyValue } from "@/lib/currency";
 
 interface SubnetSummaryCardsProps {
   subnets: SubnetDetailModel[];
+  currency: CurrencyMode;
+  taoUsdRate: number | null;
 }
 
-function formatCompact(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
-  return value.toFixed(0);
-}
-
-export function SubnetSummaryCards({ subnets }: SubnetSummaryCardsProps) {
+export function SubnetSummaryCards({ subnets, currency, taoUsdRate }: SubnetSummaryCardsProps) {
   const stats = useMemo(() => {
     let rootValue = 0;
     let alphaValue = 0;
@@ -77,7 +75,7 @@ export function SubnetSummaryCards({ subnets }: SubnetSummaryCardsProps) {
         {title}
       </div>
       <div className="text-lg font-bold text-white font-mono">
-        {formatCompact(total)} τ
+        {formatCurrencyValue(total, currency, taoUsdRate)}
       </div>
 
       {/* Progress bar */}
@@ -94,14 +92,14 @@ export function SubnetSummaryCards({ subnets }: SubnetSummaryCardsProps) {
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-emerald-500" />
           <div>
-            <span className="text-slate-300 font-mono">{formatCompact(rootValue)}</span>
+            <span className="text-slate-300 font-mono">{formatCurrencyValue(rootValue, currency, taoUsdRate)}</span>
             <span className="text-slate-600"> {rootLabel}</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-red-500" />
           <div>
-            <span className="text-slate-300 font-mono">{formatCompact(alphaValue)}</span>
+            <span className="text-slate-300 font-mono">{formatCurrencyValue(alphaValue, currency, taoUsdRate)}</span>
             <span className="text-slate-600"> {alphaLabel}</span>
           </div>
         </div>

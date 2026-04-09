@@ -15,6 +15,8 @@ import { SubnetNetworkAlerts } from "@/components/subnets/subnet-network-alerts"
 import { DataSourceBadge } from "@/components/ui-custom/data-source-badge";
 import { getSubnets, fetchSubnetsFromApi } from "@/lib/api/subnets";
 import type { SubnetDetailModel, RiskLevel } from "@/lib/types/subnets";
+import { useTaoRate } from "@/lib/hooks/use-tao-rate";
+import type { CurrencyMode } from "@/lib/currency";
 
 export default function SubnetsPage() {
   // Initialise immediately from the static snapshot so the page renders
@@ -69,6 +71,8 @@ export default function SubnetsPage() {
   const [viewMode, setViewMode] = useState<"table" | "cards" | "heatmap">("table");
   const [filterCollapsed, setFilterCollapsed] = useState(false);
   const [showAlerts, setShowAlerts] = useState(false);
+  const [currency, setCurrency] = useState<CurrencyMode>("tau");
+  const { rate: taoUsdRate } = useTaoRate();
 
   function toggleCompare(subnet: SubnetDetailModel) {
     setCompareNetuids((prev) => {
@@ -169,7 +173,7 @@ export default function SubnetsPage() {
       )}
 
       {/* Summary cards */}
-      {viewMode === "table" && <SubnetSummaryCards subnets={filtered} />}
+      {viewMode === "table" && <SubnetSummaryCards subnets={filtered} currency={currency} taoUsdRate={taoUsdRate} />}
 
       {/* Category quick-filter pills */}
       <div className="flex flex-wrap items-center gap-2">
@@ -287,7 +291,13 @@ export default function SubnetsPage() {
           {/* Center content */}
           <div className="flex-1 min-w-0">
             {viewMode === "table" ? (
-              <SubnetDataTable subnets={subnets} onSelect={handleSelectSubnet} taoUsd={taoUsd} />
+              <SubnetDataTable
+                subnets={subnets}
+                onSelect={handleSelectSubnet}
+                currency={currency}
+                onCurrencyChange={setCurrency}
+                taoUsdRate={taoUsdRate}
+              />
             ) : filtered.length === 0 ? (
               <div className="glass flex items-center justify-center h-48 text-slate-500 text-sm rounded-xl">
                 No subnets match your filters.
@@ -303,6 +313,8 @@ export default function SubnetsPage() {
                     onCompareToggle={toggleCompare}
                     compareActive={compareNetuids.includes(subnet.netuid)}
                     index={i}
+                    currency={currency}
+                    taoUsdRate={taoUsdRate}
                   />
                 ))}
               </div>
