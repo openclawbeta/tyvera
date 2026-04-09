@@ -101,8 +101,8 @@ export default function HoldersPage() {
               </>
             ) : (
               <>
-                <span className="font-semibold text-amber-300">Modeled intelligence layer.</span> This first version is a structured
-                cohort view for product development: it distinguishes root-vs-subnet posture, dominant allocations, and rotation patterns,
+                <span className="font-semibold text-amber-300">Modeled intelligence layer.</span> This current view is a structured
+                cohort approximation for product development: it distinguishes root-vs-subnet posture, dominant allocations, and rotation patterns,
                 but it is not yet sourced from live wallet-level chain attribution.
               </>
             )}
