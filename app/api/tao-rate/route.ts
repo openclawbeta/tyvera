@@ -2,14 +2,6 @@
  * app/api/tao-rate/route.ts
  *
  * TAO/USD price endpoint.
- *
- * Priority:
- *   1. Price-engine (CoinGecko → CMC → buffer) with chain data → T1/T2
- *   2. Stale in-memory cache                                    → T3
- *   3. Hard-coded fallback constants                            → T4
- *
- * TAO/USD comes from a minimal external feed (CoinGecko primary, CMC fallback).
- * Everything else (alpha prices, network stats) is chain-native.
  */
 
 import { TAO_RATE_CACHE_TTL_MS } from "@/lib/config";
@@ -24,10 +16,6 @@ import {
   syncPricesFromChain,
 } from "@/lib/chain/price-engine";
 
-/* ─────────────────────────────────────────────────────────────────── */
-/* In-memory cache (5-minute TTL)                                       */
-/* ─────────────────────────────────────────────────────────────────── */
-
 interface CachedRate {
   taoUsd: number;
   change24h: number;
@@ -41,15 +29,9 @@ let cache: CachedRate | null = null;
 let cacheTimestamp = 0;
 const TTL_MS = TAO_RATE_CACHE_TTL_MS;
 
-
-/* ─────────────────────────────────────────────────────────────────── */
-/* Route handler                                                        */
-/* ─────────────────────────────────────────────────────────────────── */
-
 export async function GET() {
   const now = Date.now();
 
-  // ── Tier 2: warm in-memory cache ──────────────────────────────────
   if (cache && now - cacheTimestamp < TTL_MS) {
     return apiResponse(
       {
@@ -58,15 +40,20 @@ export async function GET() {
         marketCap: cache.marketCap,
         volume24h: cache.volume24h,
       },
-      { source: DATA_SOURCES.RATE_CACHE, fetchedAt: cache.fetchedAt },
+      {
+        source: DATA_SOURCES.RATE_CACHE,
+        fetchedAt: cache.fetchedAt,
+        fallbackUsed: false,
+      },
+      {
+        cacheControl: "public, max-age=300, s-maxage=300",
+      },
     );
   }
 
-  // ── Check price-engine buffer for recent data ─────────────────────
   const latestPrice = getLatestTaoPrice();
 
   if (latestPrice) {
-    // We have a real price from the engine (exchange-sourced or admin-seeded)
     const priceChanges = derivePriceChanges();
     const snapshot: CachedRate = {
       taoUsd: latestPrice.taoUsd,
@@ -74,9 +61,10 @@ export async function GET() {
       marketCap: latestPrice.marketCap ?? +(latestPrice.taoUsd * 21_000_000).toFixed(0),
       volume24h: latestPrice.volume24h ?? 0,
       fetchedAt: latestPrice.timestamp,
-      source: (latestPrice.source === "coingecko" || latestPrice.source === "coinmarketcap")
-        ? DATA_SOURCES.CHAIN_LIVE
-        : DATA_SOURCES.CHAIN_CACHE,
+      source:
+        latestPrice.source === "coingecko" || latestPrice.source === "coinmarketcap"
+          ? DATA_SOURCES.CHAIN_LIVE
+          : DATA_SOURCES.CHAIN_CACHE,
     };
 
     cache = snapshot;
@@ -89,11 +77,17 @@ export async function GET() {
         marketCap: snapshot.marketCap,
         volume24h: snapshot.volume24h,
       },
-      { source: snapshot.source, fetchedAt: snapshot.fetchedAt },
+      {
+        source: snapshot.source,
+        fetchedAt: snapshot.fetchedAt,
+        fallbackUsed: false,
+      },
+      {
+        cacheControl: "public, max-age=300, s-maxage=300",
+      },
     );
   }
 
-  // ── Tier 1: Live sync (fetches TAO/USD + chain data) ──────────────
   try {
     const syncResult = await syncPricesFromChain();
     const updatedPrice = syncResult ? getLatestTaoPrice() : null;
@@ -119,14 +113,20 @@ export async function GET() {
           marketCap: fresh.marketCap,
           volume24h: fresh.volume24h,
         },
-        { source: fresh.source, fetchedAt: fresh.fetchedAt },
+        {
+          source: fresh.source,
+          fetchedAt: fresh.fetchedAt,
+          fallbackUsed: false,
+        },
+        {
+          cacheControl: "public, max-age=300, s-maxage=300",
+        },
       );
     }
   } catch (err) {
     console.error("[tao-rate] Price sync failed:", err);
   }
 
-  // ── Tier 3: stale cache ───────────────────────────────────────────
   if (cache) {
     return apiResponse(
       {
@@ -139,12 +139,16 @@ export async function GET() {
         source: DATA_SOURCES.RATE_STALE,
         fetchedAt: cache.fetchedAt,
         stale: true,
+        fallbackUsed: true,
         snapshotAgeMs: now - cacheTimestamp,
+        note: `Using last known real price from ${cache.source}.`,
+      },
+      {
+        cacheControl: "public, max-age=60, s-maxage=60",
       },
     );
   }
 
-  // ── Cold start: no price data exists yet ────────────────────────────
   return apiResponse(
     {
       taoUsd: null,
@@ -154,9 +158,14 @@ export async function GET() {
       awaiting: true,
     },
     {
-      source: DATA_SOURCES.FALLBACK_CONSTANT,
-      fetchedAt: new Date().toISOString(),
+      source: DATA_SOURCES.UNAVAILABLE,
+      fetchedAt: null,
+      fallbackUsed: true,
+      awaiting: true,
       note: "Awaiting pricing source — no price data has been fetched yet",
+    },
+    {
+      cacheControl: "public, max-age=60, s-maxage=60",
     },
   );
 }

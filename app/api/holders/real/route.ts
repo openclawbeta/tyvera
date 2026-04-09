@@ -23,7 +23,6 @@ import {
 } from "@/lib/data-source-policy";
 
 export async function GET() {
-  // ── Tier 2: cached attribution ────────────────────────────────────
   if (isHolderAttributionCacheFresh()) {
     const cached = getHolderAttributionCache();
     if (cached) {
@@ -35,19 +34,22 @@ export async function GET() {
         {
           source: DATA_SOURCES.HOLDER_CACHE,
           fetchedAt: cached.fetchedAt,
+          fallbackUsed: cached.source !== "chain-live",
+          note: cached.notes,
+        },
+        {
+          cacheControl: "public, s-maxage=300",
         },
       );
     }
   }
 
-  // ── Tier 1: live chain extraction ─────────────────────────────────
   const snapshot = await fetchHolderAttributionFromChain(250);
   setHolderAttributionCache(snapshot);
 
-  const source =
-    snapshot.source === "chain-live"
-      ? DATA_SOURCES.CHAIN_LIVE
-      : DATA_SOURCES.MODELED;
+  const source = snapshot.source === "chain-live"
+    ? DATA_SOURCES.CHAIN_LIVE
+    : DATA_SOURCES.MODELED;
 
   return apiResponse(
     {
@@ -57,7 +59,11 @@ export async function GET() {
     {
       source,
       fetchedAt: snapshot.fetchedAt,
+      fallbackUsed: snapshot.source !== "chain-live",
       ...(snapshot.notes ? { note: snapshot.notes } : {}),
+    },
+    {
+      cacheControl: "public, s-maxage=300",
     },
   );
 }

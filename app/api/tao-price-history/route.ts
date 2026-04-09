@@ -1,14 +1,7 @@
 /**
  * app/api/tao-price-history/route.ts
  *
- * TAO price history endpoint — chain-only data source.
- *
- * Priority:
- *   1. Price-engine rolling buffer (up to 7 days at 5-min intervals) → T2
- *   2. Synthetic random walk fallback                                 → T4
- *
- * No external API dependencies (no CoinGecko).
- * History is built from the price-engine rolling buffer, populated by cron.
+ * TAO price history endpoint — chain-first buffer-backed data.
  */
 
 import { NextRequest } from "next/server";
@@ -19,10 +12,6 @@ import {
   type DataSourceId,
 } from "@/lib/data-source-policy";
 import { getTaoPriceHistory, getLatestTaoPrice } from "@/lib/chain/price-engine";
-
-/* ─────────────────────────────────────────────────────────────────── */
-/* Synthetic fallback (deterministic)                                   */
-/* ─────────────────────────────────────────────────────────────────── */
 
 function seededRandom(seed: number): () => number {
   let s = seed;
@@ -35,7 +24,7 @@ function seededRandom(seed: number): () => number {
 function generateSyntheticData(days: number): Array<{ date: string; price: number }> {
   const data: Array<{ date: string; price: number }> = [];
   const now = new Date();
-  const rng = seededRandom(42); // Deterministic seed
+  const rng = seededRandom(42);
   let price = 320;
 
   for (let i = days; i >= 0; i--) {
@@ -52,9 +41,7 @@ function generateSyntheticData(days: number): Array<{ date: string; price: numbe
   return data;
 }
 
-function calculateChanges(
-  prices: Array<{ date: string; price: number }>
-): { change24h: number; change7d: number; change30d: number } {
+function calculateChanges(prices: Array<{ date: string; price: number }>) {
   if (prices.length === 0) {
     return { change24h: 0, change7d: 0, change30d: 0 };
   }
@@ -74,10 +61,6 @@ function calculateChanges(
   };
 }
 
-/* ─────────────────────────────────────────────────────────────────── */
-/* Route handler                                                        */
-/* ─────────────────────────────────────────────────────────────────── */
-
 export async function GET(request: NextRequest) {
   const auth = await checkApiAuth(request);
   if (auth.errorResponse) return auth.errorResponse;
@@ -89,21 +72,17 @@ export async function GET(request: NextRequest) {
 
   let prices: Array<{ date: string; price: number }> = [];
   let source: DataSourceId = DATA_SOURCES.SYNTHETIC;
-  let fetchedAt = new Date().toISOString();
+  let fetchedAt: string | null = new Date().toISOString();
 
-  // ── Tier 2: Price-engine rolling buffer ───────────────────────────
   const history = getTaoPriceHistory();
 
   if (history.length > 1) {
-    // Convert price points to daily format
-    // Group by date, take latest price per day
     const dailyMap = new Map<string, number>();
     for (const point of history) {
       const date = point.timestamp.split("T")[0];
       dailyMap.set(date, point.taoUsd);
     }
 
-    // Sort by date and take last N days
     const sortedDays = [...dailyMap.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-days);
@@ -118,20 +97,18 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // ── Tier 4: Synthetic fallback ────────────────────────────────────
   if (prices.length === 0) {
-    // If we have a current price from the engine, anchor the synthetic data to it
     const currentPrice = getLatestTaoPrice();
     const syntheticData = generateSyntheticData(days);
 
     if (currentPrice && currentPrice.taoUsd > 0) {
-      // Anchor synthetic to actual current price
       const lastSynthetic = syntheticData[syntheticData.length - 1].price;
       const ratio = currentPrice.taoUsd / lastSynthetic;
       prices = syntheticData.map((p) => ({
         date: p.date,
         price: Math.round(p.price * ratio * 100) / 100,
       }));
+      fetchedAt = currentPrice.timestamp;
     } else {
       prices = syntheticData;
     }
@@ -147,9 +124,11 @@ export async function GET(request: NextRequest) {
     {
       source,
       fetchedAt,
-      ...(source === DATA_SOURCES.SYNTHETIC
-        ? { note: "Price history from synthetic random walk — engine buffer has insufficient data" }
-        : { note: `${prices.length} daily prices from price-engine rolling buffer` }),
+      fallbackUsed: source === DATA_SOURCES.SYNTHETIC,
+      note:
+        source === DATA_SOURCES.SYNTHETIC
+          ? "Price history from synthetic random walk — engine buffer has insufficient data"
+          : `${prices.length} daily prices from price-engine rolling buffer`,
     },
     {
       cacheControl: `public, s-maxage=${cacheMaxAge}, stale-while-revalidate=3600`,
