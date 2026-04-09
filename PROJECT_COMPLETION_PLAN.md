@@ -218,13 +218,11 @@ Success criteria:
 ## Commands To Support
 
 Current:
-- `npm run build-holder-snapshot`
-
-Needed next:
 - `npm run build-holder-attribution`
-- optionally `npm run refresh-intel` to chain all generation steps
+- `npm run build-holder-snapshot`
+- `npm run refresh-intel`
 
-Proposed refresh sequence:
+Refresh sequence:
 1. `python scripts/fetch_subnets_subtensor.py`
 2. `npm run build-holder-attribution`
 3. `npm run build-holder-snapshot`
@@ -233,6 +231,6 @@ Proposed refresh sequence:
 
 ## Immediate Next Task
 
-**Implement `build-holder-attribution` as a bounded real extractor that produces `public/data/holder-attribution.json` reliably enough for repeated use.**
+**Harden and optimize `build-holder-attribution` so it completes reliably enough for repeated use and produces meaningful real extracted positions.**
 
-That is the main missing bridge between the now-working holder UI/snapshot pipeline and a genuinely data-backed product.
+That is still the main bridge between the now-working holder UI/snapshot pipeline and a genuinely data-backed product.
