@@ -9,6 +9,7 @@ import type { SubnetDetailModel } from "@/lib/types/subnets";
 interface SubnetDataTableProps {
   subnets: SubnetDetailModel[];
   onSelect: (netuid: number) => void;
+  taoUsd?: number;
 }
 
 type SortKey =
@@ -54,7 +55,16 @@ function getChangeColor(value: number): string {
   return "text-red-400";
 }
 
-export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
+function formatValue(value: number, currency: "tau" | "usd", taoUsd: number): string {
+  const adjusted = currency === "usd" ? value * taoUsd : value;
+  const suffix = currency === "usd" ? "$" : "τ";
+
+  if (Math.abs(adjusted) >= 1_000_000) return `${currency === "usd" ? "$" : ""}${(adjusted / 1_000_000).toFixed(1)}M${currency === "tau" ? " τ" : ""}`;
+  if (Math.abs(adjusted) >= 1_000) return `${currency === "usd" ? "$" : ""}${(adjusted / 1_000).toFixed(1)}K${currency === "tau" ? " τ" : ""}`;
+  return `${currency === "usd" ? "$" : ""}${adjusted.toFixed(currency === "usd" ? 0 : 0)}${currency === "tau" ? " τ" : ""}`;
+}
+
+export function SubnetDataTable({ subnets, onSelect, taoUsd = 600 }: SubnetDataTableProps) {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortState>({ key: "emissions", direction: "desc" });
   const [includeRoot, setIncludeRoot] = useState(false);
@@ -379,12 +389,12 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
 
                     {/* Market Cap */}
                     <td className="px-3 py-2 text-right font-mono text-slate-300">
-                      {formatCompact(subnet.marketCap ?? 0)} τ
+                      {formatValue(subnet.marketCap ?? 0, currency, taoUsd)}
                     </td>
 
                     {/* Volume 24H */}
                     <td className="px-3 py-2 text-right font-mono text-slate-300">
-                      {formatCompact(subnet.volume24h ?? 0)} τ
+                      {formatValue(subnet.volume24h ?? 0, currency, taoUsd)}
                     </td>
 
                     {/* Vol/Cap Ratio */}
@@ -399,7 +409,7 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
                         getChangeColor(subnet.flow24h ?? 0),
                       )}
                     >
-                      {formatCompact(Math.abs(subnet.flow24h ?? 0))} τ
+                      {formatValue(Math.abs(subnet.flow24h ?? 0), currency, taoUsd)}
                     </td>
 
                     {/* Flow 1W */}
@@ -409,7 +419,7 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
                         getChangeColor(subnet.flow1w ?? 0),
                       )}
                     >
-                      {formatCompact(Math.abs(subnet.flow1w ?? 0))} τ
+                      {formatValue(Math.abs(subnet.flow1w ?? 0), currency, taoUsd)}
                     </td>
 
                     {/* Flow 1M */}
@@ -419,7 +429,7 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
                         getChangeColor(subnet.flow1m ?? 0),
                       )}
                     >
-                      {formatCompact(Math.abs(subnet.flow1m ?? 0))} τ
+                      {formatValue(Math.abs(subnet.flow1m ?? 0), currency, taoUsd)}
                     </td>
 
                     {/* Daily Chain Buys */}
@@ -434,7 +444,7 @@ export function SubnetDataTable({ subnets, onSelect }: SubnetDataTableProps) {
 
                     {/* Liquidity */}
                     <td className="px-3 py-2 text-right font-mono text-slate-300">
-                      {formatCompact(subnet.liquidity)} τ
+                      {formatValue(subnet.liquidity, currency, taoUsd)}
                     </td>
                   </tr>
                 ))}

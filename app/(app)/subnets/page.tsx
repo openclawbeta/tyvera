@@ -25,6 +25,7 @@ export default function SubnetsPage() {
   const [totalSubnets, setTotalSubnets] = useState<number>(seedSubnets.length);
   const [dataSource, setDataSource] = useState<string>("static-snapshot");
   const [snapshotAge, setSnapshotAge] = useState<number | null>(null);
+  const [taoUsd, setTaoUsd] = useState(600);
   const [liveLoaded, setLiveLoaded] = useState(false);
 
   useEffect(() => {
@@ -43,6 +44,15 @@ export default function SubnetsPage() {
         if (cancelled) return;
         setLiveLoaded(true);
       }); // silent: static snapshot is already displayed
+
+    fetch('/api/tao-rate')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled && typeof data?.taoUsd === 'number' && data.taoUsd > 0) {
+          setTaoUsd(data.taoUsd);
+        }
+      })
+      .catch(() => {});
 
     return () => {
       cancelled = true;
@@ -277,7 +287,7 @@ export default function SubnetsPage() {
           {/* Center content */}
           <div className="flex-1 min-w-0">
             {viewMode === "table" ? (
-              <SubnetDataTable subnets={subnets} onSelect={handleSelectSubnet} />
+              <SubnetDataTable subnets={subnets} onSelect={handleSelectSubnet} taoUsd={taoUsd} />
             ) : filtered.length === 0 ? (
               <div className="glass flex items-center justify-center h-48 text-slate-500 text-sm rounded-xl">
                 No subnets match your filters.
@@ -299,8 +309,8 @@ export default function SubnetsPage() {
             )}
           </div>
 
-          {/* Right detail preview — only in cards view */}
-          {viewMode === "cards" && (
+          {/* Right detail preview — available in both cards and table view */}
+          {(viewMode === "cards" || viewMode === "table") && (
             <div className="w-full lg:w-72 flex-shrink-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
               <SubnetDetailPreview subnet={selected} />
             </div>
