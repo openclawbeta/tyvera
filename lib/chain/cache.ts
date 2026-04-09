@@ -11,7 +11,7 @@
  * to serve stale data or fall through to TaoStats.
  */
 
-import type { ChainSnapshot, MetagraphCacheEntry } from "./types";
+import type { ChainSnapshot, MetagraphCacheEntry, HolderAttributionSnapshot } from "./types";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Subnet cache                                                         */
@@ -77,4 +77,26 @@ export function isMetagraphCacheFresh(netuid: number): boolean {
 
 export function getBlockHeight(): number | null {
   return subnetCache?.blockHeight ?? null;
+}
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* Holder attribution cache                                             */
+/* ─────────────────────────────────────────────────────────────────── */
+
+let holderAttributionCache: HolderAttributionSnapshot | null = null;
+const HOLDER_ATTRIBUTION_MAX_AGE_MS = 15 * 60 * 1000;
+
+export function setHolderAttributionCache(snapshot: HolderAttributionSnapshot): void {
+  holderAttributionCache = snapshot;
+}
+
+export function getHolderAttributionCache(): HolderAttributionSnapshot | null {
+  return holderAttributionCache;
+}
+
+export function isHolderAttributionCacheFresh(): boolean {
+  if (!holderAttributionCache) return false;
+  const ts = Date.parse(holderAttributionCache.fetchedAt);
+  if (isNaN(ts)) return false;
+  return Date.now() - ts < HOLDER_ATTRIBUTION_MAX_AGE_MS;
 }

@@ -14,10 +14,15 @@ export {
   getMetagraphCache,
   isMetagraphCacheFresh,
   getBlockHeight,
+  setHolderAttributionCache,
+  getHolderAttributionCache,
+  isHolderAttributionCacheFresh,
 } from "./cache";
 export type {
   ChainSubnet,
   ChainNeuron,
   ChainSnapshot,
   MetagraphCacheEntry,
+  ChainHolderPosition,
+  HolderAttributionSnapshot,
 } from "./types";

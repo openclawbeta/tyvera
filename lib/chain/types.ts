@@ -45,3 +45,17 @@ export interface MetagraphCacheEntry {
   blockHeight: number;
   fetchedAt: string;
 }
+
+export interface ChainHolderPosition {
+  coldkey: string;
+  hotkey: string;
+  netuid: number;
+  stakeTao: number;
+}
+
+export interface HolderAttributionSnapshot {
+  positions: ChainHolderPosition[];
+  fetchedAt: string;
+  source: "chain-live" | "unavailable";
+  notes?: string;
+}

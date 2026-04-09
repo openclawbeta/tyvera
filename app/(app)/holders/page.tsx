@@ -10,6 +10,21 @@ import type { HolderIntelSnapshot } from "@/lib/types/holders";
 import { formatCurrencyValue } from "@/lib/currency";
 import { useTaoRate } from "@/lib/hooks/use-tao-rate";
 
+interface RealAttributionResponse {
+  snapshot: {
+    fetchedAt: string;
+    source: string;
+    notes?: string;
+  };
+  summary: {
+    available: boolean;
+    source: string;
+    trackedPositions: number;
+    trackedWallets: number;
+    notes?: string;
+  };
+}
+
 function strategyTone(tag: string): string {
   if (tag === "root-heavy") return "text-cyan-300";
   if (tag === "subnet-heavy") return "text-violet-300";
@@ -20,12 +35,18 @@ function strategyTone(tag: string): string {
 export default function HoldersPage() {
   const [data, setData] = useState<HolderIntelSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
+  const [realAttribution, setRealAttribution] = useState<RealAttributionResponse | null>(null);
   const { rate: taoUsdRate } = useTaoRate();
 
   useEffect(() => {
-    fetch("/api/holders", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((json: HolderIntelSnapshot) => setData(json))
+    Promise.all([
+      fetch("/api/holders", { cache: "no-store" }).then((res) => res.json()),
+      fetch("/api/holders/real", { cache: "no-store" }).then((res) => res.json()).catch(() => null),
+    ])
+      .then(([json, real]) => {
+        setData(json as HolderIntelSnapshot);
+        setRealAttribution(real as RealAttributionResponse | null);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -54,6 +75,28 @@ export default function HoldersPage() {
           </div>
         </div>
       </FadeIn>
+
+      {realAttribution && (
+        <FadeIn delay={0.03}>
+          <div
+            className="flex items-start gap-3 px-4 py-3.5 rounded-xl"
+            style={{
+              background: realAttribution.summary.available ? "rgba(34,211,238,0.04)" : "rgba(148,163,184,0.05)",
+              border: realAttribution.summary.available ? "1px solid rgba(34,211,238,0.12)" : "1px solid rgba(148,163,184,0.12)",
+            }}
+          >
+            <Info className={`w-4 h-4 flex-shrink-0 mt-0.5 ${realAttribution.summary.available ? "text-cyan-300" : "text-slate-400"}`} />
+            <div className="text-[12px] text-slate-300">
+              <span className={`font-semibold ${realAttribution.summary.available ? "text-cyan-300" : "text-slate-300"}`}>
+                {realAttribution.summary.available ? "Real attribution available." : "Real attribution scaffold added."}
+              </span>{" "}
+              {realAttribution.summary.available
+                ? `Tracking ${realAttribution.summary.trackedWallets} wallets across ${realAttribution.summary.trackedPositions} positions from chain data.`
+                : (realAttribution.summary.notes ?? "Live holder attribution is not yet wired; this endpoint is the honest staging point for real chain-backed ingestion.")}
+            </div>
+          </div>
+        </FadeIn>
+      )}
 
       {loading || !data ? (
         <GlassCard padding="lg">
