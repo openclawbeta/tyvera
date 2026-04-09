@@ -121,13 +121,14 @@ export function seedTaoPrice(taoUsd: number, source: TaoPricePoint["source"] = "
   }
 }
 
-/** Get the latest known TAO/USD price, or a bootstrap estimate. */
+/** Get the latest known TAO/USD price, or a bootstrap fallback. */
 export function getLatestTaoPrice(): TaoPricePoint {
   if (priceHistory.length > 0) {
     return priceHistory[priceHistory.length - 1];
   }
-  // Bootstrap: use a reasonable default that will be overwritten on first sync
-  return { taoUsd: 350, timestamp: new Date().toISOString(), source: "bootstrap" };
+  // Only returned on a completely cold start (no cron has ever run).
+  // After the first successful sync this is never reached again.
+  return { taoUsd: 0, timestamp: new Date().toISOString(), source: "bootstrap" };
 }
 
 /** Get price history for the last N points. */
@@ -422,11 +423,21 @@ export async function syncPricesFromChain(): Promise<PriceSnapshot | null> {
       volume24h = fiatPrice.volume24h;
       console.log(`[price-engine] TAO/USD = $${taoUsd} from ${fiatPrice.source}`);
     } else {
-      // Fall back to last known price from buffer
+      // Fall back to last known price from buffer (preserves the last real price)
       const lastKnown = getLatestTaoPrice();
       taoUsd = lastKnown.taoUsd;
-      priceSource = lastKnown.source === "bootstrap" ? "bootstrap" : "chain-derived";
-      console.warn(`[price-engine] External feeds unavailable — using buffer price $${taoUsd}`);
+      priceSource = lastKnown.source; // Keep original source label — don't downgrade
+      change24h = lastKnown.change24h ?? 0;
+      marketCap = lastKnown.marketCap ?? 0;
+      volume24h = lastKnown.volume24h ?? 0;
+
+      if (taoUsd <= 0) {
+        // True cold start — no price has ever been fetched
+        console.error("[price-engine] No price data available — cold start, skipping sync");
+        return null;
+      }
+
+      console.warn(`[price-engine] External feeds unavailable — reusing last known price $${taoUsd} (${lastKnown.source})`);
     }
 
     // Step 2: Connect to chain

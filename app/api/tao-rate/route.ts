@@ -69,7 +69,7 @@ export async function GET() {
   // ── Check price-engine buffer for recent data ─────────────────────
   const latestPrice = getLatestTaoPrice();
 
-  if (latestPrice.source !== "bootstrap") {
+  if (latestPrice.taoUsd > 0 && latestPrice.source !== "bootstrap") {
     // We have a real price from the engine (exchange-sourced or admin-seeded)
     const priceChanges = derivePriceChanges();
     const snapshot: CachedRate = {

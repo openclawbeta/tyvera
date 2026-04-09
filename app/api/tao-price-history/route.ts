@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
     const currentPrice = getLatestTaoPrice();
     const syntheticData = generateSyntheticData(days);
 
-    if (currentPrice.source !== "bootstrap") {
+    if (currentPrice.taoUsd > 0 && currentPrice.source !== "bootstrap") {
       // Anchor synthetic to actual current price
       const lastSynthetic = syntheticData[syntheticData.length - 1].price;
       const ratio = currentPrice.taoUsd / lastSynthetic;
