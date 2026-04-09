@@ -31,6 +31,35 @@ export function getDataHealthSummary() {
       subnets: inspectJsonFile(join(root, "public", "data", "subnets.json")),
       holders: inspectJsonFile(join(root, "public", "data", "holders.json")),
       holderAttribution: inspectJsonFile(join(root, "public", "data", "holder-attribution.json")),
+      validators: inspectJsonFile(join(root, "public", "data", "validators.json")),
+      taoRate: {
+        exists: true,
+        fetchedAt: null,
+        ageSec: null,
+        sizeBytes: null,
+        note: "Runtime API/cache-driven; inspect /api/tao-rate for live state.",
+      },
+      taoPriceHistory: {
+        exists: true,
+        fetchedAt: null,
+        ageSec: null,
+        sizeBytes: null,
+        note: "Runtime API/provider-driven; inspect /api/tao-price-history for source metadata.",
+      },
+      metagraph: {
+        exists: true,
+        fetchedAt: null,
+        ageSec: null,
+        sizeBytes: null,
+        note: "Runtime provider/cached route; inspect /api/metagraph?netuid=... for source metadata.",
+      },
+      activity: {
+        exists: true,
+        fetchedAt: null,
+        ageSec: null,
+        sizeBytes: null,
+        note: "Runtime route; inspect /api/activity for live provider state.",
+      },
     },
   };
 }
