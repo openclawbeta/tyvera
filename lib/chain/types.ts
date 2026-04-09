@@ -58,4 +58,10 @@ export interface HolderAttributionSnapshot {
   fetchedAt: string;
   source: "chain-live" | "unavailable";
   notes?: string;
+  coverage?: {
+    coldkeysScanned: number;
+    hotkeysScanned: number;
+    netuidsScanned: number;
+    alphaQueries: number;
+  };
 }

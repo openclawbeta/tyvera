@@ -13,6 +13,7 @@ function run(command, args) {
 
 async function main() {
   await run("python3", ["scripts/fetch_subnets_subtensor.py"]);
+  await run("node", ["scripts/build-validator-snapshot.mjs"]);
   await run("node", ["scripts/build-holder-attribution.mjs"]);
   await run("node", ["scripts/build-holder-snapshot.mjs"]);
 }

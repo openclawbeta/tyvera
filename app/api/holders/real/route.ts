@@ -2,10 +2,6 @@
  * app/api/holders/real/route.ts
  *
  * Live holder attribution from on-chain data.
- *
- * Data source priority:
- *   1. Holder attribution cache (15 min)  → T2
- *   2. Live chain extraction              → T1
  */
 
 import {
@@ -36,6 +32,7 @@ export async function GET() {
           fetchedAt: cached.fetchedAt,
           fallbackUsed: cached.source !== "chain-live",
           note: cached.notes,
+          ...(cached.coverage ? { note: `${cached.notes ?? ""}`.trim() } : {}),
         },
         {
           cacheControl: "public, s-maxage=300",
@@ -60,7 +57,7 @@ export async function GET() {
       source,
       fetchedAt: snapshot.fetchedAt,
       fallbackUsed: snapshot.source !== "chain-live",
-      ...(snapshot.notes ? { note: snapshot.notes } : {}),
+      note: snapshot.notes,
     },
     {
       cacheControl: "public, s-maxage=300",

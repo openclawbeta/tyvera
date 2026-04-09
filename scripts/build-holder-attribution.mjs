@@ -15,6 +15,7 @@ const output = {
       method: "bounded-chain-scan",
       limit: 250,
       notes: snapshot.notes ?? null,
+      coverage: snapshot.coverage ?? null,
     },
   },
 };

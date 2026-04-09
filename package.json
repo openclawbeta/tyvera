@@ -12,6 +12,7 @@
     "fetch-subnets-subtensor": "python scripts/fetch_subnets_subtensor.py",
     "build-holder-attribution": "node scripts/build-holder-attribution.mjs",
     "build-holder-snapshot": "node scripts/build-holder-snapshot.mjs",
+    "build-validator-snapshot": "node scripts/build-validator-snapshot.mjs",
     "refresh-intel": "node scripts/refresh-intel.mjs"
   },
   "dependencies": {

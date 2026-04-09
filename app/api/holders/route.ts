@@ -1,14 +1,4 @@
-/**
- * app/api/holders/route.ts
- *
- * Modeled holder intelligence endpoint.
- *
- * Data source priority:
- *   1. JSON snapshot (public/data/holders.json) → T3
- *   2. Modeled live fallback                   → T4
- */
-
-import { readHolderSnapshot } from "@/lib/api/holders-snapshot";
+import { resolveHolders } from "@/lib/services/holders";
 import {
   DATA_SOURCES,
   apiResponse,
@@ -16,21 +6,26 @@ import {
 } from "@/lib/data-source-policy";
 
 export async function GET() {
-  const { data, dataSource, generatedAt } = readHolderSnapshot();
+  const result = await resolveHolders();
 
   const source: DataSourceId =
-    dataSource === "holder-snapshot"
+    result.source === "holder-snapshot"
       ? DATA_SOURCES.HOLDER_SNAPSHOT
+      : result.source === "tao-app"
+      ? DATA_SOURCES.TAOSTATS_LIVE
       : DATA_SOURCES.MODELED;
 
   return apiResponse(
-    { ...data },
+    { ...result.data },
     {
       source,
-      fetchedAt: generatedAt ?? data.generatedAt,
-      ...(source === DATA_SOURCES.MODELED
-        ? { note: "No snapshot file found — using modeled holder data" }
-        : {}),
+      fetchedAt: result.generatedAt ?? result.data.generatedAt,
+      fallbackUsed: result.fallbackUsed,
+      stale: result.stale ?? false,
+      note: result.note,
+    },
+    {
+      cacheControl: "public, s-maxage=300",
     },
   );
 }

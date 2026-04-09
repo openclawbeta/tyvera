@@ -14,7 +14,6 @@ const MAX_HOTKEYS_PER_COLDKEY = 4;
 const MAX_NETUIDS_TO_SCAN = 12;
 const MIN_POSITION_TAO = 5;
 const MAX_TOTAL_ALPHA_QUERIES = 360;
-const TOP_NEURONS_PER_SUBNET = 8;
 
 function toNumber(raw: unknown): number {
   if (raw === null || raw === undefined) return 0;
@@ -155,17 +154,22 @@ export async function fetchHolderAttributionFromChain(limit = 250): Promise<Hold
 
     const positions: ChainHolderPosition[] = [];
     let alphaQueries = 0;
+    let hotkeysScanned = 0;
 
     for (const coldkey of coldkeys) {
       let hotkeys: string[] = [];
       try {
         const stakingHotkeys = await (api.query.subtensorModule as any).stakingHotkeys(coldkey);
-        hotkeys = (stakingHotkeys?.toJSON?.() as string[] | undefined) ?? [];
+        const ownedHotkeys = await (api.query.subtensorModule as any).ownedHotkeys(coldkey).catch(() => null);
+        const staking = (stakingHotkeys?.toJSON?.() as string[] | undefined) ?? [];
+        const owned = (ownedHotkeys?.toJSON?.() as string[] | undefined) ?? [];
+        hotkeys = Array.from(new Set([...staking, ...owned]));
       } catch {
         continue;
       }
 
       for (const hotkey of hotkeys.slice(0, MAX_HOTKEYS_PER_COLDKEY)) {
+        hotkeysScanned += 1;
         const candidateNetuids = netuids.slice(0, Math.max(0, MAX_NETUIDS_TO_SCAN - Math.floor(alphaQueries / Math.max(1, MAX_COLDKEYS_TO_SCAN))));
         const alphaChecks = await Promise.all(
           candidateNetuids.map(async (netuid) => {
@@ -206,8 +210,14 @@ export async function fetchHolderAttributionFromChain(limit = 250): Promise<Hold
       fetchedAt: new Date().toISOString(),
       source: sorted.length > 0 ? "chain-live" : "unavailable",
       notes: sorted.length > 0
-        ? `Partial real extraction from metagraph + owner + stakingHotkeys + alpha across ${coldkeys.length} coldkeys (${alphaQueries} alpha queries).`
-        : `No positions found from partial extraction across ${coldkeys.length} coldkeys (${alphaQueries} alpha queries).`,
+        ? `Partial real extraction from metagraph + owner + staking/owned hotkeys + alpha across ${coldkeys.length} coldkeys (${hotkeysScanned} hotkeys, ${alphaQueries} alpha queries).`
+        : `No positions found from partial extraction across ${coldkeys.length} coldkeys (${hotkeysScanned} hotkeys, ${alphaQueries} alpha queries).`,
+      coverage: {
+        coldkeysScanned: coldkeys.length,
+        hotkeysScanned,
+        netuidsScanned: netuids.length,
+        alphaQueries,
+      },
     };
   } catch (error) {
     return {
@@ -215,6 +225,12 @@ export async function fetchHolderAttributionFromChain(limit = 250): Promise<Hold
       fetchedAt: new Date().toISOString(),
       source: "unavailable",
       notes: error instanceof Error ? error.message : "Unknown holder attribution error",
+      coverage: {
+        coldkeysScanned: 0,
+        hotkeysScanned: 0,
+        netuidsScanned: 0,
+        alphaQueries: 0,
+      },
     };
   } finally {
     if (api) await disconnect(api);
