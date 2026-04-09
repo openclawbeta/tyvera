@@ -121,14 +121,15 @@ export function seedTaoPrice(taoUsd: number, source: TaoPricePoint["source"] = "
   }
 }
 
-/** Get the latest known TAO/USD price, or a bootstrap fallback. */
-export function getLatestTaoPrice(): TaoPricePoint {
+/**
+ * Get the latest known TAO/USD price.
+ * Returns null on cold start (no price has ever been fetched).
+ */
+export function getLatestTaoPrice(): TaoPricePoint | null {
   if (priceHistory.length > 0) {
     return priceHistory[priceHistory.length - 1];
   }
-  // Only returned on a completely cold start (no cron has ever run).
-  // After the first successful sync this is never reached again.
-  return { taoUsd: 0, timestamp: new Date().toISOString(), source: "bootstrap" };
+  return null;
 }
 
 /** Get price history for the last N points. */
@@ -425,17 +426,18 @@ export async function syncPricesFromChain(): Promise<PriceSnapshot | null> {
     } else {
       // Fall back to last known price from buffer (preserves the last real price)
       const lastKnown = getLatestTaoPrice();
+
+      if (!lastKnown) {
+        // True cold start — no price has ever been fetched
+        console.error("[price-engine] No price data available — awaiting first successful price fetch");
+        return null;
+      }
+
       taoUsd = lastKnown.taoUsd;
       priceSource = lastKnown.source; // Keep original source label — don't downgrade
       change24h = lastKnown.change24h ?? 0;
       marketCap = lastKnown.marketCap ?? 0;
       volume24h = lastKnown.volume24h ?? 0;
-
-      if (taoUsd <= 0) {
-        // True cold start — no price has ever been fetched
-        console.error("[price-engine] No price data available — cold start, skipping sync");
-        return null;
-      }
 
       console.warn(`[price-engine] External feeds unavailable — reusing last known price $${taoUsd} (${lastKnown.source})`);
     }
@@ -518,12 +520,14 @@ export function derivePriceChanges(): {
   change7d: number;
   change30d: number;
 } {
+  const latestPoint = getLatestTaoPrice();
+  if (!latestPoint) return { change1h: 0, change24h: 0, change7d: 0, change30d: 0 };
+
   // If the latest point has a change24h from the exchange API, use it
-  const latest = priceHistory.length > 0 ? priceHistory[priceHistory.length - 1] : null;
-  const exchangeChange24h = latest?.change24h ?? 0;
+  const exchangeChange24h = latestPoint.change24h ?? 0;
 
   const now = Date.now();
-  const current = getLatestTaoPrice().taoUsd;
+  const current = latestPoint.taoUsd;
 
   function findPriceAtAge(ageMs: number): number | null {
     const target = now - ageMs;

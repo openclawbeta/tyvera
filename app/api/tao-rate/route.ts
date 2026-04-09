@@ -41,10 +41,6 @@ let cache: CachedRate | null = null;
 let cacheTimestamp = 0;
 const TTL_MS = TAO_RATE_CACHE_TTL_MS;
 
-const FALLBACK_RATE = 600;
-const FALLBACK_CHANGE = 0;
-const FALLBACK_MARKET_CAP = 12_600_000_000; // 600 * 21M
-const FALLBACK_VOLUME = 305_520_000;
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Route handler                                                        */
@@ -69,7 +65,7 @@ export async function GET() {
   // ── Check price-engine buffer for recent data ─────────────────────
   const latestPrice = getLatestTaoPrice();
 
-  if (latestPrice.taoUsd > 0 && latestPrice.source !== "bootstrap") {
+  if (latestPrice) {
     // We have a real price from the engine (exchange-sourced or admin-seeded)
     const priceChanges = derivePriceChanges();
     const snapshot: CachedRate = {
@@ -100,8 +96,8 @@ export async function GET() {
   // ── Tier 1: Live sync (fetches TAO/USD + chain data) ──────────────
   try {
     const syncResult = await syncPricesFromChain();
-    if (syncResult) {
-      const updatedPrice = getLatestTaoPrice();
+    const updatedPrice = syncResult ? getLatestTaoPrice() : null;
+    if (syncResult && updatedPrice) {
       const updatedChanges = derivePriceChanges();
 
       const fresh: CachedRate = {
@@ -148,18 +144,19 @@ export async function GET() {
     );
   }
 
-  // ── Tier 4: hard-coded fallback ───────────────────────────────────
+  // ── Cold start: no price data exists yet ────────────────────────────
   return apiResponse(
     {
-      taoUsd: FALLBACK_RATE,
-      change24h: FALLBACK_CHANGE,
-      marketCap: FALLBACK_MARKET_CAP,
-      volume24h: FALLBACK_VOLUME,
+      taoUsd: null,
+      change24h: null,
+      marketCap: null,
+      volume24h: null,
+      awaiting: true,
     },
     {
       source: DATA_SOURCES.FALLBACK_CONSTANT,
-      fetchedAt: new Date(0).toISOString(),
-      note: "All sources unavailable — using hard-coded fallback",
+      fetchedAt: new Date().toISOString(),
+      note: "Awaiting pricing source — no price data has been fetched yet",
     },
   );
 }

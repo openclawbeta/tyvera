@@ -92,7 +92,20 @@ export function GlobalTicker() {
   }
 
   if (!ticker) {
-    return null;
+    return (
+      <div
+        className="fixed top-0 right-0 left-0 lg:left-60 h-8 z-30 flex items-center px-4 gap-4 text-xs text-slate-500 font-mono"
+        style={{
+          background: "rgba(0,0,0,0.85)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+        }}
+      >
+        <span className="text-sm">τ</span>
+        <span>Awaiting pricing source...</span>
+      </div>
+    );
   }
 
   const isPositive = ticker.change24h >= 0;

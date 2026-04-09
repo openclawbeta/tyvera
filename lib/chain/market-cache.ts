@@ -94,12 +94,13 @@ export async function refreshMarketCache(
   chainSubnets?: Array<{ netuid: number; tao_in?: number; alpha_in?: number; liquidity?: number }>,
 ): Promise<boolean> {
   const taoPrice = getLatestTaoPrice();
-  const taoUsd = taoPrice.taoUsd;
 
-  if (taoUsd <= 0) {
-    console.log("[market-cache] No TAO/USD price available — cannot compute alpha prices");
+  if (!taoPrice || taoPrice.taoUsd <= 0) {
+    console.log("[market-cache] No TAO/USD price available — awaiting pricing source");
     return false;
   }
+
+  const taoUsd = taoPrice.taoUsd;
 
   // Strategy A: Use provided chain subnet data + price-engine TAO/USD
   if (chainSubnets && chainSubnets.length > 0) {
