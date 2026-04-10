@@ -9,19 +9,20 @@ import { FadeIn } from "@/components/ui-custom/fade-in";
 import { cn } from "@/lib/utils";
 
 const TICKER_FALLBACK = [
-  { name: "SN15 Blockchain Insights", yield: "82.4%", up: true },
-  { name: "SN126", yield: "69.5%", up: true },
-  { name: "SN107", yield: "65.2%", up: true },
-  { name: "SN114", yield: "40.1%", up: true },
-  { name: "SN38 Distributed Training", yield: "32.8%", up: true },
-  { name: "SN49 Protein Folding", yield: "26.7%", up: true },
-  { name: "SN1 Text Prompting", yield: "24.3%", up: false },
+  { name: "SN15 Blockchain Insights", yield: "+0.23%/day", up: true },
+  { name: "SN126", yield: "+0.19%/day", up: true },
+  { name: "SN107", yield: "+0.18%/day", up: true },
+  { name: "SN114", yield: "+0.11%/day", up: true },
+  { name: "SN38 Distributed Training", yield: "+0.10%/day", up: true },
+  { name: "SN100", yield: "+0.10%/day", up: true },
+  { name: "SN120", yield: "+0.09%/day", up: true },
 ];
 
 interface LiveSubnet {
   netuid: number;
   name: string;
   yield: number;
+  emissions: number;
   risk: string;
   liquidity: number;
   yieldDelta7d: number;
@@ -96,18 +97,19 @@ export default function HomePage() {
         const data = Array.isArray(raw) ? raw : raw?.subnets ?? [];
         if (!Array.isArray(data) || data.length === 0) return;
 
-        const sorted = [...data]
-          .filter((s: LiveSubnet) => s.netuid > 0 && s.yield > 0 && s.yield < 200)
-          .sort((a: LiveSubnet, b: LiveSubnet) => b.yield - a.yield);
+        const withDaily = [...data]
+          .filter((s: LiveSubnet) => s.netuid > 0 && s.emissions > 0 && s.liquidity > 0)
+          .map((s: LiveSubnet) => ({ ...s, dailyYield: (s.emissions / s.liquidity) * 100 }))
+          .sort((a, b) => b.dailyYield - a.dailyYield);
 
-        const tickerItems = sorted.slice(0, 10).map((s: LiveSubnet) => ({
+        const tickerItems = withDaily.slice(0, 12).map((s) => ({
           name: /^SN\d+$/.test(s.name) ? `SN${s.netuid}` : `SN${s.netuid} ${s.name}`,
-          yield: `${s.yield.toFixed(1)}%`,
-          up: s.yieldDelta7d >= 0,
+          yield: `+${s.dailyYield.toFixed(2)}%/day`,
+          up: s.dailyYield > 0,
         }));
         if (tickerItems.length > 0) setTicker(tickerItems);
 
-        setFeatured(sorted.slice(0, 3));
+        setFeatured(withDaily.slice(0, 3));
       })
       .catch(() => {});
   }, []);
@@ -140,11 +142,11 @@ export default function HomePage() {
           </Link>
 
           <div className="hidden items-center gap-3 lg:flex">
-            <Link href="/pricing" className="rounded-xl px-4 py-2 text-[13px] font-medium text-slate-500 transition-all hover:bg-white/[0.05] hover:text-slate-200">
-              Pricing
-            </Link>
             <Link href="/subnets" className="rounded-xl px-4 py-2 text-[13px] font-medium text-slate-500 transition-all hover:bg-white/[0.05] hover:text-slate-200">
               Subnets
+            </Link>
+            <Link href="/metrics" className="rounded-xl px-4 py-2 text-[13px] font-medium text-slate-500 transition-all hover:bg-white/[0.05] hover:text-slate-200">
+              Metrics
             </Link>
             <Link href="/signup">
               <button
@@ -356,20 +358,20 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {(featured.length > 0
-              ? featured.map((s, i) => ({
+              ? featured.map((s: any, i: number) => ({
                   netuid: s.netuid,
                   name: s.name,
-                  yield: `${s.yield.toFixed(1)}%`,
+                  yield: `${s.dailyYield?.toFixed(2) ?? (s.emissions / s.liquidity * 100).toFixed(2)}%`,
                   risk: s.risk,
-                  delta: `${s.yieldDelta7d >= 0 ? "+" : ""}${s.yieldDelta7d.toFixed(1)}%`,
+                  delta: `${formatLiquidity(s.emissions)}/day`,
                   liquidity: formatLiquidity(s.liquidity),
                   grad: GRADIENT_CLASSES[i % 3],
                   accent: ACCENT_COLORS[i % 3],
                 }))
               : [
-                  { netuid: 49, name: "Protein Folding", yield: "26.7%", risk: "LOW", delta: "+0.4%", liquidity: "13,800 τ", grad: "from-cyan-500 to-blue-600", accent: "#22d3ee" },
-                  { netuid: 1, name: "Text Prompting", yield: "24.3%", risk: "LOW", delta: "+1.2%", liquidity: "12,400 τ", grad: "from-violet-500 to-purple-700", accent: "#8b5cf6" },
-                  { netuid: 25, name: "Code Execution", yield: "22.1%", risk: "LOW", delta: "+1.5%", liquidity: "9,700 τ", grad: "from-emerald-500 to-teal-700", accent: "#34d399" },
+                  { netuid: 15, name: "Blockchain Insights", yield: "0.23%", risk: "LOW", delta: "194.5 τ/day", liquidity: "86,148 τ", grad: "from-cyan-500 to-blue-600", accent: "#22d3ee" },
+                  { netuid: 107, name: "SN107", yield: "0.18%", risk: "LOW", delta: "155.4 τ/day", liquidity: "86,956 τ", grad: "from-violet-500 to-purple-700", accent: "#8b5cf6" },
+                  { netuid: 114, name: "SN114", yield: "0.11%", risk: "LOW", delta: "125.6 τ/day", liquidity: "114,317 τ", grad: "from-emerald-500 to-teal-700", accent: "#34d399" },
                 ]
             ).map((s, i) => (
               <FadeIn key={s.netuid} delay={i * 0.1}>
@@ -406,14 +408,14 @@ export default function HomePage() {
                   <div className="mb-0.5 font-mono text-[28px] font-bold tabular-nums text-white" style={{ letterSpacing: "-0.03em" }}>
                     {s.yield}
                   </div>
-                  <div className="mb-4 text-[11px] text-slate-600">estimated annual yield</div>
+                  <div className="mb-4 text-[11px] text-slate-600">daily yield vs τ staked</div>
 
                   <div className="mb-4 h-px" style={{ background: "rgba(255,255,255,0.05)" }} />
 
                   <div className="flex items-center gap-2">
                     <span className="tag-emerald">{s.risk} RISK</span>
-                    <span className="text-[11px] font-semibold tabular-nums text-emerald-400">{s.delta} 7d</span>
-                    <span className="ml-auto text-[11px] tabular-nums text-slate-600">{s.liquidity}</span>
+                    <span className="text-[11px] font-semibold tabular-nums text-cyan-400">{s.delta}</span>
+                    <span className="ml-auto text-[11px] tabular-nums text-slate-600">{s.liquidity} staked</span>
                   </div>
                 </div>
               </FadeIn>
