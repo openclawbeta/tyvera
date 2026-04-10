@@ -4,31 +4,33 @@ import { GlobalTicker } from "@/components/layout/global-ticker";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#05070b] text-white">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.08),transparent_24%),radial-gradient(circle_at_80%_12%,rgba(59,130,246,0.08),transparent_22%),linear-gradient(180deg,#05070b_0%,#070913_48%,#05070b_100%)] text-white">
       <GlobalTicker />
-      <div className="flex min-h-screen">
-        <aside className="hidden lg:flex lg:w-[272px] xl:w-[288px] border-r border-white/6 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] backdrop-blur-2xl pt-8 mt-8 sticky top-8 self-start min-h-[calc(100vh-2rem)]">
+
+      <div className="flex min-h-screen overflow-x-clip pt-8">
+        <aside className="sticky top-8 hidden min-h-[calc(100vh-2rem)] shrink-0 self-start border-r border-white/6 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] backdrop-blur-2xl lg:flex lg:w-[248px] xl:w-[276px]">
           <AppSidebar />
         </aside>
 
-        <div className="flex-1 min-w-0 mt-8">
-          <div className="border-b border-white/6 bg-black/30 backdrop-blur-xl sticky top-8 z-20">
-            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="min-w-0 flex-1 overflow-x-hidden">
+          <div className="sticky top-8 z-20 border-b border-white/8 bg-[linear-gradient(180deg,rgba(10,12,18,0.88),rgba(8,10,16,0.72))] backdrop-blur-2xl shadow-[0_18px_40px_rgba(0,0,0,0.28)]">
+            <div className="mx-auto flex h-[72px] max-w-[1600px] items-center justify-between px-4 sm:px-6 lg:px-8">
               <div>
-                <div className="text-[11px] uppercase tracking-[0.2em] text-slate-500 font-semibold">Tyvera Terminal</div>
-                <div className="text-sm text-slate-300 mt-0.5">Bittensor intelligence workspace</div>
+                <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">Tyvera Terminal</div>
+                <div className="mt-1 text-sm tracking-tight text-slate-300">Bittensor intelligence workspace</div>
               </div>
-              <div className="hidden md:flex items-center gap-3 text-[11px] text-slate-500 uppercase tracking-[0.18em]">
-                <span className="rounded-full border border-white/8 bg-white/[0.03] px-3 py-1">Live routes</span>
-                <span className="rounded-full border border-white/8 bg-white/[0.03] px-3 py-1">Source aware</span>
-                <span className="rounded-full border border-white/8 bg-white/[0.03] px-3 py-1">Beta</span>
+
+              <div className="hidden items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 md:flex">
+                <span className="rounded-full border border-white/8 bg-white/[0.03] px-3 py-1.5">Live routes</span>
+                <span className="rounded-full border border-cyan-400/12 bg-cyan-400/[0.05] px-3 py-1.5 text-cyan-300">Source aware</span>
+                <span className="rounded-full border border-white/8 bg-white/[0.03] px-3 py-1.5">Beta</span>
               </div>
             </div>
           </div>
 
-          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-            <div className="rounded-[28px] border border-white/6 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))] shadow-[0_30px_100px_rgba(0,0,0,0.35)] min-h-[calc(100vh-9rem)] overflow-hidden">
-              <div className="p-4 sm:p-6 lg:p-8">{children}</div>
+          <div className="mx-auto w-full max-w-[1600px] px-3 py-6 sm:px-5 lg:px-6 lg:py-8 xl:px-8">
+            <div className="min-h-[calc(100vh-9rem)] overflow-x-hidden rounded-[30px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.034),rgba(255,255,255,0.013))] shadow-[0_30px_100px_rgba(0,0,0,0.42),0_0_0_1px_rgba(255,255,255,0.025)_inset,0_0_34px_rgba(79,124,255,0.04)]">
+              <div className="min-w-0 p-4 sm:p-5 lg:p-7 xl:p-8">{children}</div>
             </div>
           </div>
         </div>
