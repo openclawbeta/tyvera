@@ -9,13 +9,13 @@ import { FadeIn } from "@/components/ui-custom/fade-in";
 import { cn } from "@/lib/utils";
 
 const TICKER_FALLBACK = [
+  { name: "SN15 Blockchain Insights", yield: "82.4%", up: true },
+  { name: "SN126", yield: "69.5%", up: true },
+  { name: "SN107", yield: "65.2%", up: true },
+  { name: "SN114", yield: "40.1%", up: true },
+  { name: "SN38 Distributed Training", yield: "32.8%", up: true },
   { name: "SN49 Protein Folding", yield: "26.7%", up: true },
-  { name: "SN1 Text Prompting", yield: "24.3%", up: true },
-  { name: "SN18 Image Generation", yield: "23.0%", up: true },
-  { name: "SN25 Code Execution", yield: "22.1%", up: true },
-  { name: "SN4 Multi-Modality", yield: "21.7%", up: true },
-  { name: "SN19 Video Gen", yield: "28.4%", up: false },
-  { name: "SN3 Data Scraping", yield: "15.0%", up: false },
+  { name: "SN1 Text Prompting", yield: "24.3%", up: false },
 ];
 
 interface LiveSubnet {
@@ -97,7 +97,7 @@ export default function HomePage() {
         if (!Array.isArray(data) || data.length === 0) return;
 
         const sorted = [...data]
-          .filter((s: LiveSubnet) => s.netuid > 0 && s.yield > 0 && s.yield < 1000)
+          .filter((s: LiveSubnet) => s.netuid > 0 && s.yield > 0 && s.yield < 200)
           .sort((a: LiveSubnet, b: LiveSubnet) => b.yield - a.yield);
 
         const tickerItems = sorted.slice(0, 10).map((s: LiveSubnet) => ({
@@ -308,7 +308,10 @@ export default function HomePage() {
       </section>
 
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.012)", overflow: "hidden" }}>
-        <div className="flex py-2.5">
+        <div
+          className="flex py-2.5"
+          style={{ animation: "ticker-scroll 30s linear infinite", width: "max-content" }}
+        >
           {[...ticker, ...ticker].map((item, i) => (
             <div key={`${item.name}-${i}`} className="flex shrink-0 items-center gap-3 px-6" style={{ borderRight: "1px solid rgba(255,255,255,0.05)" }}>
               <span className="whitespace-nowrap text-[11px] font-medium text-slate-600">{item.name}</span>
