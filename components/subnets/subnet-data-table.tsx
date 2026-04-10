@@ -112,25 +112,25 @@ export function SubnetDataTable({ subnets, onSelect, currency, onCurrencyChange,
     }
   }
 
-  const headers: Array<{ key: SortKey; label: string; align?: "left" | "center" | "right" }> = [
-    { key: "name", label: "#", align: "center" },
-    { key: "name", label: "Star", align: "center" },
-    { key: "name", label: "Subnet", align: "left" },
-    { key: "emissions", label: "Emission/Day", align: "right" },
-    { key: "alphaPrice", label: "Price τ", align: "right" },
-    { key: "change1h", label: "1H", align: "right" },
-    { key: "change24h", label: "24H", align: "right" },
-    { key: "change1w", label: "1W", align: "right" },
-    { key: "change1m", label: "1M", align: "right" },
-    { key: "marketCap", label: "MCap", align: "right" },
-    { key: "volume24h", label: "Vol (24H)", align: "right" },
-    { key: "volumeCapRatio", label: "Vol/Cap", align: "right" },
-    { key: "flow24h", label: "Flow (24H)", align: "right" },
-    { key: "flow1w", label: "Flow (1W)", align: "right" },
-    { key: "flow1m", label: "Flow (1M)", align: "right" },
-    { key: "dailyChainBuys", label: "Buys", align: "right" },
-    { key: "incentivePct", label: "Incentive", align: "right" },
-    { key: "liquidity", label: "Liquidity", align: "right" },
+  const headers: Array<{ id: string; key: SortKey; label: string; align?: "left" | "center" | "right" }> = [
+    { id: "rank", key: "name", label: "#", align: "center" },
+    { id: "star", key: "name", label: "Star", align: "center" },
+    { id: "subnet", key: "name", label: "Subnet", align: "left" },
+    { id: "emissions", key: "emissions", label: "Emission/Day", align: "right" },
+    { id: "alphaPrice", key: "alphaPrice", label: "Price τ", align: "right" },
+    { id: "change1h", key: "change1h", label: "1H", align: "right" },
+    { id: "change24h", key: "change24h", label: "24H", align: "right" },
+    { id: "change1w", key: "change1w", label: "1W", align: "right" },
+    { id: "change1m", key: "change1m", label: "1M", align: "right" },
+    { id: "marketCap", key: "marketCap", label: "MCap", align: "right" },
+    { id: "volume24h", key: "volume24h", label: "Vol (24H)", align: "right" },
+    { id: "volumeCapRatio", key: "volumeCapRatio", label: "Vol/Cap", align: "right" },
+    { id: "flow24h", key: "flow24h", label: "Flow (24H)", align: "right" },
+    { id: "flow1w", key: "flow1w", label: "Flow (1W)", align: "right" },
+    { id: "flow1m", key: "flow1m", label: "Flow (1M)", align: "right" },
+    { id: "dailyChainBuys", key: "dailyChainBuys", label: "Buys", align: "right" },
+    { id: "incentivePct", key: "incentivePct", label: "Incentive", align: "right" },
+    { id: "liquidity", key: "liquidity", label: "Liquidity", align: "right" },
   ];
 
   return (
@@ -245,7 +245,7 @@ export function SubnetDataTable({ subnets, onSelect, currency, onCurrencyChange,
                 <tr className="bg-white/[0.02] border-b border-white/[0.04]">
                   {headers.map((header) => (
                     <th
-                      key={header.key}
+                      key={header.id}
                       onClick={() => {
                         if (header.key !== "name") {
                           toggleSort(header.key);
