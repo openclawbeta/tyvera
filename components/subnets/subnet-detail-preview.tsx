@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bookmark, BookmarkCheck, TrendingUp, TrendingDown, Users, Layers, Zap, BarChart2, Eye } from "lucide-react";
 import { cn, subnetGradient, scoreBg, riskBg, formatLargeNumber } from "@/lib/utils";
@@ -141,10 +142,12 @@ export function SubnetDetailPreview({ subnet }: SubnetDetailPreviewProps) {
 
         {/* CTA */}
         <div className="p-5 border-t border-white/[0.06]">
-          <button className="w-full btn-primary justify-center py-2.5 text-sm">
-            <Zap className="w-4 h-4" />
-            View Full Analytics
-          </button>
+          <Link href={`/subnets/${subnet.netuid}`} className="w-full">
+            <button className="w-full btn-primary justify-center py-2.5 text-sm">
+              <Zap className="w-4 h-4" />
+              View Full Analytics
+            </button>
+          </Link>
         </div>
       </motion.div>
     </AnimatePresence>
