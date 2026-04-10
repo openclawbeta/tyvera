@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, RefreshCw, Wallet } from "lucide-react";
+import { ArrowRight, RefreshCw, Wallet, TrendingUp, Activity, Shield } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
 import { SectionTitle } from "@/components/ui-custom/section-title";
@@ -28,102 +28,129 @@ export default function DashboardPage() {
 
   const isConnected = walletState !== "disconnected";
 
-  // Only call personal data APIs when wallet is connected
-  const portfolio       = isConnected ? getPortfolio()         : null;
-  const history         = isConnected ? getPortfolioHistory()  : null;
-  const recentChanges   = isConnected ? getPortfolioActivity() : [];
-  const recommendations = isConnected ? getRecommendations()   : [];
+  const portfolio = isConnected ? getPortfolio() : null;
+  const history = isConnected ? getPortfolioHistory() : null;
+  const recentChanges = isConnected ? getPortfolioActivity() : [];
+  const recommendations = isConnected ? getRecommendations() : [];
 
-  const portfolioStats     = portfolio?.stats ?? null;
-  const allocations        = portfolio?.allocations ?? [];
+  const portfolioStats = portfolio?.stats ?? null;
+  const allocations = portfolio?.allocations ?? [];
   const portfolioChartData = history?.value ?? [];
-  const yieldChartData     = history?.yield ?? [];
-  const topRec             = recommendations[1] ?? recommendations[0] ?? null;
-  const topRecBand         = topRec?.band ?? "STRONG";
+  const yieldChartData = history?.yield ?? [];
+  const topRec = recommendations[1] ?? recommendations[0] ?? null;
+  const topRecBand = topRec?.band ?? "STRONG";
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-7">
-
-      <PageHeader
-        title="Dashboard"
-        subtitle="Your Bittensor portfolio at a glance"
-      >
+    <div className="mx-auto max-w-[1440px] space-y-8">
+      <PageHeader title="Dashboard" subtitle="Your Bittensor portfolio at a glance">
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex items-center rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-slate-400">
             Personal command surface
           </div>
           <button onClick={handleRefresh} className="btn-ghost gap-1.5">
-            <RefreshCw className={cn("w-3.5 h-3.5", refreshing && "animate-spin")} />
+            <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
             Refresh
           </button>
         </div>
       </PageHeader>
 
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold">
-        Portfolio context and decision framing
-      </div>
-
       <FadeIn delay={0.03}>
-        <div className="grid gap-4 xl:grid-cols-3">
-          {[
-            {
-              label: "Portfolio command",
-              title: "Track value, stake posture, and realized yield.",
-              detail: "This surface is for allocation monitoring — not generic analytics. The main chart should answer what your TAO exposure is doing now.",
-            },
-            {
-              label: "Network readthrough",
-              title: "Use subnet momentum to contextualize portfolio moves.",
-              detail: "Yield and trend cards here work as market context around your positions, not as isolated decoration.",
-            },
-            {
-              label: "Decision layer",
-              title: "Recommendations should map to action, not filler.",
-              detail: "Allocation, recent activity, and recommendation modules are meant to support rebalance decisions quickly.",
-            },
-          ].map((item) => (
-            <div key={item.label} className="rounded-2xl border border-white/8 bg-white/[0.025] p-5">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold">{item.label}</div>
-              <div className="mt-3 text-lg font-semibold tracking-tight text-white">{item.title}</div>
-              <p className="mt-2 text-sm leading-relaxed text-slate-400">{item.detail}</p>
+        <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+          <div
+            className="relative overflow-hidden rounded-[28px] border border-white/8 p-6 md:p-7"
+            style={{
+              background:
+                "linear-gradient(160deg, rgba(34,211,238,0.08) 0%, rgba(79,124,255,0.045) 28%, rgba(255,255,255,0.018) 62%, rgba(255,255,255,0.012) 100%)",
+              boxShadow:
+                "0 24px 80px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 40px rgba(34,211,238,0.04)",
+            }}
+          >
+            <div className="absolute right-0 top-0 h-40 w-56 pointer-events-none" style={{ background: "radial-gradient(circle at top right, rgba(34,211,238,0.16), transparent 68%)" }} />
+
+            <div className="relative">
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300">
+                <TrendingUp className="h-3 w-3" />
+                portfolio command layer
+              </div>
+
+              <h2 className="mt-5 text-3xl font-black tracking-[-0.04em] text-white md:text-[40px]">
+                Read your TAO posture
+                <span className="block bg-[linear-gradient(135deg,#67e8f9_0%,#4f7cff_55%,#8b5cf6_100%)] bg-clip-text text-transparent">
+                  before you move capital.
+                </span>
+              </h2>
+
+              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-400 md:text-[15px]">
+                Dashboard is the portfolio command surface: current value, weighted yield, recent activity, and recommendation context arranged to support faster allocation decisions.
+              </p>
+
+              <div className="mt-6 grid gap-3 md:grid-cols-3">
+                {[
+                  { label: "Portfolio state", value: isConnected && portfolioStats ? "Connected" : "Awaiting wallet", note: isConnected ? "Personal metrics unlocked" : "Connect to reveal your book", tone: isConnected ? "text-cyan-300" : "text-amber-300" },
+                  { label: "Decision mode", value: "Allocation-first", note: "Built around position quality and edge", tone: "text-white" },
+                  { label: "Trust model", value: "User-approved", note: "Recommendations inform — you still approve", tone: "text-emerald-300" },
+                ].map((card) => (
+                  <div key={card.label} className="rounded-2xl border border-white/8 bg-black/20 px-4 py-4">
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">{card.label}</div>
+                    <div className={cn("mt-2 text-base font-semibold tracking-tight", card.tone)}>{card.value}</div>
+                    <div className="mt-1 text-xs text-slate-500">{card.note}</div>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
+          </div>
+
+          <div className="grid gap-4">
+            {[
+              {
+                label: "Portfolio command",
+                title: "Track value, stake posture, and realized yield.",
+                detail: "This surface is for allocation monitoring — the main chart should answer what your TAO exposure is doing now.",
+              },
+              {
+                label: "Network readthrough",
+                title: "Use subnet momentum to contextualize portfolio moves.",
+                detail: "Yield and trend modules work as market context around your positions, not as isolated decoration.",
+              },
+              {
+                label: "Decision layer",
+                title: "Recommendations should map to action, not filler.",
+                detail: "Allocation, recent activity, and recommendation modules should help you decide what deserves attention next.",
+              },
+            ].map((item) => (
+              <div key={item.label} className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 shadow-[0_14px_50px_rgba(0,0,0,0.24)]">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">{item.label}</div>
+                <div className="mt-3 text-lg font-semibold tracking-tight text-white">{item.title}</div>
+                <p className="mt-2 text-sm leading-relaxed text-slate-400">{item.detail}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </FadeIn>
 
-      {/* ── Primary metric zone ── */}
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+        Portfolio context and decision framing
+      </div>
+
       <FadeIn delay={0.05}>
         {isConnected && portfolioStats ? (
           <div className="grid grid-cols-12 gap-5">
-
-            {/* Portfolio Value + chart — dominant */}
-            <div className="col-span-12 lg:col-span-9">
-              <GlassCard padding="lg">
-                <div className="mb-5 flex items-center justify-between gap-3 border-b border-white/[0.06] pb-4">
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Core portfolio signal</div>
-                  <div className="text-[11px] text-slate-500">Value trend · selected horizon</div>
-                </div>
-                <div className="flex items-start justify-between mb-5">
+            <div className="col-span-12 lg:col-span-8 xl:col-span-9">
+              <div className="rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.034),rgba(255,255,255,0.013))] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.34)]">
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] pb-4">
                   <div>
-                    <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">
-                      Portfolio Value
-                    </div>
-                    <div
-                      className="font-bold text-slate-100 tabular-nums leading-none"
-                      style={{ fontSize: "30px", letterSpacing: "-0.025em" }}
-                    >
-                      ${portfolioStats.totalValueUsd.toLocaleString()}
-                    </div>
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Core portfolio signal</div>
+                    <div className="mt-1 text-sm tracking-tight text-slate-300">Value trend across the selected horizon</div>
                   </div>
-                  <div className="flex items-center gap-0.5">
+                  <div className="flex items-center gap-0.5 rounded-xl border border-white/8 bg-white/[0.03] p-1">
                     {["7d", "14d", "30d"].map((p) => (
                       <button
                         key={p}
                         onClick={() => setDashPeriod(p)}
-                        className="px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-150"
+                        className="rounded-lg px-3 py-1.5 text-[11px] font-medium transition-all duration-150"
                         style={{
-                          color: p === dashPeriod ? "#22d3ee" : "#475569",
-                          background: p === dashPeriod ? "rgba(34,211,238,0.08)" : "transparent",
+                          color: p === dashPeriod ? "#a5f3fc" : "#64748b",
+                          background: p === dashPeriod ? "rgba(34,211,238,0.1)" : "transparent",
                         }}
                       >
                         {p}
@@ -131,103 +158,97 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 </div>
-                <SimpleLineChart
-                  data={portfolioChartData}
-                  color="#22d3ee"
-                  height={180}
-                  showGrid
-                  prefix="$"
-                  gradientId="portfolioGrad"
-                />
-              </GlassCard>
+
+                <div className="mb-6 grid gap-3 md:grid-cols-[1.05fr_0.95fr]">
+                  <div>
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Portfolio value</div>
+                    <div className="mt-2 text-[34px] font-bold leading-none tracking-[-0.03em] text-white tabular-nums">
+                      ${portfolioStats.totalValueUsd.toLocaleString()}
+                    </div>
+                    <div className="mt-2 text-sm text-slate-500">This is the primary read on what your current book is worth.</div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-1 xl:grid-cols-3">
+                    {[
+                      { label: "Total Staked", value: `${portfolioStats.totalStakedTao.toFixed(2)} τ` },
+                      { label: "Weighted Yield", value: `${portfolioStats.weightedYield.toFixed(1)}%` },
+                      { label: "7-Day Earnings", value: `${portfolioStats.earnings7d.toFixed(4)} τ` },
+                    ].map((stat) => (
+                      <div key={stat.label} className="rounded-2xl border border-white/[0.06] bg-black/20 px-4 py-4">
+                        <div className="text-[9.5px] font-semibold uppercase tracking-widest text-slate-600">{stat.label}</div>
+                        <div className="mt-2 text-lg font-bold leading-none tracking-[-0.02em] text-slate-200 tabular-nums">{stat.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <SimpleLineChart data={portfolioChartData} color="#22d3ee" height={190} showGrid prefix="$" gradientId="portfolioGrad" />
+              </div>
             </div>
 
-            {/* Secondary stats — quiet */}
-            <div className="col-span-12 lg:col-span-3 flex flex-col gap-3">
-              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold">
+            <div className="col-span-12 lg:col-span-4 xl:col-span-3 space-y-4">
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
                 Supporting portfolio stats
               </div>
-              {[
-                { label: "Total Staked",   value: `${portfolioStats.totalStakedTao.toFixed(2)} τ` },
-                { label: "Weighted Yield", value: `${portfolioStats.weightedYield.toFixed(1)}%` },
-                { label: "7-Day Earnings", value: `${portfolioStats.earnings7d.toFixed(4)} τ` },
-              ].map((stat) => (
-                <GlassCard key={stat.label} padding="md">
-                  <div className="text-[9.5px] font-semibold text-slate-600 uppercase tracking-widest mb-2">
-                    {stat.label}
-                  </div>
-                  <div
-                    className="font-bold text-slate-200 tabular-nums leading-none"
-                    style={{ fontSize: "18px", letterSpacing: "-0.02em" }}
-                  >
-                    {stat.value}
-                  </div>
-                </GlassCard>
-              ))}
-            </div>
 
+              <div className="rounded-[24px] border border-white/8 bg-white/[0.022] p-5 shadow-[0_16px_56px_rgba(0,0,0,0.26)]">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                  <Activity className="h-3.5 w-3.5" />
+                  Position posture
+                </div>
+                <div className="mt-4 space-y-3">
+                  {[
+                    "Use total value as the top-line read before interpreting yield shifts.",
+                    "Weighted yield is a support metric, not the whole portfolio story.",
+                    "Recent earnings matter most when compared against allocation concentration.",
+                  ].map((line) => (
+                    <div key={line} className="rounded-xl border border-white/6 bg-black/20 px-4 py-3 text-sm leading-relaxed text-slate-400">
+                      {line}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
-          /* ── Disconnected: portfolio empty state ── */
-          <GlassCard padding="lg">
-            <div className="flex flex-col items-center text-center py-10">
+          <div className="rounded-[28px] border border-white/8 bg-[linear-gradient(160deg,rgba(255,255,255,0.03),rgba(255,255,255,0.012))] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.34)]">
+            <div className="flex flex-col items-center py-10 text-center">
               <div
-                className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
+                className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl"
                 style={{
                   background: "rgba(34,211,238,0.07)",
                   border: "1px solid rgba(34,211,238,0.16)",
                 }}
               >
-                <Wallet className="w-5 h-5" style={{ color: "#22d3ee" }} />
+                <Wallet className="h-6 w-6" style={{ color: "#22d3ee" }} />
               </div>
-              <p
-                className="font-semibold text-slate-300 mb-1.5"
-                style={{ fontSize: "13px", letterSpacing: "-0.01em" }}
-              >
-                Connect a wallet to view your portfolio
-              </p>
-              <p className="text-[11px] text-slate-600 mb-5 max-w-xs leading-relaxed">
-                Your portfolio value, staked TAO, yield, and activity will appear here once connected.
+              <p className="mb-1.5 text-[15px] font-semibold tracking-tight text-slate-300">Connect a wallet to view your portfolio</p>
+              <p className="mb-6 max-w-md text-sm leading-relaxed text-slate-500">
+                Portfolio value, staked TAO, yield, and recent activity appear here once a wallet is connected. Until then, the dashboard remains intentionally restrained.
               </p>
               <button
                 onClick={openModal}
-                className="flex items-center gap-2 text-[12px] font-semibold px-4 py-2.5 rounded-xl transition-all duration-200"
+                className="flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-all duration-200"
                 style={{
                   background: "rgba(34,211,238,0.08)",
                   border: "1px solid rgba(34,211,238,0.2)",
                   color: "#67e8f9",
                 }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(34,211,238,0.14)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.background = "rgba(34,211,238,0.08)";
-                }}
               >
-                <Wallet className="w-3.5 h-3.5" />
+                <Wallet className="h-4 w-4" />
                 Connect Wallet
               </button>
             </div>
-          </GlassCard>
+          </div>
         )}
       </FadeIn>
 
-      {/* ── Charts row ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-        {/* Subnet Momentum — market data, always visible */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <FadeIn delay={0.1}>
           <GlassCard padding="lg">
             <div className="mb-5">
-              <SectionTitle
-                label="Yield comparison"
-                title="Subnet Momentum"
-                subtitle="Current yield vs 7-day trend"
-              >
-                <span
-                  className="rounded-lg px-2 py-1 text-[9.5px] font-medium text-slate-600 uppercase tracking-wider"
-                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
-                >
+              <SectionTitle label="Yield comparison" title="Subnet Momentum" subtitle="Current yield vs 7-day trend">
+                <span className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-2 py-1 text-[9.5px] font-medium uppercase tracking-wider text-slate-600">
                   Color = trend direction
                 </span>
               </SectionTitle>
@@ -236,48 +257,24 @@ export default function DashboardPage() {
           </GlassCard>
         </FadeIn>
 
-        {/* Weighted Yield — portfolio data, gated */}
         <FadeIn delay={0.12}>
           <GlassCard padding="lg">
             <div className="mb-5">
-              <SectionTitle
-                label="Portfolio APR"
-                title="Weighted Yield"
-                subtitle="14-day rolling average"
-              />
+              <SectionTitle label="Portfolio APR" title="Weighted Yield" subtitle="14-day rolling average" />
             </div>
             {isConnected && yieldChartData.length > 0 ? (
-              <SimpleLineChart
-                data={yieldChartData}
-                color="#8b5cf6"
-                height={110}
-                suffix="%"
-                gradientId="yieldGrad"
-              />
+              <SimpleLineChart data={yieldChartData} color="#8b5cf6" height={110} suffix="%" gradientId="yieldGrad" />
             ) : (
-              <div
-                className="flex items-center justify-center rounded-xl"
-                style={{
-                  height: 110,
-                  background: "rgba(255,255,255,0.018)",
-                  border: "1px solid rgba(255,255,255,0.04)",
-                }}
-              >
-                <span className="text-[11px] text-slate-700">
-                  {isConnected ? "No yield history" : "Connect wallet to view"}
-                </span>
+              <div className="flex items-center justify-center rounded-xl" style={{ height: 110, background: "rgba(255,255,255,0.018)", border: "1px solid rgba(255,255,255,0.04)" }}>
+                <span className="text-[11px] text-slate-700">{isConnected ? "No yield history" : "Connect wallet to view"}</span>
               </div>
             )}
           </GlassCard>
         </FadeIn>
-
       </div>
 
-      {/* ── Personal panels: only when connected ── */}
       {isConnected && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-
-          {/* Allocation */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           <FadeIn delay={0.15}>
             <GlassCard padding="lg">
               <div className="mb-4">
@@ -287,43 +284,39 @@ export default function DashboardPage() {
             </GlassCard>
           </FadeIn>
 
-          {/* Top recommendation */}
           {topRec && (
             <FadeIn delay={0.18}>
               <div
-                className="rounded-2xl p-5"
+                className="rounded-[24px] p-5"
                 style={{
                   background: "rgba(34,211,238,0.04)",
                   border: "1px solid rgba(34,211,238,0.28)",
                   boxShadow: "0 0 0 1px rgba(34,211,238,0.1), 0 0 32px rgba(34,211,238,0.06), inset 0 1px 0 rgba(255,255,255,0.04)",
                 }}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <span
-                    className="font-bold text-cyan-300 uppercase"
-                    style={{ fontSize: "9.5px", letterSpacing: "0.1em" }}
-                  >
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="text-[9.5px] font-bold uppercase text-cyan-300" style={{ letterSpacing: "0.1em" }}>
                     Top Recommendation
                   </span>
                   <span className="tag-cyan">{topRecBand}</span>
                 </div>
 
-                <div className="flex items-center gap-2 mb-4">
+                <div className="mb-4 flex items-center gap-2">
                   <div
                     className={cn(
-                      "w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white",
+                      "flex h-9 w-9 items-center justify-center rounded-xl text-xs font-bold text-white",
                       `bg-gradient-to-br ${subnetGradient(topRec.fromSubnet.netuid)}`,
                     )}
                     style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}
                   >
                     {topRec.fromSubnet.netuid}
                   </div>
-                  <div className="flex-1 flex justify-center">
-                    <ArrowRight className="w-4 h-4 text-cyan-400" />
+                  <div className="flex flex-1 justify-center">
+                    <ArrowRight className="h-4 w-4 text-cyan-400" />
                   </div>
                   <div
                     className={cn(
-                      "w-9 h-9 rounded-xl flex items-center justify-center text-xs font-bold text-white",
+                      "flex h-9 w-9 items-center justify-center rounded-xl text-xs font-bold text-white",
                       `bg-gradient-to-br ${subnetGradient(topRec.toSubnet.netuid)}`,
                     )}
                     style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}
@@ -331,35 +324,24 @@ export default function DashboardPage() {
                     {topRec.toSubnet.netuid}
                   </div>
                   <div className="ml-auto text-right">
-                    <div
-                      className="font-bold text-emerald-400 tabular-nums"
-                      style={{ fontSize: "18px", letterSpacing: "-0.02em" }}
-                    >
-                      +{topRec.projectedEdge.toFixed(1)}%
-                    </div>
+                    <div className="text-[18px] font-bold tracking-[-0.02em] text-emerald-400 tabular-nums">+{topRec.projectedEdge.toFixed(1)}%</div>
                     <div className="text-[10px] text-slate-600">projected edge</div>
                   </div>
                 </div>
 
-                <p className="text-[11px] text-slate-500 leading-relaxed mb-4">
-                  {topRec.rationale}
-                </p>
+                <p className="mb-4 text-[11px] leading-relaxed text-slate-500">{topRec.rationale}</p>
 
                 <button
                   onClick={() => router.push("/recommendations")}
-                  className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-semibold text-cyan-400 transition-all duration-150 hover:bg-cyan-400/10"
-                  style={{
-                    background: "rgba(34,211,238,0.06)",
-                    border: "1px solid rgba(34,211,238,0.15)",
-                  }}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-[11px] font-semibold text-cyan-400 transition-all duration-150 hover:bg-cyan-400/10"
+                  style={{ background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.15)" }}
                 >
-                  View Analysis <ArrowRight className="w-3 h-3" />
+                  View Analysis <ArrowRight className="h-3 w-3" />
                 </button>
               </div>
             </FadeIn>
           )}
 
-          {/* Recent Activity */}
           <FadeIn delay={0.2}>
             <GlassCard padding="lg">
               <div className="mb-4">
@@ -367,38 +349,48 @@ export default function DashboardPage() {
               </div>
               <div className="space-y-2.5">
                 {recentChanges.map((change, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-3 py-2 border-b border-white/[0.04] last:border-0"
-                  >
-                    <div
-                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                      style={{
-                        background: change.status === "CONFIRMED" ? "#34d399" : "#475569",
-                      }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[11px] text-slate-300 truncate">
+                  <div key={i} className="flex items-center gap-3 border-b border-white/[0.04] py-2 last:border-0">
+                    <div className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: change.status === "CONFIRMED" ? "#34d399" : "#475569" }} />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[11px] text-slate-300">
                         {change.type === "MOVE" && change.fromSubnet && change.toSubnet
                           ? `${change.fromSubnet} → ${change.toSubnet}`
                           : change.label ?? change.subnet ?? change.type}
                       </div>
-                      <div className="text-[10px] text-slate-600">
-                        {formatDate(change.timestamp)}
-                      </div>
+                      <div className="text-[10px] text-slate-600">{formatDate(change.timestamp)}</div>
                     </div>
-                    <div className="text-[11px] text-slate-400 tabular-nums flex-shrink-0">
-                      {change.amount.toFixed(2)}τ
-                    </div>
+                    <div className="shrink-0 text-[11px] text-slate-400 tabular-nums">{change.amount.toFixed(2)}τ</div>
                   </div>
                 ))}
               </div>
             </GlassCard>
           </FadeIn>
-
         </div>
       )}
 
+      <FadeIn>
+        <div className="grid gap-4 md:grid-cols-3">
+          {[
+            {
+              title: "What this page should do",
+              detail: "Give a fast, trustworthy read on portfolio condition before you dive into subnets or recommendations.",
+            },
+            {
+              title: "Why hierarchy matters",
+              detail: "Portfolio value and recommendation quality should dominate; support metrics should stay secondary.",
+            },
+            {
+              title: "Best follow-on action",
+              detail: isConnected ? "Use Recommendations or Subnets when the dashboard suggests a real allocation question." : "Connect a wallet to unlock portfolio-specific reads and activity context.",
+            },
+          ].map((card) => (
+            <div key={card.title} className="rounded-2xl border border-white/8 bg-white/[0.022] p-5">
+              <div className="text-sm font-semibold tracking-tight text-white">{card.title}</div>
+              <p className="mt-2 text-sm leading-relaxed text-slate-400">{card.detail}</p>
+            </div>
+          ))}
+        </div>
+      </FadeIn>
     </div>
   );
 }
