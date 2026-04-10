@@ -47,7 +47,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function AlertsPage() {
-  const { address: walletAddress, walletState, getAuthHeaders } = useWallet();
+  const { address: walletAddress, walletState, getAuthHeaders, openModal } = useWallet();
   const [tab, setTab] = useState<"feed" | "settings">("feed");
 
   // Feed state
@@ -223,6 +223,18 @@ export default function AlertsPage() {
             <p className="text-sm max-w-md" style={{ color: "#94a3b8" }}>
               Alerts are personalized to your staked subnets. Connect your Bittensor wallet to configure alert thresholds and receive notifications that matter to you.
             </p>
+            <button
+              onClick={openModal}
+              className="mt-6 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all"
+              style={{
+                background: "rgba(34,211,238,0.12)",
+                border: "1px solid rgba(34,211,238,0.22)",
+                color: "#22d3ee",
+              }}
+            >
+              <WalletCards className="w-4 h-4" />
+              Connect Wallet
+            </button>
           </div>
         </div>
       </div>

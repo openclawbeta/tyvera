@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Wallet, TrendingUp, Info, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { Wallet, TrendingUp, Info, Loader2, ArrowRight } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
 import { StatCard } from "@/components/ui-custom/stat-card";
@@ -364,6 +365,19 @@ export default function PortfolioPage() {
                 You don&apos;t have any TAO staked on subnets yet.
                 Explore subnet analytics to find the best staking opportunities.
               </p>
+              <Link href="/subnets" className="inline-flex mt-5">
+                <button
+                  className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all"
+                  style={{
+                    background: "rgba(34,211,238,0.12)",
+                    border: "1px solid rgba(34,211,238,0.22)",
+                    color: "#22d3ee",
+                  }}
+                >
+                  Explore Subnets
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </Link>
             </div>
           </GlassCard>
         </FadeIn>

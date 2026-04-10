@@ -150,14 +150,14 @@ export default function MetricsPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           {["24H", "7D", "30D"].map((range) => (
-            <button key={range} className={cn("btn-ghost text-xs", range === "7D" && "text-cyan-300 border-cyan-400/20 bg-cyan-400/10")}>
+            <span key={range} className={cn("btn-ghost text-xs cursor-default opacity-70", range === "7D" && "text-cyan-300 border-cyan-400/20 bg-cyan-400/10 opacity-100")}>
               {range}
-            </button>
+            </span>
           ))}
-          <button className="btn-ghost text-xs gap-1.5">
-            <Download className="w-3.5 h-3.5" /> Export CSV
-          </button>
-          <button className="btn-ghost text-xs gap-1.5">
+          <span className="btn-ghost text-xs gap-1.5 cursor-default opacity-70">
+            <Download className="w-3.5 h-3.5" /> Export CSV (soon)
+          </span>
+          <button onClick={() => window.location.reload()} className="btn-ghost text-xs gap-1.5">
             <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} /> Refresh
           </button>
         </div>
@@ -330,7 +330,7 @@ export default function MetricsPage() {
             <GlassCard padding="lg">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <div className="text-[17px] font-bold text-white tracking-[-0.02em]">Hovered subnet preview</div>
+                  <div className="text-[17px] font-bold text-white tracking-[-0.02em]">Selected subnet preview</div>
                   <div className="text-[12px] text-slate-500 mt-1">Use the table to scan fast, then click through to the full subnet page for deep detail.</div>
                 </div>
               </div>
