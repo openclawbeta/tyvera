@@ -10,6 +10,7 @@ import { YieldOutlierTag } from "@/components/subnets/subnet-risk-banner";
 import type { SubnetDetailModel as Subnet } from "@/lib/types/subnets";
 import type { CurrencyMode } from "@/lib/currency";
 import { formatCurrencyValue, formatPriceValue } from "@/lib/currency";
+import { useSubnetWatchlist } from "@/lib/hooks/use-subnet-watchlist";
 
 interface SubnetCardProps {
   subnet: Subnet;
@@ -90,6 +91,8 @@ export const SubnetCard = memo(function SubnetCard({
   taoUsdRate = null,
 }: SubnetCardProps) {
   const router = useRouter();
+  const { isWatched, toggleWatch } = useSubnetWatchlist();
+  const watched = isWatched(subnet.netuid);
   const isUp = subnet.yieldDelta7d >= 0;
   const sparkColor = isUp ? "#22d3ee" : "#f43f5e";
 
@@ -159,12 +162,15 @@ export const SubnetCard = memo(function SubnetCard({
         </div>
         <button
           className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
-          style={{ color: subnet.isWatched ? "#22d3ee" : "#475569" }}
+          style={{ color: watched ? "#22d3ee" : "#475569" }}
           onClick={(e) => {
-            e.stopPropagation();   // don't navigate when bookmarking
+            e.stopPropagation();
+            toggleWatch(subnet.netuid);
           }}
+          aria-label={watched ? `Remove ${subnet.name} from watchlist` : `Add ${subnet.name} to watchlist`}
+          title={watched ? "Watching" : "Add to watchlist"}
         >
-          {subnet.isWatched
+          {watched
             ? <BookmarkCheck className="w-3.5 h-3.5" />
             : <Bookmark className="w-3.5 h-3.5" />
           }

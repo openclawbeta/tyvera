@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, ChevronDown, ChevronUp, Star } from "lucide-react";
+import { Search, ChevronDown, ChevronUp, Star, StarOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { YieldOutlierTag } from "@/components/subnets/subnet-risk-banner";
 import type { SubnetDetailModel } from "@/lib/types/subnets";
 import type { CurrencyMode } from "@/lib/currency";
 import { formatCurrencyValue, formatPriceValue } from "@/lib/currency";
+import { useSubnetWatchlist } from "@/lib/hooks/use-subnet-watchlist";
 
 interface SubnetDataTableProps {
   subnets: SubnetDetailModel[];
@@ -50,6 +51,7 @@ function getChangeColor(value: number): string {
 }
 
 export function SubnetDataTable({ subnets, onSelect, currency, onCurrencyChange, taoUsdRate }: SubnetDataTableProps) {
+  const { isWatched, toggleWatch } = useSubnetWatchlist();
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortState>({ key: "emissions", direction: "desc" });
   const [includeRoot, setIncludeRoot] = useState(false);
@@ -295,11 +297,15 @@ export function SubnetDataTable({ subnets, onSelect, currency, onCurrencyChange,
                     {/* Star */}
                     <td className="px-3 py-2 text-center">
                       <button
-                        onClick={(e) => e.stopPropagation()}
-                        aria-label={`Bookmark subnet ${subnet.name}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleWatch(subnet.netuid);
+                        }}
+                        aria-label={isWatched(subnet.netuid) ? `Remove ${subnet.name} from watchlist` : `Add ${subnet.name} to watchlist`}
+                        title={isWatched(subnet.netuid) ? "Watching" : "Add to watchlist"}
                         className="text-slate-600 hover:text-yellow-400 transition-colors"
                       >
-                        <Star className="w-3.5 h-3.5" />
+                        {isWatched(subnet.netuid) ? <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" /> : <StarOff className="w-3.5 h-3.5" />}
                       </button>
                     </td>
 

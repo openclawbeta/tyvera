@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, ChevronDown, ChevronUp, Star } from "lucide-react";
+import { Search, ChevronDown, ChevronUp, Star, StarOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { YieldOutlierTag } from "@/components/subnets/subnet-risk-banner";
 import type { SubnetDetailModel, RiskLevel } from "@/lib/types/subnets";
+import { useSubnetWatchlist } from "@/lib/hooks/use-subnet-watchlist";
 
 interface MetricsDataTableProps {
   subnets: SubnetDetailModel[];
@@ -69,6 +70,7 @@ function riskOrder(risk: RiskLevel): number {
 }
 
 export function MetricsDataTable({ subnets, onSelect }: MetricsDataTableProps) {
+  const { isWatched, toggleWatch } = useSubnetWatchlist();
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortState>({ key: "score", direction: "desc" });
   const [rowsPerPage, setRowsPerPage] = useState(25);
@@ -253,11 +255,15 @@ export function MetricsDataTable({ subnets, onSelect }: MetricsDataTableProps) {
                       </td>
                       <td className="px-3 py-2 text-center">
                         <button
-                          onClick={(e) => e.stopPropagation()}
-                          aria-label={`Bookmark subnet ${subnet.name}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleWatch(subnet.netuid);
+                          }}
+                          aria-label={isWatched(subnet.netuid) ? `Remove ${subnet.name} from watchlist` : `Add ${subnet.name} to watchlist`}
+                          title={isWatched(subnet.netuid) ? "Watching" : "Add to watchlist"}
                           className="text-slate-600 hover:text-yellow-400 transition-colors"
                         >
-                          <Star className="w-3.5 h-3.5" />
+                          {isWatched(subnet.netuid) ? <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" /> : <StarOff className="w-3.5 h-3.5" />}
                         </button>
                       </td>
                       <td className="px-3 py-2 text-left">

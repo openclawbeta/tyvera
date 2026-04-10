@@ -7,12 +7,15 @@ import { cn, subnetGradient, scoreBg, riskBg, formatLargeNumber } from "@/lib/ut
 import { MetricPill } from "@/components/ui-custom/metric-pill";
 import { SimpleLineChart } from "@/components/charts/simple-line-chart";
 import type { SubnetDetailModel as Subnet } from "@/lib/types/subnets";
+import { useSubnetWatchlist } from "@/lib/hooks/use-subnet-watchlist";
 
 interface SubnetDetailPreviewProps {
   subnet: Subnet | null;
 }
 
 export function SubnetDetailPreview({ subnet }: SubnetDetailPreviewProps) {
+  const { isWatched, toggleWatch } = useSubnetWatchlist();
+
   if (!subnet) {
     return (
       <div className="glass h-full flex flex-col items-center justify-center p-8 text-center">
@@ -24,6 +27,8 @@ export function SubnetDetailPreview({ subnet }: SubnetDetailPreviewProps) {
       </div>
     );
   }
+
+  const watched = isWatched(subnet.netuid);
 
   const chartData = subnet.momentum.map((value, i) => ({
     label: `d${i + 1}`,
@@ -55,8 +60,13 @@ export function SubnetDetailPreview({ subnet }: SubnetDetailPreviewProps) {
                   <h3 className="text-base font-bold text-white">{subnet.name}</h3>
                   <p className="text-xs text-slate-500 font-mono">SN{subnet.netuid} · {subnet.category}</p>
                 </div>
-                <button className="text-slate-600 hover:text-cyan-400 transition-colors mt-0.5">
-                  {subnet.isWatched
+                <button
+                  className="text-slate-600 hover:text-cyan-400 transition-colors mt-0.5"
+                  onClick={() => toggleWatch(subnet.netuid)}
+                  aria-label={watched ? `Remove ${subnet.name} from watchlist` : `Add ${subnet.name} to watchlist`}
+                  title={watched ? "Watching" : "Add to watchlist"}
+                >
+                  {watched
                     ? <BookmarkCheck className="w-4 h-4 text-cyan-400" />
                     : <Bookmark className="w-4 h-4" />
                   }
