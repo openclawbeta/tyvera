@@ -2,7 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Check, X, Zap, TrendingUp, Shield, Building2, ArrowRight } from "lucide-react";
+import {
+  Check,
+  X,
+  Zap,
+  TrendingUp,
+  Shield,
+  Building2,
+  ArrowRight,
+  Layers3,
+  Receipt,
+  Sparkles,
+  Wallet,
+  BadgeDollarSign,
+  AlertTriangle,
+} from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { FadeIn } from "@/components/ui-custom/fade-in";
 import { cn } from "@/lib/utils";
@@ -34,8 +48,7 @@ const TIERS: PricingTier[] = [
     tagline: "Browse the network for free",
     monthlyPrice: 0,
     annualPrice: 0,
-
-    icon: <Zap className="w-5 h-5" />,
+    icon: <Zap className="h-5 w-5" />,
     accent: "text-slate-300",
     accentBorder: "rgba(148,163,184,0.2)",
     accentBg: "rgba(148,163,184,0.05)",
@@ -51,10 +64,10 @@ const TIERS: PricingTier[] = [
       "Public dashboard metrics",
     ],
     limits: {
-      "Subnets": "Top 20",
-      "Validators": "Top 25",
+      Subnets: "Top 20",
+      Validators: "Top 25",
       "AI Queries": "5/day",
-      "Strategies": "1",
+      Strategies: "1",
       "Alert Rules": "—",
       "Tax Export": "—",
       "Internal APIs": "Included",
@@ -65,9 +78,8 @@ const TIERS: PricingTier[] = [
     planId: "ANALYST",
     tagline: "Full data access for active stakers",
     monthlyPrice: 19.99,
-    annualPrice: 191.90,
-
-    icon: <TrendingUp className="w-5 h-5" />,
+    annualPrice: 191.9,
+    icon: <TrendingUp className="h-5 w-5" />,
     accent: "text-cyan-400",
     accentBorder: "rgba(34,211,238,0.25)",
     accentBg: "rgba(34,211,238,0.06)",
@@ -87,10 +99,10 @@ const TIERS: PricingTier[] = [
       "Personal dashboard with wallet",
     ],
     limits: {
-      "Subnets": "All",
-      "Validators": "All",
+      Subnets: "All",
+      Validators: "All",
       "AI Queries": "25/day",
-      "Strategies": "All 5",
+      Strategies: "All 5",
       "Alert Rules": "3",
       "Tax Export": "1/mo",
       "Internal APIs": "Included",
@@ -101,9 +113,8 @@ const TIERS: PricingTier[] = [
     planId: "STRATEGIST",
     tagline: "AI-powered edge for power users",
     monthlyPrice: 49.99,
-    annualPrice: 479.90,
-
-    icon: <Shield className="w-5 h-5" />,
+    annualPrice: 479.9,
+    icon: <Shield className="h-5 w-5" />,
     accent: "text-emerald-400",
     accentBorder: "rgba(52,211,153,0.25)",
     accentBg: "rgba(52,211,153,0.06)",
@@ -124,10 +135,10 @@ const TIERS: PricingTier[] = [
       "Advanced portfolio, alerts, and recommendations",
     ],
     limits: {
-      "Subnets": "All",
-      "Validators": "All",
+      Subnets: "All",
+      Validators: "All",
       "AI Queries": "Unlimited",
-      "Strategies": "All 5",
+      Strategies: "All 5",
       "Alert Rules": "Unlimited",
       "Tax Export": "Unlimited",
       "Internal APIs": "Included",
@@ -138,9 +149,8 @@ const TIERS: PricingTier[] = [
     planId: "INSTITUTIONAL",
     tagline: "For funds, DAOs, and subnet teams",
     monthlyPrice: 99.99,
-    annualPrice: 959.90,
-
-    icon: <Building2 className="w-5 h-5" />,
+    annualPrice: 959.9,
+    icon: <Building2 className="h-5 w-5" />,
     accent: "text-amber-400",
     accentBorder: "rgba(251,191,36,0.25)",
     accentBg: "rgba(251,191,36,0.06)",
@@ -157,10 +167,10 @@ const TIERS: PricingTier[] = [
       "Custom analytics reports",
     ],
     limits: {
-      "Subnets": "All",
-      "Validators": "All",
+      Subnets: "All",
+      Validators: "All",
       "AI Queries": "Unlimited",
-      "Strategies": "All 5",
+      Strategies: "All 5",
       "Alert Rules": "Unlimited",
       "Tax Export": "Unlimited",
       "Internal APIs": "Included",
@@ -169,47 +179,80 @@ const TIERS: PricingTier[] = [
 ];
 
 const COMPARISON_FEATURES = [
-  { category: "Data Access", items: [
-    { name: "Subnet explorer", tiers: ["Top 20", "All", "All", "All"] },
-    { name: "View modes (table, cards, heatmap)", tiers: ["Table only", "All 3", "All 3", "All 3"] },
-    { name: "Category browsing", tiers: [false, true, true, true] },
-    { name: "Subnet comparison panel", tiers: [false, false, true, true] },
-    { name: "Network alerts (whale/dereg/coldkey)", tiers: [false, false, true, true] },
-    { name: "Validators", tiers: ["Top 25", "All", "All", "All"] },
-    { name: "Validator grid view", tiers: [false, true, true, true] },
-  ]},
-  { category: "Analytics", items: [
-    { name: "Yield calculator", tiers: ["Basic", "Full", "Full", "Full"] },
-    { name: "AI Intel queries", tiers: ["5/day", "25/day", "Unlimited", "Unlimited"] },
-    { name: "Backtest strategies", tiers: ["Hold only", "All 5", "All 5", "All 5"] },
-    { name: "Recommendations engine", tiers: [false, false, true, true] },
-    { name: "Custom guardrails", tiers: [false, false, true, true] },
-  ]},
-  { category: "Portfolio & Activity", items: [
-    { name: "Dashboard (personal)", tiers: [false, true, true, true] },
-    { name: "Portfolio tracking", tiers: [false, false, true, true] },
-    { name: "Activity history", tiers: [false, "30 days", "All time", "All time"] },
-  ]},
-  { category: "Alerts & Exports", items: [
-    { name: "Smart alert rules", tiers: [false, "3 rules", "Unlimited", "Unlimited"] },
-    { name: "Alert presets", tiers: [false, false, true, true] },
-    { name: "Tax report (real data)", tiers: [false, true, true, true] },
-    { name: "CSV export", tiers: [false, "1/mo", "Unlimited", "Unlimited"] },
-  ]},
-  { category: "Platform", items: [
-    { name: "Internal Tyvera APIs", tiers: ["Included", "Included", "Included", "Included"] },
-    { name: "Custom webhooks", tiers: [false, false, false, true] },
-    { name: "Team access", tiers: [false, false, false, "5 wallets"] },
-    { name: "White-label embeds", tiers: [false, false, false, true] },
-    { name: "Priority support", tiers: [false, false, false, true] },
-    { name: "Early access / beta features", tiers: [false, false, false, true] },
-  ]},
+  {
+    category: "Data Access",
+    items: [
+      { name: "Subnet explorer", tiers: ["Top 20", "All", "All", "All"] },
+      { name: "View modes (table, cards, heatmap)", tiers: ["Table only", "All 3", "All 3", "All 3"] },
+      { name: "Category browsing", tiers: [false, true, true, true] },
+      { name: "Subnet comparison panel", tiers: [false, false, true, true] },
+      { name: "Network alerts (whale/dereg/coldkey)", tiers: [false, false, true, true] },
+      { name: "Validators", tiers: ["Top 25", "All", "All", "All"] },
+      { name: "Validator grid view", tiers: [false, true, true, true] },
+    ],
+  },
+  {
+    category: "Analytics",
+    items: [
+      { name: "Yield calculator", tiers: ["Basic", "Full", "Full", "Full"] },
+      { name: "AI Intel queries", tiers: ["5/day", "25/day", "Unlimited", "Unlimited"] },
+      { name: "Backtest strategies", tiers: ["Hold only", "All 5", "All 5", "All 5"] },
+      { name: "Recommendations engine", tiers: [false, false, true, true] },
+      { name: "Custom guardrails", tiers: [false, false, true, true] },
+    ],
+  },
+  {
+    category: "Portfolio & Activity",
+    items: [
+      { name: "Dashboard (personal)", tiers: [false, true, true, true] },
+      { name: "Portfolio tracking", tiers: [false, false, true, true] },
+      { name: "Activity history", tiers: [false, "30 days", "All time", "All time"] },
+    ],
+  },
+  {
+    category: "Alerts & Exports",
+    items: [
+      { name: "Smart alert rules", tiers: [false, "3 rules", "Unlimited", "Unlimited"] },
+      { name: "Alert presets", tiers: [false, false, true, true] },
+      { name: "Tax report (real data)", tiers: [false, true, true, true] },
+      { name: "CSV export", tiers: [false, "1/mo", "Unlimited", "Unlimited"] },
+    ],
+  },
+  {
+    category: "Platform",
+    items: [
+      { name: "Internal Tyvera APIs", tiers: ["Included", "Included", "Included", "Included"] },
+      { name: "Custom webhooks", tiers: [false, false, false, true] },
+      { name: "Team access", tiers: [false, false, false, "5 wallets"] },
+      { name: "White-label embeds", tiers: [false, false, false, true] },
+      { name: "Priority support", tiers: [false, false, false, true] },
+      { name: "Early access / beta features", tiers: [false, false, false, true] },
+    ],
+  },
+];
+
+const TOP_NOTES = [
+  {
+    label: "Explorer",
+    title: "Use Tyvera free while validating fit.",
+    detail: "Explore the network, sample the intelligence layer, and understand the product before moving into paid workflows.",
+  },
+  {
+    label: "Analyst / Strategist",
+    title: "Unlock deeper decision tooling when the edge matters.",
+    detail: "Paid plans are positioned around serious subnet research, alerts, recommendations, and portfolio command surfaces.",
+  },
+  {
+    label: "Institutional",
+    title: "Support desks, funds, and subnet operators with heavier needs.",
+    detail: "The upper tier is for teams that need operational support, custom analytics, and more structured access patterns.",
+  },
 ];
 
 function TierValue({ value }: { value: boolean | string }) {
-  if (value === true) return <Check className="w-4 h-4 text-emerald-400 mx-auto" />;
-  if (value === false) return <X className="w-4 h-4 text-slate-600 mx-auto" />;
-  return <span className="text-xs text-slate-300 font-medium">{value}</span>;
+  if (value === true) return <Check className="mx-auto h-4 w-4 text-emerald-400" />;
+  if (value === false) return <X className="mx-auto h-4 w-4 text-slate-600" />;
+  return <span className="text-xs font-medium text-slate-300">{value}</span>;
 }
 
 interface PaymentInstructions {
@@ -231,7 +274,6 @@ export default function PricingPage() {
   const [taoUsd, setTaoUsd] = useState<number | null>(null);
   const [subscribeError, setSubscribeError] = useState<string | null>(null);
 
-  // Fetch live TAO/USD rate
   useEffect(() => {
     const fetchRate = async () => {
       try {
@@ -242,17 +284,15 @@ export default function PricingPage() {
           setTaoUsd(data.taoUsd);
         }
       } catch {
-        // Keep null — will hide TAO estimate
+        // Keep null and hide TAO estimate.
       }
     };
     fetchRate();
   }, []);
 
-  /** Convert USD to TAO using live rate */
   const usdToTao = (usd: number): string => {
     if (!taoUsd || usd === 0) return "";
     const tao = usd / taoUsd;
-    // Show 2-4 decimal places depending on size
     if (tao >= 1) return `~${tao.toFixed(2)} τ/mo`;
     if (tao >= 0.01) return `~${tao.toFixed(3)} τ/mo`;
     return `~${tao.toFixed(4)} τ/mo`;
@@ -261,19 +301,16 @@ export default function PricingPage() {
   const handleSubscribe = async (planId: string) => {
     setSubscribeError(null);
 
-    // Free tier — go straight to subnets
     if (planId === "FREE") {
       router.push("/subnets");
       return;
     }
 
-    // Institutional — contact flow
     if (planId === "INSTITUTIONAL") {
       window.open("mailto:tyvera.ai@gmail.com?subject=Institutional%20Plan%20Inquiry", "_blank");
       return;
     }
 
-    // Paid tiers require a connected wallet
     if (!address || walletState === "disconnected") {
       openModal();
       return;
@@ -285,11 +322,7 @@ export default function PricingPage() {
       const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          address,
-          plan: planId,
-          billing,
-        }),
+        body: JSON.stringify({ address, plan: planId, billing }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -305,29 +338,82 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-10">
+    <div className="mx-auto max-w-[1440px] space-y-10">
       <PageHeader
         title="Pricing"
-        subtitle="Transparent tiers — pay in TAO or fiat, upgrade anytime"
+        subtitle="Operator-grade plans for subnet research, allocation workflows, and premium Bittensor intelligence"
       />
 
-      {/* Billing Toggle */}
       <FadeIn>
-        <div className="flex justify-center">
+        <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
           <div
-            className="inline-flex items-center gap-1 p-1 rounded-xl"
+            className="relative overflow-hidden rounded-[28px] border border-white/8 p-6 md:p-7"
             style={{
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.06)",
+              background:
+                "linear-gradient(160deg, rgba(34,211,238,0.08) 0%, rgba(79,124,255,0.05) 28%, rgba(255,255,255,0.018) 62%, rgba(255,255,255,0.012) 100%)",
+              boxShadow:
+                "0 24px 80px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 40px rgba(34,211,238,0.04)",
             }}
           >
+            <div className="absolute right-0 top-0 h-40 w-56 pointer-events-none" style={{ background: "radial-gradient(circle at top right, rgba(34,211,238,0.16), transparent 68%)" }} />
+
+            <div className="relative">
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300">
+                <Layers3 className="h-3 w-3" />
+                pricing architecture
+              </div>
+
+              <h2 className="mt-5 text-3xl font-black tracking-[-0.04em] text-white md:text-[40px]">
+                Pricing is being shaped around
+                <span className="block bg-[linear-gradient(135deg,#67e8f9_0%,#4f7cff_55%,#8b5cf6_100%)] bg-clip-text text-transparent">
+                  real capability, not fake tiering.
+                </span>
+              </h2>
+
+              <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-400 md:text-[15px]">
+                Explorer is for evaluation. Analyst and Strategist are for actual subnet research, monitoring, and decision workflows.
+                Institutional is for teams that need support, broader controls, and desk-level access patterns.
+              </p>
+
+              <div className="mt-6 grid gap-3 md:grid-cols-3">
+                {[
+                  { label: "Settlement rail", value: "TAO-native", note: taoUsd ? `1 τ = $${taoUsd.toFixed(2)}` : "Live rate when available", tone: "text-cyan-300", icon: Wallet },
+                  { label: "Pricing anchor", value: "USD-led", note: "TAO equivalent updates dynamically", tone: "text-white", icon: BadgeDollarSign },
+                  { label: "Trust posture", value: "Source-aware", note: "Plans should reflect real product depth", tone: "text-emerald-300", icon: Shield },
+                ].map(({ label, value, note, tone, icon: Icon }) => (
+                  <div key={label} className="rounded-2xl border border-white/8 bg-black/20 px-4 py-4">
+                    <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      <Icon className="h-3.5 w-3.5" />
+                      {label}
+                    </div>
+                    <div className={cn("mt-2 text-base font-semibold tracking-tight", tone)}>{value}</div>
+                    <div className="mt-1 text-xs text-slate-500">{note}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4">
+            {TOP_NOTES.map((item) => (
+              <div key={item.label} className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 shadow-[0_14px_50px_rgba(0,0,0,0.24)]">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">{item.label}</div>
+                <div className="mt-3 text-lg font-semibold tracking-tight text-white">{item.title}</div>
+                <p className="mt-2 text-sm leading-relaxed text-slate-400">{item.detail}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </FadeIn>
+
+      <FadeIn>
+        <div className="flex justify-center">
+          <div className="inline-flex items-center gap-1 rounded-xl border border-white/8 bg-white/[0.03] p-1">
             <button
               onClick={() => setBilling("monthly")}
               className={cn(
-                "px-5 py-2 rounded-lg text-sm font-medium transition-all",
-                billing === "monthly"
-                  ? "bg-white/10 text-white"
-                  : "text-slate-500 hover:text-slate-300"
+                "rounded-lg px-5 py-2 text-sm font-medium transition-all",
+                billing === "monthly" ? "bg-white/10 text-white" : "text-slate-500 hover:text-slate-300",
               )}
             >
               Monthly
@@ -335,20 +421,13 @@ export default function PricingPage() {
             <button
               onClick={() => setBilling("annual")}
               className={cn(
-                "px-5 py-2 rounded-lg text-sm font-medium transition-all relative",
-                billing === "annual"
-                  ? "bg-white/10 text-white"
-                  : "text-slate-500 hover:text-slate-300"
+                "relative rounded-lg px-5 py-2 text-sm font-medium transition-all",
+                billing === "annual" ? "bg-white/10 text-white" : "text-slate-500 hover:text-slate-300",
               )}
             >
               Annual
               <span
-                className="absolute -top-2 -right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                style={{
-                  background: "rgba(52,211,153,0.15)",
-                  color: "#34d399",
-                  border: "1px solid rgba(52,211,153,0.3)",
-                }}
+                className="absolute -right-2 -top-2 rounded-full border border-emerald-400/30 bg-emerald-400/15 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300"
               >
                 -20%
               </span>
@@ -357,8 +436,11 @@ export default function PricingPage() {
         </div>
       </FadeIn>
 
-      {/* Tier Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+        Plan board
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
         {TIERS.map((tier, idx) => {
           const price = billing === "monthly" ? tier.monthlyPrice : Math.round((tier.annualPrice / 12) * 100) / 100;
           const totalAnnual = tier.annualPrice;
@@ -366,23 +448,17 @@ export default function PricingPage() {
           return (
             <FadeIn key={tier.name} delay={idx * 0.08}>
               <div
-                className={cn(
-                  "relative rounded-2xl flex flex-col h-full",
-                  tier.popular && "ring-1"
-                )}
+                className={cn("relative flex h-full flex-col overflow-hidden rounded-2xl", tier.popular && "ring-1")}
                 style={{
                   background: `linear-gradient(170deg, ${tier.accentBg} 0%, rgba(255,255,255,0.012) 40%)`,
                   border: `1px solid ${tier.accentBorder}`,
-                  boxShadow: tier.accentGlow
-                    ? `${tier.accentGlow}, 0 4px 24px rgba(0,0,0,0.3)`
-                    : "0 4px 24px rgba(0,0,0,0.3)",
+                  boxShadow: tier.accentGlow ? `${tier.accentGlow}, 0 4px 24px rgba(0,0,0,0.3)` : "0 4px 24px rgba(0,0,0,0.3)",
                   ...(tier.popular ? { ringColor: "rgba(52,211,153,0.3)" } : {}),
                 }}
               >
-                {/* Popular badge */}
                 {tier.popular && (
                   <div
-                    className="absolute -top-3 left-1/2 -translate-x-1/2 text-[11px] font-bold px-4 py-1 rounded-full"
+                    className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full px-4 py-1 text-[11px] font-bold"
                     style={{
                       background: "rgba(52,211,153,0.15)",
                       border: "1px solid rgba(52,211,153,0.35)",
@@ -393,16 +469,13 @@ export default function PricingPage() {
                   </div>
                 )}
 
-                <div className="p-6 flex flex-col flex-1">
-                  {/* Header */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center"
-                      style={{
-                        background: tier.accentBg,
-                        border: `1px solid ${tier.accentBorder}`,
-                      }}
-                    >
+                {tier.popular && (
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-20" style={{ background: "radial-gradient(ellipse at top, rgba(52,211,153,0.12), transparent 70%)" }} />
+                )}
+
+                <div className="relative flex flex-1 flex-col p-6">
+                  <div className="mb-3 flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: tier.accentBg, border: `1px solid ${tier.accentBorder}` }}>
                       <span className={tier.accent}>{tier.icon}</span>
                     </div>
                     <div>
@@ -411,7 +484,16 @@ export default function PricingPage() {
                     </div>
                   </div>
 
-                  {/* Price */}
+                  <div className="mb-4 rounded-xl border border-white/[0.06] bg-black/20 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    {tier.monthlyPrice === 0
+                      ? "Entry layer"
+                      : tier.popular
+                        ? "Best value workflow"
+                        : tier.planId === "INSTITUTIONAL"
+                          ? "Team / desk access"
+                          : "Core operator access"}
+                  </div>
+
                   <div className="mb-5">
                     <div className="flex items-baseline gap-1">
                       {tier.monthlyPrice === 0 ? (
@@ -423,46 +505,50 @@ export default function PricingPage() {
                         </>
                       )}
                     </div>
+
                     {tier.monthlyPrice > 0 && billing === "annual" && (
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="mt-1 text-xs text-slate-500">
                         ${totalAnnual}/year
                         {taoUsd && <> &middot; {usdToTao(price)}</>}
                       </p>
                     )}
+
                     {tier.monthlyPrice > 0 && billing === "monthly" && taoUsd && (
-                      <p className="text-xs text-slate-500 mt-1">
-                        {usdToTao(tier.monthlyPrice)}
-                      </p>
+                      <p className="mt-1 text-xs text-slate-500">{usdToTao(tier.monthlyPrice)}</p>
                     )}
                   </div>
 
-                  {/* CTA */}
+                  <div className="mb-5 grid grid-cols-2 gap-2 text-xs">
+                    {Object.entries(tier.limits)
+                      .slice(0, 4)
+                      .map(([key, value]) => (
+                        <div key={key} className="rounded-xl border border-white/6 bg-white/[0.02] px-3 py-2">
+                          <div className="text-[10px] uppercase tracking-[0.14em] text-slate-600">{key}</div>
+                          <div className="mt-1 font-medium text-slate-300">{value}</div>
+                        </div>
+                      ))}
+                  </div>
+
                   <button
                     onClick={() => handleSubscribe(tier.planId)}
                     disabled={subscribing === tier.planId}
                     className={cn(
-                      "w-full py-2.5 rounded-xl text-sm font-semibold transition-all mb-6",
-                      "flex items-center justify-center gap-2",
+                      "mb-6 flex w-full items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-semibold transition-all",
                       tier.popular
-                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30"
-                        : "bg-white/[0.06] text-slate-300 border border-white/[0.08] hover:bg-white/[0.1]",
-                      subscribing === tier.planId && "opacity-50 cursor-wait"
+                        ? "border-emerald-500/30 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
+                        : "border-white/[0.08] bg-white/[0.06] text-slate-300 hover:bg-white/[0.1]",
+                      subscribing === tier.planId && "cursor-wait opacity-50",
                     )}
                   >
                     {subscribing === tier.planId ? "Processing..." : tier.cta}
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="h-4 w-4" />
                   </button>
 
-                  {/* Features */}
-                  <div className="space-y-2.5 flex-1">
+                  <div className="flex-1 space-y-2.5">
                     {tier.features.map((feature) => (
                       <div key={feature} className="flex items-start gap-2.5">
-                        <Check
-                          className={cn("w-4 h-4 mt-0.5 shrink-0", tier.accent)}
-                        />
-                        <span className="text-[13px] text-slate-400 leading-snug">
-                          {feature}
-                        </span>
+                        <Check className={cn("mt-0.5 h-4 w-4 shrink-0", tier.accent)} />
+                        <span className="text-[13px] leading-snug text-slate-400">{feature}</span>
                       </div>
                     ))}
                   </div>
@@ -473,51 +559,76 @@ export default function PricingPage() {
         })}
       </div>
 
-      {/* TAO Payment Note */}
       <FadeIn>
-        <div
-          className="rounded-xl px-5 py-4 flex items-start gap-3"
-          style={{
-            background: "rgba(34,211,238,0.04)",
-            border: "1px solid rgba(34,211,238,0.12)",
-          }}
-        >
-          <Zap className="w-4 h-4 mt-0.5 shrink-0 text-cyan-400" />
-          <div className="text-sm text-slate-400 leading-relaxed">
-            <span className="font-semibold text-cyan-300">Pay in TAO.</span>{" "}
-            All paid tiers can be activated on-chain with TAO. Prices in TAO update live based on the current TAO/USD rate
-            {taoUsd && <> (1 τ = ${taoUsd.toFixed(2)})</>}. Annual plans get 20% off.
+        <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+          <div className="rounded-[24px] border border-cyan-400/12 bg-cyan-400/[0.04] p-5 shadow-[0_14px_50px_rgba(0,0,0,0.24)]">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300">
+              <Wallet className="h-3.5 w-3.5" />
+              TAO payment model
+            </div>
+            <div className="mt-4 space-y-3 text-sm leading-relaxed text-slate-400">
+              <p>
+                <span className="font-semibold text-cyan-300">Pay in TAO.</span> Paid plans can be activated on-chain, with the TAO equivalent updating from the live TAO/USD rate when available.
+              </p>
+              <p>
+                Annual billing applies a 20% discount. Review the destination, memo, and quoted amount before confirming any transfer.
+              </p>
+              {taoUsd && <p className="text-cyan-200">Current reference rate: 1 τ = ${taoUsd.toFixed(2)}</p>}
+            </div>
+          </div>
+
+          <div className="rounded-[24px] border border-white/8 bg-white/[0.022] p-5 shadow-[0_14px_50px_rgba(0,0,0,0.24)]">
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-300" />
+              access model notes
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {[
+                {
+                  title: "Evaluation first",
+                  detail: "Start with Explorer to validate the product before moving into paid operator workflows.",
+                  icon: Sparkles,
+                },
+                {
+                  title: "TAO-native settlement",
+                  detail: "Paid access is designed around on-chain TAO settlement rather than conventional card-first billing.",
+                  icon: Receipt,
+                },
+                {
+                  title: "Scale with workflow depth",
+                  detail: "Upgrade as your process matures from scanning to active research, alerts, and recommendation-driven allocation.",
+                  icon: TrendingUp,
+                },
+              ].map(({ title, detail, icon: Icon }) => (
+                <div key={title} className="rounded-2xl border border-white/8 bg-black/20 p-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold tracking-tight text-white">
+                    <Icon className="h-4 w-4 text-slate-400" />
+                    {title}
+                  </div>
+                  <p className="mt-2 text-sm leading-relaxed text-slate-400">{detail}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </FadeIn>
 
-      {/* Comparison Table */}
       <FadeIn>
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-white">Feature Comparison</h2>
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Feature comparison
+          </div>
 
-          <div
-            className="rounded-xl overflow-hidden"
-            style={{
-              background: "rgba(255,255,255,0.018)",
-              border: "1px solid rgba(255,255,255,0.065)",
-            }}
-          >
+          <div className="overflow-hidden rounded-xl border border-white/[0.065] bg-white/[0.018]">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-white/[0.06]">
-                    <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider w-[280px]">
+                    <th className="w-[280px] px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                       Feature
                     </th>
                     {TIERS.map((tier) => (
-                      <th
-                        key={tier.name}
-                        className={cn(
-                          "px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider",
-                          tier.accent
-                        )}
-                      >
+                      <th key={tier.name} className={cn("px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider", tier.accent)}>
                         {tier.name}
                       </th>
                     ))}
@@ -526,24 +637,14 @@ export default function PricingPage() {
                 <tbody>
                   {COMPARISON_FEATURES.map((section) => (
                     <React.Fragment key={section.category}>
-                      {/* Section header */}
                       <tr>
-                        <td
-                          colSpan={5}
-                          className="px-5 py-2.5 text-[11px] font-bold text-slate-500 uppercase tracking-widest"
-                          style={{ background: "rgba(255,255,255,0.02)" }}
-                        >
+                        <td colSpan={5} className="px-5 py-2.5 text-[11px] font-bold uppercase tracking-widest text-slate-500" style={{ background: "rgba(255,255,255,0.02)" }}>
                           {section.category}
                         </td>
                       </tr>
                       {section.items.map((item) => (
-                        <tr
-                          key={item.name}
-                          className="border-b border-white/[0.03] hover:bg-white/[0.015] transition-colors"
-                        >
-                          <td className="px-5 py-2.5 text-[13px] text-slate-400">
-                            {item.name}
-                          </td>
+                        <tr key={item.name} className="border-b border-white/[0.03] transition-colors hover:bg-white/[0.015]">
+                          <td className="px-5 py-2.5 text-[13px] text-slate-400">{item.name}</td>
                           {item.tiers.map((val, i) => (
                             <td key={i} className="px-4 py-2.5 text-center">
                               <TierValue value={val} />
@@ -553,7 +654,6 @@ export default function PricingPage() {
                       ))}
                     </React.Fragment>
                   ))}
-                  {/* CTA row at bottom of comparison */}
                   <tr>
                     <td className="px-5 py-4" />
                     {TIERS.map((tier) => (
@@ -561,10 +661,10 @@ export default function PricingPage() {
                         <button
                           onClick={() => handleSubscribe(tier.planId)}
                           className={cn(
-                            "px-4 py-2 rounded-lg text-xs font-semibold transition-all",
+                            "rounded-lg border px-4 py-2 text-xs font-semibold transition-all",
                             tier.popular
-                              ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30"
-                              : "bg-white/[0.06] text-slate-300 border border-white/[0.08] hover:bg-white/[0.1]",
+                              ? "border-emerald-500/30 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
+                              : "border-white/[0.08] bg-white/[0.06] text-slate-300 hover:bg-white/[0.1]",
                           )}
                         >
                           {tier.cta}
@@ -579,73 +679,20 @@ export default function PricingPage() {
         </div>
       </FadeIn>
 
-      {/* FAQ-style bottom section */}
-      <FadeIn>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pb-8">
-          <div
-            className="rounded-xl p-5"
-            style={{
-              background: "rgba(255,255,255,0.018)",
-              border: "1px solid rgba(255,255,255,0.065)",
-            }}
-          >
-            <h3 className="text-sm font-semibold text-white mb-2">7-Day Free Trial</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Connect your wallet and get full Strategist access for 7 days. No credit card required. Downgrade to Explorer anytime.
-            </p>
-          </div>
-          <div
-            className="rounded-xl p-5"
-            style={{
-              background: "rgba(255,255,255,0.018)",
-              border: "1px solid rgba(255,255,255,0.065)",
-            }}
-          >
-            <h3 className="text-sm font-semibold text-white mb-2">On-Chain Payments</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Pay directly in TAO on-chain. No intermediaries. Review all transfer details carefully before sending funds.
-            </p>
-          </div>
-          <div
-            className="rounded-xl p-5"
-            style={{
-              background: "rgba(255,255,255,0.018)",
-              border: "1px solid rgba(255,255,255,0.065)",
-            }}
-          >
-            <h3 className="text-sm font-semibold text-white mb-2">Upgrade Anytime</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Switch tiers as the product evolves. Premium access and feature availability may change as Tyvera matures.
-            </p>
-          </div>
-        </div>
-      </FadeIn>
-
-      {/* Subscribe Error */}
       {subscribeError && (
-        <div
-          className="rounded-xl px-5 py-3 flex items-center gap-3"
-          style={{
-            background: "rgba(239,68,68,0.06)",
-            border: "1px solid rgba(239,68,68,0.2)",
-          }}
-        >
-          <X className="w-4 h-4 shrink-0 text-red-400" />
+        <div className="flex items-center gap-3 rounded-xl border border-red-400/20 bg-red-400/[0.06] px-5 py-3">
+          <X className="h-4 w-4 shrink-0 text-red-400" />
           <span className="text-sm text-red-300">{subscribeError}</span>
-          <button
-            onClick={() => setSubscribeError(null)}
-            className="ml-auto text-xs text-slate-500 hover:text-slate-300"
-          >
+          <button onClick={() => setSubscribeError(null)} className="ml-auto text-xs text-slate-500 hover:text-slate-300">
             Dismiss
           </button>
         </div>
       )}
 
-      {/* Payment Instructions Modal */}
       {paymentInfo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div
-            className="rounded-2xl p-6 max-w-md w-full mx-4 space-y-4"
+            className="mx-4 w-full max-w-md space-y-4 rounded-2xl p-6"
             style={{
               background: "linear-gradient(170deg, rgba(52,211,153,0.04) 0%, rgba(15,23,42,0.98) 30%)",
               border: "1px solid rgba(52,211,153,0.2)",
@@ -653,44 +700,32 @@ export default function PricingPage() {
             }}
           >
             <div className="text-center">
-              <h3 className="text-lg font-semibold text-white mb-1">
-                Subscribe to {paymentInfo.display_name}
-              </h3>
-              <p className="text-xs text-slate-500">
-                {paymentInfo.billing === "annual" ? "Annual" : "Monthly"} billing
-              </p>
+              <h3 className="mb-1 text-lg font-semibold text-white">Subscribe to {paymentInfo.display_name}</h3>
+              <p className="text-xs text-slate-500">{paymentInfo.billing === "annual" ? "Annual" : "Monthly"} billing</p>
             </div>
 
-            <div
-              className="rounded-xl p-4 space-y-3"
-              style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.06)" }}
-            >
+            <div className="space-y-3 rounded-xl border border-white/[0.06] bg-black/30 p-4">
               <div className="flex justify-between text-sm">
                 <span className="text-slate-400">Amount</span>
-                <span className="text-white font-semibold">{paymentInfo.amount_tao} τ</span>
+                <span className="font-semibold text-white">{paymentInfo.amount_tao} τ</span>
               </div>
               <div className="space-y-1">
                 <span className="text-xs text-slate-500">Send to:</span>
-                <div className="font-mono text-xs text-cyan-300 break-all bg-slate-900/50 p-2 rounded">
-                  {paymentInfo.deposit_address}
-                </div>
+                <div className="break-all rounded bg-slate-900/50 p-2 font-mono text-xs text-cyan-300">{paymentInfo.deposit_address}</div>
               </div>
               <div className="space-y-1">
                 <span className="text-xs text-slate-500">Include memo:</span>
-                <div className="font-mono text-sm text-amber-300 bg-slate-900/50 p-2 rounded font-bold">
-                  {paymentInfo.memo}
-                </div>
+                <div className="rounded bg-slate-900/50 p-2 font-mono text-sm font-bold text-amber-300">{paymentInfo.memo}</div>
               </div>
             </div>
 
-            <p className="text-xs text-slate-500 text-center">
-              Payment auto-verifies within 10 minutes. Expires{" "}
-              {new Date(paymentInfo.expires_at).toLocaleString()}.
+            <p className="text-center text-xs text-slate-500">
+              Payment auto-verifies within 10 minutes. Expires {new Date(paymentInfo.expires_at).toLocaleString()}.
             </p>
 
             <button
               onClick={() => setPaymentInfo(null)}
-              className="w-full py-2 rounded-xl text-sm font-medium bg-white/[0.06] text-slate-300 border border-white/[0.08] hover:bg-white/[0.1] transition-all"
+              className="w-full rounded-xl border border-white/[0.08] bg-white/[0.06] py-2 text-sm font-medium text-slate-300 transition-all hover:bg-white/[0.1]"
             >
               Close
             </button>
