@@ -310,7 +310,7 @@ export default function HomePage() {
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.012)", overflow: "hidden" }}>
         <div className="flex py-2.5">
           {[...ticker, ...ticker].map((item, i) => (
-            <div key={i} className="flex shrink-0 items-center gap-3 px-6" style={{ borderRight: "1px solid rgba(255,255,255,0.05)" }}>
+            <div key={`${item.name}-${i}`} className="flex shrink-0 items-center gap-3 px-6" style={{ borderRight: "1px solid rgba(255,255,255,0.05)" }}>
               <span className="whitespace-nowrap text-[11px] font-medium text-slate-600">{item.name}</span>
               <span className={cn("font-mono tabular-nums text-[11px] font-bold", item.up ? "text-emerald-400" : "text-rose-400")}>
                 {item.up ? "▲" : "▼"}&thinsp;{item.yield}

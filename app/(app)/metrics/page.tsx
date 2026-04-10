@@ -212,8 +212,8 @@ export default function MetricsPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 2xl:grid-cols-[1.7fr_0.9fr] gap-5">
-        <div className="space-y-5">
+      <div className="grid grid-cols-1 2xl:grid-cols-[1fr_340px] gap-5 overflow-hidden">
+        <div className="space-y-5 min-w-0">
           <GlassCard padding="lg">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -361,7 +361,7 @@ export default function MetricsPage() {
           )}
         </div>
 
-        <div className="space-y-5">
+        <div className="space-y-5 min-w-0">
           <GlassCard padding="lg" glow="cyan">
             <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600 mb-3">Best opportunities</div>
             {bestOpportunity && (
