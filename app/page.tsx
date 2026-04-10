@@ -90,7 +90,6 @@ function formatLiquidity(val: number): string {
 }
 
 export default function HomePage() {
-  console.log('Rendering the HomePage component');
   const [ticker, setTicker] = useState(TICKER_FALLBACK);
   const [featured, setFeatured] = useState<LiveSubnet[]>([]);
 
@@ -119,15 +118,14 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen text-slate-100 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.14),transparent_22%),radial-gradient(circle_at_78%_18%,rgba(59,130,246,0.12),transparent_20%),radial-gradient(circle_at_50%_100%,rgba(16,185,129,0.06),transparent_26%)]" style={{ backgroundColor: "#06070f" }}>
+    <div className="min-h-screen text-slate-100" style={{ background: "#06070f" }}>
 
       {/* ── NAVBAR ──────────────────────────────────────────────────── */}
       <nav
         className="fixed top-0 inset-x-0 z-50 h-16 flex items-center"
         style={{
-          background: "linear-gradient(180deg, rgba(8,10,18,0.9), rgba(7,9,16,0.78))",
-          borderBottom: "1px solid rgba(255,255,255,0.07)",
-          boxShadow: "0 10px 32px rgba(0,0,0,0.22)",
+          background: "rgba(6,7,15,0.82)",
+          borderBottom: "1px solid rgba(255,255,255,0.05)",
           backdropFilter: "blur(24px) saturate(1.6)",
         }}
       >
@@ -185,7 +183,7 @@ export default function HomePage() {
       </nav>
 
       {/* ── HERO ────────────────────────────────────────────────────── */}
-      <section className="relative pt-32 pb-20 px-6 md:px-8 overflow-hidden border-b border-white/6">
+      <section className="relative pt-36 pb-24 px-8 overflow-hidden">
         {/* Background layers */}
         <div
           className="absolute inset-0 pointer-events-none"
@@ -208,194 +206,123 @@ export default function HomePage() {
           }}
         />
 
-        <div className="max-w-7xl mx-auto relative">
-          <div className="grid xl:grid-cols-[1.05fr_0.95fr] gap-10 xl:gap-14 items-center">
-            <div>
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="inline-flex items-center gap-2 mb-8 rounded-full px-4 py-2"
+        <div className="max-w-4xl mx-auto text-center relative">
+          {/* Live pill */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="inline-flex items-center gap-2 mb-8 rounded-full px-4 py-2"
+            style={{
+              background: "rgba(34,211,238,0.07)",
+              border: "1px solid rgba(34,211,238,0.2)",
+              boxShadow: "0 0 20px rgba(34,211,238,0.06)",
+            }}
+          >
+            <span
+              className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-dot"
+              style={{ boxShadow: "0 0 5px rgba(52,211,153,0.7)" }}
+            />
+            <span className="text-[11px] font-semibold text-cyan-300 tracking-wide uppercase">
+              Live on Bittensor Mainnet
+            </span>
+          </motion.div>
+
+          {/* Headline */}
+          <motion.h1
+            initial={{ opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.07, ease: [0.22, 1, 0.36, 1] }}
+            className="font-black leading-[1.06] mb-7"
+            style={{ fontSize: "clamp(42px, 7vw, 72px)", letterSpacing: "-0.04em" }}
+          >
+            <span
+              className="block text-transparent bg-clip-text"
+              style={{
+                backgroundImage: "linear-gradient(160deg, #f8fafc 0%, #ffffff 35%, #bae6fd 100%)",
+              }}
+            >
+              Optimize Your
+            </span>
+            <span
+              className="block text-transparent bg-clip-text"
+              style={{
+                backgroundImage: "linear-gradient(135deg, #67e8f9 0%, #22d3ee 45%, #38bdf8 100%)",
+              }}
+            >
+              TAO Allocation
+            </span>
+          </motion.h1>
+
+          {/* Sub-headline */}
+          <motion.p
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.14, ease: [0.22, 1, 0.36, 1] }}
+            className="text-[18px] text-slate-400 leading-relaxed mb-10 max-w-2xl mx-auto"
+            style={{ letterSpacing: "-0.01em" }}
+          >
+            Live subnet intelligence with user-approved reallocation.{" "}
+            <span className="text-slate-200 font-medium">
+              No silent execution. No custody. Full control.
+            </span>
+          </motion.p>
+
+          {/* CTA buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="flex flex-wrap items-center gap-3 justify-center mb-10"
+          >
+            <Link href="/dashboard">
+              <button
+                className="flex items-center gap-2 rounded-xl font-semibold px-7 py-3 text-[14px] transition-all duration-200"
                 style={{
-                  background: "rgba(34,211,238,0.08)",
-                  border: "1px solid rgba(34,211,238,0.24)",
-                  boxShadow: "0 0 24px rgba(34,211,238,0.08)",
+                  background: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
+                  color: "#04060d",
+                  boxShadow: "0 0 0 1px rgba(34,211,238,0.4), 0 6px 24px rgba(34,211,238,0.24), inset 0 1px 0 rgba(255,255,255,0.22)",
+                  letterSpacing: "-0.01em",
                 }}
               >
-                <span
-                  className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse-dot"
-                  style={{ boxShadow: "0 0 6px rgba(52,211,153,0.8)" }}
-                />
-                <span className="text-[11px] font-semibold text-cyan-300 tracking-[0.18em] uppercase">
-                  Live on Bittensor Mainnet
-                </span>
-              </motion.div>
-
-              <motion.h1
-                initial={{ opacity: 0, y: 22 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.07, ease: [0.22, 1, 0.36, 1] }}
-                className="font-black leading-[0.96] mb-7 max-w-4xl"
-                style={{ fontSize: "clamp(46px, 7vw, 90px)", letterSpacing: "-0.055em" }}
+                Open App <ArrowRight className="w-4 h-4" />
+              </button>
+            </Link>
+            <Link href="/subnets">
+              <button
+                className="flex items-center gap-2 rounded-xl font-medium px-7 py-3 text-[14px] text-slate-200 transition-all duration-200"
+                style={{
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
+                  letterSpacing: "-0.01em",
+                }}
               >
-                <span className="block text-white">Operate Bittensor</span>
-                <span
-                  className="block text-transparent bg-clip-text"
-                  style={{ backgroundImage: "linear-gradient(135deg, #7dd3fc 0%, #4f7cff 42%, #8b5cf6 74%, #d946ef 100%)" }}
-                >
-                  like a market terminal.
-                </span>
-              </motion.h1>
+                Explore Subnets
+              </button>
+            </Link>
+          </motion.div>
 
-              <motion.p
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.55, delay: 0.14, ease: [0.22, 1, 0.36, 1] }}
-                className="text-[18px] md:text-[20px] text-slate-300 leading-relaxed mb-10 max-w-2xl"
-                style={{ letterSpacing: "-0.015em" }}
-              >
-                Tyvera brings subnet discovery, holder flows, validator coverage, and portfolio intelligence into one premium operating surface — sharp, source-aware, and built for real allocation decisions.
-              </motion.p>
-
-              <motion.div
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                className="flex flex-wrap items-center gap-3 mb-10"
-              >
-                <Link href="/dashboard">
-                  <button
-                    className="flex items-center gap-2 rounded-xl font-semibold px-7 py-3 text-[14px] transition-all duration-200"
-                    style={{
-                      background: "linear-gradient(135deg, #66d9ff 0%, #4f7cff 48%, #7c3aed 100%)",
-                      color: "#f8fafc",
-                      boxShadow: "0 0 0 1px rgba(125,211,252,0.28), 0 12px 30px rgba(79,124,255,0.22)",
-                      letterSpacing: "-0.01em",
-                    }}
-                  >
-                    Open Platform <ArrowRight className="w-4 h-4" />
-                  </button>
-                </Link>
-                <Link href="/subnets">
-                  <button
-                    className="flex items-center gap-2 rounded-xl font-medium px-7 py-3 text-[14px] text-slate-100 transition-all duration-200"
-                    style={{
-                      background: "rgba(255,255,255,0.05)",
-                      border: "1px solid rgba(255,255,255,0.12)",
-                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
-                      letterSpacing: "-0.01em",
-                    }}
-                  >
-                    Explore Subnets
-                  </button>
-                </Link>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.32 }}
-                className="grid sm:grid-cols-3 gap-3 max-w-3xl"
-              >
-                {[
-                  ["Source-aware", "Fallback state stays visible"],
-                  ["Non-custodial", "You approve every move"],
-                  ["Allocator-grade", "Built for decision speed"],
-                ].map(([title, sub]) => (
-                  <div key={title} className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-4">
-                    <div className="text-sm font-semibold text-white">{title}</div>
-                    <div className="mt-1 text-xs text-slate-500">{sub}</div>
-                  </div>
-                ))}
-              </motion.div>
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-              className="relative"
-            >
-              <div className="absolute -inset-8 rounded-[36px] opacity-80 blur-3xl" style={{ background: "radial-gradient(circle at 30% 30%, rgba(59,130,246,0.24), transparent 40%), radial-gradient(circle at 75% 20%, rgba(217,70,239,0.2), transparent 35%), radial-gradient(circle at 60% 70%, rgba(34,211,238,0.16), transparent 40%)" }} />
-              <div className="relative rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(14,17,26,0.96),rgba(9,11,18,0.98))] shadow-[0_30px_100px_rgba(0,0,0,0.45)] overflow-hidden">
-                <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
-                  <div>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold">Live command board</div>
-                    <div className="mt-1 text-lg font-semibold text-white">Bittensor allocation intelligence</div>
-                  </div>
-                  <div className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[11px] font-semibold text-cyan-300">Terminal live</div>
-                </div>
-
-                <div className="grid gap-0 border-b border-white/8 lg:grid-cols-[1.2fr_0.8fr]">
-                  <div className="border-r border-white/8 p-5">
-                    <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.16em] text-slate-500">
-                      <span>Signal curve</span>
-                      <span>7D allocator trend</span>
-                    </div>
-                    <div className="mt-5 h-56 rounded-2xl border border-white/6 bg-[radial-gradient(circle_at_top,rgba(79,124,255,0.16),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))] p-4 relative overflow-hidden">
-                      <div className="absolute inset-x-4 top-6 bottom-4 opacity-20" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px)", backgroundSize: "100% 25%, 16.6% 100%" }} />
-                      <svg viewBox="0 0 420 180" className="relative z-10 h-full w-full">
-                        <defs>
-                          <linearGradient id="heroLine" x1="0" y1="0" x2="1" y2="0">
-                            <stop offset="0%" stopColor="#67e8f9" />
-                            <stop offset="45%" stopColor="#4f7cff" />
-                            <stop offset="100%" stopColor="#d946ef" />
-                          </linearGradient>
-                          <linearGradient id="heroFill" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="rgba(79,124,255,0.32)" />
-                            <stop offset="100%" stopColor="rgba(79,124,255,0.02)" />
-                          </linearGradient>
-                        </defs>
-                        <path d="M0 145 C35 138, 54 118, 86 122 S140 98, 170 106 S232 74, 262 86 S325 52, 355 62 S395 28, 420 24" fill="none" stroke="url(#heroLine)" strokeWidth="5" strokeLinecap="round" />
-                        <path d="M0 145 C35 138, 54 118, 86 122 S140 98, 170 106 S232 74, 262 86 S325 52, 355 62 S395 28, 420 24 L420 180 L0 180 Z" fill="url(#heroFill)" />
-                      </svg>
-                    </div>
-                  </div>
-
-                  <div className="p-5">
-                    <div className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Market pulse</div>
-                    <div className="mt-4 space-y-3">
-                      {[
-                        ["TAO spot", "$432.84", "+3.12%", "text-emerald-300"],
-                        ["Top subnet est. yield", "84.6%", "elevated", "text-cyan-300"],
-                        ["Network breadth", "128", "tracked subnets", "text-violet-300"],
-                        ["Allocator posture", "Risk-on", "moderate", "text-amber-300"],
-                      ].map(([label, value, sub, tone]) => (
-                        <div key={label} className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3">
-                          <div className="text-[10px] uppercase tracking-[0.16em] text-slate-500">{label}</div>
-                          <div className={`mt-1 text-xl font-semibold ${tone}`}>{value}</div>
-                          <div className="mt-1 text-xs text-slate-500">{sub}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-3 p-5 md:grid-cols-3">
-                  {[
-                    ["Subnet scanner", "Yield, risk, liquidity, participation"],
-                    ["Holder lens", "Concentration, flows, attribution state"],
-                    ["Validator board", "Coverage, shortlist, provider clarity"],
-                  ].map(([title, sub]) => (
-                    <div key={title} className="rounded-2xl border border-white/8 bg-white/[0.02] px-4 py-3">
-                      <div className="text-sm font-semibold text-white">{title}</div>
-                      <div className="mt-1 text-xs text-slate-500">{sub}</div>
-                    </div>
-                  ))}
-                </div>
+          {/* Trust pills */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.32 }}
+            className="flex items-center gap-6 justify-center flex-wrap"
+          >
+            {["You approve every move.", "No seed phrase storage.", "No silent execution."].map((t) => (
+              <div key={t} className="flex items-center gap-1.5">
+                <CheckCircle className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                <span className="text-[12px] text-slate-500">{t}</span>
               </div>
-            </motion.div>
-          </div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
       {/* ── MARKET STRIP ────────────────────────────────────────────── */}
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.012)", overflow: "hidden" }}>
-        <motion.div
-          className="flex py-2.5 whitespace-nowrap will-change-transform"
-          animate={{ x: ["0%", "-50%"] }}
-          transition={{ duration: 28, ease: "linear", repeat: Infinity }}
-        >
+        <div className="flex py-2.5">
           {[...ticker, ...ticker].map((item, i) => (
             <div
               key={i}
@@ -408,60 +335,48 @@ export default function HomePage() {
               </span>
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
 
       {/* ── METRICS STRIP ──────────────────────────────────────────── */}
-      <section className="py-12 px-6 md:px-8">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <section className="py-12 px-8">
+        <div className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6">
           {[
-            { label: "Subnets Tracked", value: "128+", sub: "live on mainnet", tone: "#67e8f9" },
-            { label: "Data Freshness", value: "20 min", sub: "chain-synced", tone: "#60a5fa" },
-            { label: "Risk Metrics", value: "12", sub: "per subnet", tone: "#a78bfa" },
-            { label: "Wallet Extensions", value: "3", sub: "supported", tone: "#34d399" },
+            { label: "Subnets Tracked", value: "128+", sub: "live on mainnet" },
+            { label: "Data Freshness", value: "20 min", sub: "chain-synced" },
+            { label: "Risk Metrics", value: "12", sub: "per subnet" },
+            { label: "Wallet Extensions", value: "3", sub: "supported" },
           ].map((m) => (
-            <div key={m.label} className="rounded-2xl border border-white/8 bg-white/[0.024] px-4 py-5 text-center shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
-              <div className="text-[28px] font-black text-white mb-1" style={{ letterSpacing: "-0.03em", textShadow: `0 0 18px ${m.tone}18` }}>
+            <div key={m.label} className="text-center">
+              <div className="text-[28px] font-black text-white mb-1" style={{ letterSpacing: "-0.03em" }}>
                 {m.value}
               </div>
-              <div className="text-[12px] font-semibold text-slate-300 mb-0.5">{m.label}</div>
-              <div className="text-[10px] text-slate-500">{m.sub}</div>
+              <div className="text-[12px] font-semibold text-slate-400 mb-0.5">{m.label}</div>
+              <div className="text-[10px] text-slate-600">{m.sub}</div>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── FEATURED SUBNETS ────────────────────────────────────────── */}
-      <section className="py-20 px-6 md:px-8">
-        <div className="max-w-7xl mx-auto">
+      <section className="py-24 px-8">
+        <div className="max-w-6xl mx-auto">
           <FadeIn>
-            <div className="mb-14 flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-              <div>
-                <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-[0.12em] mb-3">
-                  Live Opportunities
-                </div>
-                <h2
-                  className="font-bold text-white mb-2"
-                  style={{ fontSize: "32px", letterSpacing: "-0.03em" }}
-                >
-                  Top performing subnet board
-                </h2>
-                <p className="text-[14px] text-slate-500 max-w-2xl">A tighter market-style read on where allocator attention, risk, and emissions-driven opportunity are clustering right now.</p>
+            <div className="text-center mb-14">
+              <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-[0.12em] mb-3">
+                Live Opportunities
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:w-[340px]">
-                <div className="rounded-2xl border border-white/8 bg-white/[0.025] px-4 py-3">
-                  <div className="text-[10px] uppercase tracking-[0.16em] text-slate-500">Top board</div>
-                  <div className="mt-1 text-lg font-semibold text-white">Live ranked</div>
-                </div>
-                <div className="rounded-2xl border border-white/8 bg-white/[0.025] px-4 py-3">
-                  <div className="text-[10px] uppercase tracking-[0.16em] text-slate-500">Update state</div>
-                  <div className="mt-1 text-lg font-semibold text-cyan-300">Source-aware</div>
-                </div>
-              </div>
+              <h2
+                className="font-bold text-white mb-2"
+                style={{ fontSize: "32px", letterSpacing: "-0.03em" }}
+              >
+                Top Performing Subnets
+              </h2>
+              <p className="text-[14px] text-slate-500">Ranked by composite score. Updated continuously.</p>
             </div>
           </FadeIn>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {(featured.length > 0
               ? featured.map((s, i) => ({
                   netuid: s.netuid,
@@ -541,26 +456,21 @@ export default function HomePage() {
       </section>
 
       {/* ── HOW IT WORKS ────────────────────────────────────────────── */}
-      <section className="py-20 px-6 md:px-8" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-        <div className="max-w-7xl mx-auto">
+      <section className="py-24 px-8" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+        <div className="max-w-5xl mx-auto">
           <FadeIn>
-            <div className="mb-16 flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-              <div>
-                <div className="text-[10px] font-bold text-violet-400 uppercase tracking-[0.12em] mb-3">How It Works</div>
-                <h2
-                  className="font-bold text-white"
-                  style={{ fontSize: "32px", letterSpacing: "-0.03em" }}
-                >
-                  From raw network state to allocation action
-                </h2>
-              </div>
-              <div className="max-w-xl text-sm text-slate-500 leading-relaxed">
-                Tyvera is designed as a compact operating loop: read the network, compare the field, understand risk, then act with your own wallet approval.
-              </div>
+            <div className="text-center mb-16">
+              <div className="text-[10px] font-bold text-violet-400 uppercase tracking-[0.12em] mb-3">How It Works</div>
+              <h2
+                className="font-bold text-white"
+                style={{ fontSize: "32px", letterSpacing: "-0.03em" }}
+              >
+                From data to decision in four steps
+              </h2>
             </div>
           </FadeIn>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 xl:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {STEPS.map((step, i) => (
               <FadeIn key={step.n} delay={i * 0.1}>
                 <div className="relative">
@@ -575,8 +485,7 @@ export default function HomePage() {
                     style={{
                       fontSize: "36px",
                       letterSpacing: "-0.04em",
-                      backgroundImage: "linear-gradient(135deg, #67e8f9 0%, #4f7cff 55%, #8b5cf6 100%)",
-                      filter: "drop-shadow(0 0 16px rgba(79,124,255,0.14))",
+                      backgroundImage: "linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%)",
                     }}
                   >
                     {step.n}
@@ -596,26 +505,21 @@ export default function HomePage() {
       </section>
 
       {/* ── FEATURES GRID ───────────────────────────────────────────── */}
-      <section className="py-20 px-6 md:px-8" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-        <div className="max-w-7xl mx-auto">
+      <section className="py-24 px-8" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+        <div className="max-w-6xl mx-auto">
           <FadeIn>
-            <div className="mb-16 flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-              <div>
-                <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-[0.12em] mb-3">Platform</div>
-                <h2
-                  className="font-bold text-white"
-                  style={{ fontSize: "32px", letterSpacing: "-0.03em" }}
-                >
-                  Core product surfaces built for serious TAO operators
-                </h2>
-              </div>
-              <div className="max-w-xl text-sm text-slate-500 leading-relaxed">
-                Every module exists to shorten the gap between signal and action — exploration, intelligence, portfolio command, and trust-aware execution support.
-              </div>
+            <div className="text-center mb-16">
+              <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-[0.12em] mb-3">Platform</div>
+              <h2
+                className="font-bold text-white"
+                style={{ fontSize: "32px", letterSpacing: "-0.03em" }}
+              >
+                Built for serious TAO stakers
+              </h2>
             </div>
           </FadeIn>
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {FEATURES.map((f, i) => {
               const Icon = f.icon;
               return (
@@ -650,8 +554,8 @@ export default function HomePage() {
       </section>
 
       {/* ── TRUST SECTION ───────────────────────────────────────────── */}
-      <section className="py-20 px-6 md:px-8" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-        <div className="max-w-5xl mx-auto">
+      <section className="py-24 px-8" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+        <div className="max-w-4xl mx-auto">
           <FadeIn>
             <div
               className="rounded-2xl p-10 relative overflow-hidden"
@@ -727,7 +631,7 @@ export default function HomePage() {
       </section>
 
       {/* ── PREMIUM CTA ──────────────────────────────────────────────── */}
-      <section className="py-20 px-6 md:px-8 relative overflow-hidden" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+      <section className="py-24 px-8 relative overflow-hidden" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
         <div
           className="absolute inset-0 pointer-events-none"
           style={{ background: "radial-gradient(ellipse 60% 50% at 50% 100%, rgba(34,211,238,0.05), transparent 70%)" }}
@@ -750,16 +654,17 @@ export default function HomePage() {
               className="font-black text-white mb-4"
               style={{ fontSize: "48px", letterSpacing: "-0.04em", lineHeight: 1.05 }}
             >
-              Access Tyvera as a
+              Start for{" "}
               <span
-                className="block text-transparent bg-clip-text"
-                style={{ backgroundImage: "linear-gradient(135deg, #67e8f9 0%, #4f7cff 48%, #a855f7 100%)" }}
+                className="text-transparent bg-clip-text"
+                style={{ backgroundImage: "linear-gradient(135deg, #67e8f9 0%, #22d3ee 45%, #38bdf8 100%)" }}
               >
-                premium operator workspace.
+                0.5 τ/month
               </span>
             </h2>
-            <p className="text-[15px] text-slate-400 mb-10 leading-relaxed max-w-2xl mx-auto">
-              Start with Explorer for free, then move into Analyst or Strategist when you need a more complete command layer for subnet research, monitoring, and allocation decisions.
+            <p className="text-[15px] text-slate-500 mb-10 leading-relaxed">
+              Unlock full subnet analytics, the recommendation engine, and assisted reallocation.
+              <br />Pay in TAO. Extend anytime. No auto-renewal.
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
               <Link href="/billing">
@@ -772,7 +677,7 @@ export default function HomePage() {
                     letterSpacing: "-0.01em",
                   }}
                 >
-                  View Plans <ArrowRight className="w-4 h-4" />
+                  Get Premium <ArrowRight className="w-4 h-4" />
                 </button>
               </Link>
               <Link href="/dashboard">
@@ -796,8 +701,8 @@ export default function HomePage() {
       </section>
 
       {/* ── FOOTER ──────────────────────────────────────────────────── */}
-      <footer style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: "40px 24px" }}>
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      <footer style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: "40px 32px" }}>
+        <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <div
               className="w-6 h-6 rounded-lg flex items-center justify-center"
