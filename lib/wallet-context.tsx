@@ -33,6 +33,8 @@ export interface ApprovalResult {
 }
 
 interface WalletCtx {
+  // Context for managing wallet state and interactions
+  console.log('Initializing Wallet Context');
   walletState: WalletState;
   address: string | null;
   extension: WalletExtension | null;
@@ -87,14 +89,21 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return;
 
     const detect = () => {
-      const detected: WalletExtension[] = [];
-      const injected = (window as any).injectedWeb3;
+      try {
+        const detected: WalletExtension[] = [];
+        const injected = typeof window !== "undefined" ? (window as any).injectedWeb3 : undefined;
 
-      if (injected?.["polkadot-js"]) detected.push("polkadotjs");
-      if (injected?.["subwallet-js"]) detected.push("subwallet");
-      if (injected?.talisman)         detected.push("talisman");
+        if (injected && typeof injected === "object") {
+          if (injected["polkadot-js"]) detected.push("polkadotjs");
+          if (injected["subwallet-js"]) detected.push("subwallet");
+          if (injected.talisman) detected.push("talisman");
+        }
 
-      setAvailableExtensions(detected);
+        setAvailableExtensions(detected);
+      } catch (err) {
+        console.warn("[wallet] Extension detection failed:", err);
+        setAvailableExtensions([]);
+      }
     };
 
     // Check immediately, then again after extensions have injected
@@ -114,9 +123,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     try {
       // Attempt real extension connection via @polkadot/extension-dapp
       const extensionName = EXTENSION_NAMES[ext];
-      const injected = (window as any).injectedWeb3?.[extensionName];
+      const injectedRoot = typeof window !== "undefined" ? (window as any).injectedWeb3 : undefined;
+      const injected = injectedRoot && typeof injectedRoot === "object" ? injectedRoot[extensionName] : undefined;
 
-      if (!injected) {
+      if (!injected || typeof injected.enable !== "function") {
         throw new Error(
           `${ext} extension not found. Please install it and refresh the page.`
         );
@@ -170,9 +180,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const extensionName = EXTENSION_NAMES[extension];
-      const injected = (window as any).injectedWeb3?.[extensionName];
+      const injectedRoot = typeof window !== "undefined" ? (window as any).injectedWeb3 : undefined;
+      const injected = injectedRoot && typeof injectedRoot === "object" ? injectedRoot[extensionName] : undefined;
 
-      if (!injected) {
+      if (!injected || typeof injected.enable !== "function") {
         throw new Error("Extension no longer available.");
       }
 
