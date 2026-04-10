@@ -41,6 +41,7 @@ import { MetagraphTable } from "@/components/subnets/metagraph-table";
 import { cn, subnetGradient, scoreColor, scoreBg, riskBg } from "@/lib/utils";
 import { detectRiskFlags } from "@/lib/data/subnets-real-helpers";
 import { SubnetRiskBanner } from "@/components/subnets/subnet-risk-banner";
+import { useSubnetWatchlist } from "@/lib/hooks/use-subnet-watchlist";
 
 // ── Per-subnet chart seed data (derived from real subnet metrics) ──────────
 
@@ -203,6 +204,7 @@ function ChartPanel({
 export default function SubnetDetailPage() {
   const params = useParams();
   const netuid = Number(params.netuid);
+  const { isWatched, toggleWatch } = useSubnetWatchlist();
 
   // Seed from the static snapshot immediately so the page renders without a
   // loading flash for the 12 curated subnets. For subnets outside the snapshot
@@ -258,6 +260,7 @@ export default function SubnetDetailPage() {
   const emissionsData = buildEmissionsHistory(seeds.emissionsBase);
   const inflowData   = buildInflowHistory(seeds.inflowBase);
 
+  const watched   = isWatched(subnet.netuid);
   const isUp      = subnet.yieldDelta7d >= 0;
   const riskClr   = RISK_COLORS[subnet.risk] ?? RISK_COLORS.LOW;
   const gradCls   = `bg-gradient-to-br ${subnetGradient(subnet.netuid)}`;
@@ -423,14 +426,17 @@ export default function SubnetDetailPage() {
             {/* Action buttons */}
             <div className="flex flex-wrap items-center gap-2 xl:justify-end">
               <button
+                onClick={() => toggleWatch(subnet.netuid)}
                 className="flex items-center gap-2 rounded-xl text-[12px] font-medium px-4 py-2 transition-all duration-200"
                 style={{
-                  background: subnet.isWatched ? "rgba(34,211,238,0.08)" : "rgba(255,255,255,0.05)",
-                  border: subnet.isWatched ? "1px solid rgba(34,211,238,0.22)" : "1px solid rgba(255,255,255,0.1)",
-                  color: subnet.isWatched ? "#22d3ee" : "#94a3b8",
+                  background: watched ? "rgba(34,211,238,0.08)" : "rgba(255,255,255,0.05)",
+                  border: watched ? "1px solid rgba(34,211,238,0.22)" : "1px solid rgba(255,255,255,0.1)",
+                  color: watched ? "#22d3ee" : "#94a3b8",
                 }}
+                aria-label={watched ? `Remove ${subnet.name} from watchlist` : `Add ${subnet.name} to watchlist`}
+                title={watched ? "Watching" : "Add to watchlist"}
               >
-                {subnet.isWatched
+                {watched
                   ? <><BookmarkCheck className="w-3.5 h-3.5" /> Watching</>
                   : <><Bookmark className="w-3.5 h-3.5" /> Watch</>
                 }
