@@ -100,7 +100,7 @@ interface ExpandedRow {
 }
 
 export default function ActivityPage() {
-  const { walletState, address } = useWallet();
+  const { walletState, address, openModal } = useWallet();
   const [filterType, setFilterType] = useState<FilterType>("ALL");
   const [dateRange, setDateRange] = useState<DateRange>("90d");
   const [currentPage, setCurrentPage] = useState(1);
@@ -197,6 +197,18 @@ export default function ActivityPage() {
           <p className="text-[13px] text-slate-500 text-center max-w-xs leading-relaxed">
             Connect your wallet to view your activity and transaction history.
           </p>
+          <button
+            onClick={openModal}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all"
+            style={{
+              background: "rgba(34,211,238,0.12)",
+              border: "1px solid rgba(34,211,238,0.22)",
+              color: "#22d3ee",
+            }}
+          >
+            <Wallet className="w-4 h-4" />
+            Connect Wallet
+          </button>
         </div>
       </div>
     );
