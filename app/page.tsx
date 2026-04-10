@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
-import { Zap, ArrowRight, Shield, Lock, Eye, CheckCircle, Network, TrendingUp, Lightbulb, Wallet, BarChart2, Sparkles, Layers3 } from "lucide-react";
+import { Zap, ArrowRight, Shield, Lock, Eye, CheckCircle, Network, Lightbulb, Wallet, BarChart2, Layers3 } from "lucide-react";
 import { FadeIn } from "@/components/ui-custom/fade-in";
 import { cn } from "@/lib/utils";
 
@@ -146,7 +146,7 @@ export default function HomePage() {
             <Link href="/subnets" className="rounded-xl px-4 py-2 text-[13px] font-medium text-slate-500 transition-all hover:bg-white/[0.05] hover:text-slate-200">
               Subnets
             </Link>
-            <Link href="/dashboard">
+            <Link href="/signup">
               <button
                 className="flex items-center gap-2 rounded-xl px-5 py-2 text-[13px] font-semibold transition-all duration-200"
                 style={{
@@ -155,7 +155,7 @@ export default function HomePage() {
                   boxShadow: "0 0 0 1px rgba(34,211,238,0.35), 0 4px 14px rgba(34,211,238,0.2), inset 0 1px 0 rgba(255,255,255,0.2)",
                 }}
               >
-                Open App <ArrowRight className="h-3.5 w-3.5" />
+                Enter Workspace <ArrowRight className="h-3.5 w-3.5" />
               </button>
             </Link>
           </div>
