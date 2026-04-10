@@ -61,7 +61,7 @@ function TrustLine({ icon: Icon, text }: { icon: React.ElementType; text: string
 /* ─────────────────────────────────────────────────────────────────── */
 
 export function WalletApprovalDialog() {
-  const { walletState, approvalRequest, resolveApproval, cancelApproval } = useWallet();
+  const { walletState, approvalRequest, lastApprovalResult, resolveApproval, cancelApproval } = useWallet();
   const [step, setStep] = useState<InternalStep>("review");
   const isOpen = walletState === "pending_approval" && approvalRequest !== null;
 
@@ -368,15 +368,20 @@ export function WalletApprovalDialog() {
                     <p className="text-[11px] text-slate-500 mb-4 leading-relaxed">
                       Your reallocation is being processed on-chain.
                     </p>
-                    <button
-                      className="flex items-center gap-1.5 text-[11px] font-medium transition-colors"
-                      style={{ color: "#475569" }}
-                      onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "#94a3b8")}
-                      onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "#475569")}
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      View on Bittensor Explorer
-                    </button>
+                    {lastApprovalResult?.txHash ? (
+                      <a
+                        href={`https://x.taostats.io/extrinsic/${lastApprovalResult.txHash}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1.5 text-[11px] font-medium transition-colors"
+                        style={{ color: "#475569" }}
+                        onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = "#94a3b8")}
+                        onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = "#475569")}
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        View on Bittensor Explorer
+                      </a>
+                    ) : null}
                   </motion.div>
                 )}
 

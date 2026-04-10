@@ -38,6 +38,7 @@ interface WalletCtx {
   extension: WalletExtension | null;
   isModalOpen: boolean;
   approvalRequest: ApprovalRequest | null;
+  lastApprovalResult: ApprovalResult | null;
   availableExtensions: WalletExtension[];
   connectionError: string | null;
 
@@ -76,6 +77,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [extension, setExtension] = useState<WalletExtension | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [approvalRequest, setApprovalRequest] = useState<ApprovalRequest | null>(null);
+  const [lastApprovalResult, setLastApprovalResult] = useState<ApprovalResult | null>(null);
   const [availableExtensions, setAvailableExtensions] = useState<WalletExtension[]>([]);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const prevStateRef = useRef<WalletState>("disconnected");
@@ -219,11 +221,13 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   const requestApproval = useCallback((req: ApprovalRequest) => {
     prevStateRef.current = walletState;
+    setLastApprovalResult(null);
     setApprovalRequest(req);
     setWalletState("pending_approval");
   }, [walletState]);
 
-  const resolveApproval = useCallback((_result: ApprovalResult) => {
+  const resolveApproval = useCallback((result: ApprovalResult) => {
+    setLastApprovalResult(result);
     setApprovalRequest(null);
     setWalletState("verified");
   }, []);
@@ -241,6 +245,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         extension,
         isModalOpen,
         approvalRequest,
+        lastApprovalResult,
         availableExtensions,
         connectionError,
         openModal,
