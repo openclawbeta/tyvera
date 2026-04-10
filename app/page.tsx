@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
-import { Zap, ArrowRight, Shield, Lock, Eye, CheckCircle, Network, Lightbulb, Wallet, BarChart2, Layers3 } from "lucide-react";
+import { Zap, ArrowRight, Shield, Lock, Eye, CheckCircle, Network, Lightbulb, Wallet, BarChart2, Sparkles, Layers3 } from "lucide-react";
 import { FadeIn } from "@/components/ui-custom/fade-in";
 import { cn } from "@/lib/utils";
 
