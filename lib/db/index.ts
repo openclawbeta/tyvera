@@ -146,6 +146,7 @@ export async function getDb(): Promise<DbClient> {
     // Backward-compatible column migrations for previously created tables.
     await addColumnIfMissing(_client, "payment_intents", "billing_cycle", "TEXT NOT NULL DEFAULT 'monthly'");
     await addColumnIfMissing(_client, "payment_intents", "duration_days", "INTEGER NOT NULL DEFAULT 30");
+    await addColumnIfMissing(_client, "api_keys", "last_reset_date", "TEXT DEFAULT NULL");
 
     return _client;
   })();

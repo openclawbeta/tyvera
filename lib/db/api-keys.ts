@@ -115,20 +115,34 @@ export async function validateApiKey(key: string): Promise<ApiKeyValidation> {
     return { valid: false, error: "API access not included in your tier" };
   }
 
-  if (rateLimit > 0 && record.requests_today >= rateLimit) {
+  // Use date bucket: auto-reset if last_reset_date isn't today
+  const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const lastReset = (record as any).last_reset_date as string | null;
+  let requestsToday = record.requests_today;
+
+  if (lastReset !== todayStr) {
+    // New day — reset counter
+    requestsToday = 0;
+    await db.execute(
+      `UPDATE api_keys SET requests_today = 0, last_reset_date = ? WHERE key_hash = ?`,
+      [todayStr, keyHash],
+    );
+  }
+
+  if (rateLimit > 0 && requestsToday >= rateLimit) {
     return {
       valid: false,
       error: `Rate limit exceeded (${rateLimit}/day). Upgrade for higher limits.`,
       tier,
       rate_limit: rateLimit,
-      requests_today: record.requests_today,
+      requests_today: requestsToday,
     };
   }
 
   await db.execute(
-    `UPDATE api_keys SET requests_today = requests_today + 1, last_used_at = datetime('now')
+    `UPDATE api_keys SET requests_today = requests_today + 1, last_used_at = datetime('now'), last_reset_date = ?
      WHERE key_hash = ?`,
-    [keyHash],
+    [todayStr, keyHash],
   );
 
   return {
@@ -136,7 +150,7 @@ export async function validateApiKey(key: string): Promise<ApiKeyValidation> {
     wallet_address: record.wallet_address,
     tier,
     rate_limit: rateLimit,
-    requests_today: record.requests_today + 1,
+    requests_today: requestsToday + 1,
   };
 }
 

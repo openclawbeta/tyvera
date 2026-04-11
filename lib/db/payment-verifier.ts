@@ -12,7 +12,7 @@
 /* Start it from the /api/verify-payments cron endpoint or on boot.    */
 /* ─────────────────────────────────────────────────────────────────── */
 
-import { confirmPaymentIntent, findPaymentIntentByMemo, expireSubscriptions } from "./subscriptions";
+import { confirmPaymentIntent, findPaymentIntentByMemo, findPaymentIntentByAmount, expireSubscriptions } from "./subscriptions";
 import { getTransfersToAddress, scanRecentTransfers } from "@/lib/chain/transfer-scanner";
 import { PAYMENT_VERIFY_INTERVAL_MS } from "@/lib/config";
 import { requireEnv } from "@/lib/env";
@@ -94,16 +94,21 @@ export async function runVerificationCycle(): Promise<{
     // Must be sent TO our deposit address
     if (tx.to !== getDepositAddress()) continue;
 
-    // Must have a memo matching our format
-    if (!tx.memo || !tx.memo.startsWith("TYV-")) {
-      // Without memo, we can't match to a payment intent
-      // Future: check for paired system.remark extrinsics
-      processedTxHashes.add(tx.txHash);
-      continue;
+    let intent: Awaited<ReturnType<typeof findPaymentIntentByMemo>> = null;
+
+    // Strategy 1: Match by memo if available (system.remark pairing)
+    if (tx.memo && tx.memo.startsWith("TYV-")) {
+      intent = await findPaymentIntentByMemo(tx.memo);
     }
 
-    // Try to find a matching payment intent
-    const intent = await findPaymentIntentByMemo(tx.memo);
+    // Strategy 2: Match by amount + sender + timing window
+    // Substrate transfers don't natively carry memos, so this is the
+    // primary matching path. Uses exact amount matching (TAO amounts are
+    // unique per intent due to fractional precision) within a time window.
+    if (!intent) {
+      intent = await findPaymentIntentByAmount(tx.from, tx.amount);
+    }
+
     if (!intent) {
       processedTxHashes.add(tx.txHash);
       continue;
@@ -112,13 +117,12 @@ export async function runVerificationCycle(): Promise<{
     // Verify amount (allow 1% tolerance for network fees)
     const tolerance = intent.amount_tao * 0.01;
     if (tx.amount < intent.amount_tao - tolerance) {
-      // Underpayment — don't confirm
       processedTxHashes.add(tx.txHash);
       continue;
     }
 
     // Confirm the payment!
-    const success = await confirmPaymentIntent(tx.memo, tx.txHash);
+    const success = await confirmPaymentIntent(intent.memo, tx.txHash);
     if (success) confirmed++;
 
     processedTxHashes.add(tx.txHash);

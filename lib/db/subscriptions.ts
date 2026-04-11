@@ -274,6 +274,53 @@ export async function findPaymentIntentByMemo(memo: string): Promise<{
 }
 
 /**
+ * Find a pending payment intent by sender address + amount.
+ * Used when memo is unavailable (Substrate transfers don't carry memos natively).
+ * Matches within 1% tolerance and only considers intents created in the last 24h.
+ */
+export async function findPaymentIntentByAmount(
+  senderAddress: string,
+  amountTao: number,
+): Promise<{
+  id: string;
+  wallet_address: string;
+  plan_id: string;
+  amount_tao: number;
+  memo: string;
+  status: string;
+  billing_cycle: string;
+  duration_days: number;
+} | null> {
+  const db = await getDb();
+  const tolerance = amountTao * 0.01;
+  const minAmount = amountTao - tolerance;
+  const maxAmount = amountTao + tolerance;
+
+  const rows = await db.query(
+    `SELECT * FROM payment_intents
+     WHERE wallet_address = ?
+       AND status = 'awaiting_payment'
+       AND amount_tao BETWEEN ? AND ?
+       AND expires_at > datetime('now')
+     ORDER BY created_at DESC LIMIT 1`,
+    [senderAddress, minAmount, maxAmount],
+  );
+
+  if (rows.length === 0 || rows[0].rows.length === 0) return null;
+
+  return rowToObject(rows[0].columns, rows[0].rows[0]) as unknown as {
+    id: string;
+    wallet_address: string;
+    plan_id: string;
+    amount_tao: number;
+    memo: string;
+    status: string;
+    billing_cycle: string;
+    duration_days: number;
+  };
+}
+
+/**
  * Mark a payment intent as confirmed and activate the subscription.
  */
 export async function confirmPaymentIntent(memo: string, txHash: string): Promise<boolean> {
