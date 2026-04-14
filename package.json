@@ -14,14 +14,15 @@
     "build-holder-snapshot": "node scripts/build-holder-snapshot.mjs",
     "build-holder-snapshot-tao-app": "node scripts/build-holder-snapshot-from-tao-app.mjs",
     "build-validator-snapshot": "node scripts/build-validator-snapshot.mjs",
-    "refresh-intel": "node scripts/refresh-intel.mjs"
+    "refresh-intel": "node scripts/refresh-intel.mjs",
+    "test:auth": "node scripts/test-wallet-auth.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.17.2",
     "@polkadot/extension-dapp": "^0.63.1",
     "@polkadot/util": "^14.0.3",
     "@polkadot/util-crypto": "^14.0.3",
-    "@polkadot/keyring": "^13.3.1",
+    "@polkadot/keyring": "^14.0.3",
     "@radix-ui/react-avatar": "^1.1.0",
     "@radix-ui/react-dialog": "^1.1.0",
     "@radix-ui/react-dropdown-menu": "^2.1.0",

@@ -2,32 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { createApiKey, listApiKeys, revokeApiKey } from "@/lib/db/api-keys";
 import { getEntitlement } from "@/lib/db/subscriptions";
 import { normalizeTier, getApiRateLimit } from "@/lib/types/tiers";
-import { verifyWalletAuth, getAuthenticatedAddress } from "@/lib/api/wallet-auth";
+import { requireWalletAuth } from "@/lib/api/wallet-auth";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* API Key management                                                  */
 /*                                                                     */
-/* GET  /api/keys?address=5Grw...  — list keys for a wallet            */
-/* POST /api/keys { address, label } — generate a new key              */
-/* DELETE /api/keys { address, id } — revoke a key                     */
+/* GET    /api/keys                 — list keys for the caller         */
+/* POST   /api/keys { label }       — generate a new key               */
+/* DELETE /api/keys { id }          — revoke a key                     */
 /*                                                                     */
-/* All endpoints verify wallet ownership via X-Wallet-* headers.       */
+/* The caller's wallet address is taken from the verified signed       */
+/* X-Wallet-* headers. Any `address` field in the body or query is     */
+/* ignored — it cannot be used to act on another wallet's keys.        */
 /* ─────────────────────────────────────────────────────────────────── */
 
 export async function GET(request: NextRequest) {
-  const queryAddress = request.nextUrl.searchParams.get("address");
-
-  const auth = await verifyWalletAuth(request);
+  const auth = await requireWalletAuth(request);
   if (auth.errorResponse) return auth.errorResponse;
-
-  const address = getAuthenticatedAddress(request, auth, queryAddress);
-  if (!address) {
-    return NextResponse.json({ error: "Missing address" }, { status: 400 });
-  }
-
-  if (auth.verified && auth.address !== address) {
-    return NextResponse.json({ error: "Address mismatch" }, { status: 403 });
-  }
+  const address = auth.address!;
 
   const keys = await listApiKeys(address);
   return NextResponse.json({ keys });
@@ -35,21 +27,17 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { address: bodyAddress, label } = body;
-
-    const auth = await verifyWalletAuth(request);
+    const auth = await requireWalletAuth(request);
     if (auth.errorResponse) return auth.errorResponse;
+    const address = auth.address!;
 
-    const address = getAuthenticatedAddress(request, auth, bodyAddress);
-
-    if (!address) {
-      return NextResponse.json({ error: "Missing address" }, { status: 400 });
+    let body: { label?: string } = {};
+    try {
+      body = await request.json();
+    } catch {
+      // Empty body is fine — label falls back below.
     }
-
-    if (auth.verified && auth.address !== address) {
-      return NextResponse.json({ error: "Address mismatch" }, { status: 403 });
-    }
+    const { label } = body;
 
     // Check entitlement — must be strategist+ for API access
     const entitlement = await getEntitlement(address);
@@ -88,20 +76,15 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { address: bodyAddress, id } = body;
-
-    const auth = await verifyWalletAuth(request);
+    const auth = await requireWalletAuth(request);
     if (auth.errorResponse) return auth.errorResponse;
+    const address = auth.address!;
 
-    const address = getAuthenticatedAddress(request, auth, bodyAddress);
+    const body = await request.json();
+    const { id } = body;
 
-    if (!address || !id) {
-      return NextResponse.json({ error: "Missing address or key id" }, { status: 400 });
-    }
-
-    if (auth.verified && auth.address !== address) {
-      return NextResponse.json({ error: "Address mismatch" }, { status: 403 });
+    if (!id) {
+      return NextResponse.json({ error: "Missing key id" }, { status: 400 });
     }
 
     const revoked = await revokeApiKey(id, address);

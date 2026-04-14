@@ -24,101 +24,159 @@ export interface WalletAuthResult {
   errorResponse?: NextResponse;
 }
 
-/**
- * Verify wallet ownership from request headers.
- *
- * Performs full cryptographic signature verification against the
- * claimed wallet address and rejects stale or malformed auth attempts.
- */
-export async function verifyWalletAuth(request: NextRequest): Promise<WalletAuthResult> {
-  const address = request.headers.get("X-Wallet-Address");
-  const signature = request.headers.get("X-Wallet-Signature");
-  const message = request.headers.get("X-Wallet-Message");
+/** Reason a verifyAuthPayload call rejected, for typed error mapping + tests. */
+export type AuthFailureReason =
+  | "missing"
+  | "missing_address"
+  | "missing_signature_or_message"
+  | "bad_message_format"
+  | "expired"
+  | "bad_address"
+  | "bad_signature";
 
-  // If no auth headers at all, check for address in query/body
-  // This allows a grace period for frontend migration
-  if (!address && !signature && !message) {
-    return { verified: false };
-  }
+export interface AuthPayload {
+  address: string | null | undefined;
+  signature: string | null | undefined;
+  message: string | null | undefined;
+}
 
-  if (!address) {
-    return {
-      verified: false,
-      errorResponse: NextResponse.json(
-        { error: "Missing X-Wallet-Address header" },
-        { status: 401 },
-      ),
-    };
-  }
-
-  if (!signature || !message) {
-    return {
-      verified: false,
-      errorResponse: NextResponse.json(
-        { error: "Missing X-Wallet-Signature or X-Wallet-Message header" },
-        { status: 401 },
-      ),
-    };
-  }
-
-  // Validate message format: "tyvera-auth:{timestamp}"
-  const match = message.match(/^tyvera-auth:(\d+)$/);
-  if (!match) {
-    return {
-      verified: false,
-      errorResponse: NextResponse.json(
-        { error: "Invalid auth message format. Expected: tyvera-auth:{timestamp}" },
-        { status: 401 },
-      ),
-    };
-  }
-
-  // Check timestamp freshness
-  const timestamp = parseInt(match[1], 10);
-  const now = Date.now();
-  if (Math.abs(now - timestamp) > AUTH_WINDOW_MS) {
-    return {
-      verified: false,
-      errorResponse: NextResponse.json(
-        { error: "Auth message expired. Generate a fresh signature." },
-        { status: 401 },
-      ),
-    };
-  }
-
-  // Validate address format and decode SS58.
-  try {
-    decodeAddress(address);
-  } catch {
-    return {
-      verified: false,
-      errorResponse: NextResponse.json(
-        { error: "Invalid wallet address format" },
-        { status: 401 },
-      ),
-    };
-  }
-
-  const { isValid } = signatureVerify(message, signature, address);
-  if (!isValid) {
-    return {
-      verified: false,
-      errorResponse: NextResponse.json(
-        { error: "Invalid wallet signature" },
-        { status: 401 },
-      ),
-    };
-  }
-
-  return { verified: true, address };
+export interface AuthPayloadResult {
+  ok: boolean;
+  reason?: AuthFailureReason;
+  address?: string;
 }
 
 /**
- * Extract the wallet address from a request, preferring auth headers.
- * Falls back to query param or body for backward compatibility.
+ * Pure verification: given the three header values and "now", return whether
+ * the payload represents a valid wallet signature. No Next.js / HTTP coupling.
+ *
+ * This is the one function that tests should exercise directly.
+ */
+export function verifyAuthPayload(
+  payload: AuthPayload,
+  now: number = Date.now(),
+  windowMs: number = AUTH_WINDOW_MS,
+): AuthPayloadResult {
+  const { address, signature, message } = payload;
+
+  if (!address && !signature && !message) {
+    return { ok: false, reason: "missing" };
+  }
+  if (!address) {
+    return { ok: false, reason: "missing_address" };
+  }
+  if (!signature || !message) {
+    return { ok: false, reason: "missing_signature_or_message" };
+  }
+
+  const match = message.match(/^tyvera-auth:(\d+)$/);
+  if (!match) {
+    return { ok: false, reason: "bad_message_format" };
+  }
+
+  const timestamp = parseInt(match[1], 10);
+  if (Math.abs(now - timestamp) > windowMs) {
+    return { ok: false, reason: "expired" };
+  }
+
+  try {
+    decodeAddress(address);
+  } catch {
+    return { ok: false, reason: "bad_address" };
+  }
+
+  let isValid = false;
+  try {
+    isValid = signatureVerify(message, signature, address).isValid;
+  } catch {
+    // signatureVerify throws on malformed hex signature — treat as bad_signature.
+    return { ok: false, reason: "bad_signature" };
+  }
+  if (!isValid) {
+    return { ok: false, reason: "bad_signature" };
+  }
+
+  return { ok: true, address };
+}
+
+function reasonToResponse(reason: AuthFailureReason): NextResponse {
+  switch (reason) {
+    case "missing_address":
+      return NextResponse.json(
+        { error: "Missing X-Wallet-Address header" },
+        { status: 401 },
+      );
+    case "missing_signature_or_message":
+      return NextResponse.json(
+        { error: "Missing X-Wallet-Signature or X-Wallet-Message header" },
+        { status: 401 },
+      );
+    case "bad_message_format":
+      return NextResponse.json(
+        { error: "Invalid auth message format. Expected: tyvera-auth:{timestamp}" },
+        { status: 401 },
+      );
+    case "expired":
+      return NextResponse.json(
+        { error: "Auth message expired. Generate a fresh signature." },
+        { status: 401 },
+      );
+    case "bad_address":
+      return NextResponse.json(
+        { error: "Invalid wallet address format" },
+        { status: 401 },
+      );
+    case "bad_signature":
+      return NextResponse.json(
+        { error: "Invalid wallet signature" },
+        { status: 401 },
+      );
+    case "missing":
+      // Caller decides whether no-headers should be an error.
+      return NextResponse.json(
+        { error: "Authentication required. Provide X-Wallet-Address, X-Wallet-Signature, and X-Wallet-Message headers." },
+        { status: 401 },
+      );
+  }
+}
+
+/**
+ * Verify wallet ownership from request headers.
+ *
+ * Performs full cryptographic signature verification against the claimed
+ * wallet address and rejects stale or malformed auth attempts. If no auth
+ * headers at all are present, returns `{ verified: false }` without an
+ * error response — callers that require auth must use `requireWalletAuth`.
+ */
+export async function verifyWalletAuth(request: NextRequest): Promise<WalletAuthResult> {
+  const result = verifyAuthPayload({
+    address: request.headers.get("X-Wallet-Address"),
+    signature: request.headers.get("X-Wallet-Signature"),
+    message: request.headers.get("X-Wallet-Message"),
+  });
+
+  if (result.ok) {
+    return { verified: true, address: result.address };
+  }
+
+  // No auth headers at all — let caller decide. Every other failure is an error.
+  if (result.reason === "missing") {
+    return { verified: false };
+  }
+
+  return { verified: false, errorResponse: reasonToResponse(result.reason!) };
+}
+
+/**
+ * Extract the wallet address from a request, preferring verified auth.
+ * Falls back to a provided address only when auth was not attempted.
+ *
+ * NOTE: routes that protect per-wallet resources should gate on
+ * `requireWalletAuth` and use `auth.address` directly. Do not trust a
+ * caller-supplied fallback address for anything sensitive.
  */
 export function getAuthenticatedAddress(
-  request: NextRequest,
+  _request: NextRequest,
   authResult: WalletAuthResult,
   fallbackAddress?: string | null,
 ): string | null {
@@ -136,13 +194,10 @@ export async function requireWalletAuth(request: NextRequest): Promise<WalletAut
   const result = await verifyWalletAuth(request);
 
   if (!result.verified && !result.errorResponse) {
-    // No auth headers provided at all
+    // No auth headers provided at all — close the door.
     return {
       verified: false,
-      errorResponse: NextResponse.json(
-        { error: "Authentication required. Provide X-Wallet-Address, X-Wallet-Signature, and X-Wallet-Message headers." },
-        { status: 401 },
-      ),
+      errorResponse: reasonToResponse("missing"),
     };
   }
 
