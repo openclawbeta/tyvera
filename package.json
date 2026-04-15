@@ -15,7 +15,8 @@
     "build-holder-snapshot-tao-app": "node scripts/build-holder-snapshot-from-tao-app.mjs",
     "build-validator-snapshot": "node scripts/build-validator-snapshot.mjs",
     "refresh-intel": "node scripts/refresh-intel.mjs",
-    "test:auth": "node scripts/test-wallet-auth.mjs"
+    "test:auth": "node scripts/test-wallet-auth.mjs",
+    "test:recs": "node scripts/test-recommendations.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.17.2",

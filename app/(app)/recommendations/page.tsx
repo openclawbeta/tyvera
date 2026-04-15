@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Filter, Clock, CheckCircle, Wallet, Shield, AlertCircle, Radar, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { FadeIn } from "@/components/ui-custom/fade-in";
@@ -8,7 +8,10 @@ import { RecommendationCard } from "@/components/recommendations/recommendation-
 import { ReviewPanel } from "@/components/recommendations/review-panel";
 import { getRecommendations } from "@/lib/api/recommendations";
 import { useWallet } from "@/lib/wallet-context";
-import type { RecommendationUiModel as Recommendation } from "@/lib/types/recommendations";
+import type {
+  RecommendationUiModel as Recommendation,
+  WalletHoldingsMap,
+} from "@/lib/types/recommendations";
 
 const BANDS = [
   { dot: "#22d3ee", dotGlow: "rgba(34,211,238,0.6)", label: "Strong", range: "score ≥ 0.35" },
@@ -133,9 +136,61 @@ function WalletBanner() {
 }
 
 export default function RecommendationsPage() {
-  const recommendations = getRecommendations();
-  const [selected, setSelected] = useState<Recommendation | null>(recommendations[1] ?? recommendations[0] ?? null);
+  const { address, walletState } = useWallet();
+  const [holdings, setHoldings] = useState<WalletHoldingsMap | null>(null);
   const [filterBand, setFilterBand] = useState<string>("all");
+
+  // Fetch wallet holdings when an address is available. We don't require
+  // verification — a connected wallet is enough to personalize suggestions
+  // since nothing executes until the user signs.
+  useEffect(() => {
+    if (!address) {
+      setHoldings(null);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/portfolio?address=${encodeURIComponent(address)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const positions: Array<{ netuid: number; stakedTao: number }> =
+          data?.positions ?? [];
+        if (!Array.isArray(positions) || cancelled) return;
+        const map: WalletHoldingsMap = {};
+        for (const p of positions) {
+          if (typeof p?.netuid === "number" && typeof p?.stakedTao === "number" && p.stakedTao > 0) {
+            map[p.netuid] = (map[p.netuid] ?? 0) + p.stakedTao;
+          }
+        }
+        if (!cancelled) setHoldings(map);
+      } catch {
+        // Best-effort — fall back to anonymous recommendations silently.
+        if (!cancelled) setHoldings(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [address, walletState]);
+
+  const recommendations = useMemo(
+    () => getRecommendations({ address, holdings }),
+    [address, holdings],
+  );
+
+  const [selected, setSelected] = useState<Recommendation | null>(null);
+
+  // Keep `selected` in sync with the current rec list: prefer the previously
+  // selected id, otherwise fall back to the second (legacy default) or first.
+  useEffect(() => {
+    setSelected((prev) => {
+      if (prev && recommendations.some((r) => r.id === prev.id)) return prev;
+      return recommendations[1] ?? recommendations[0] ?? null;
+    });
+  }, [recommendations]);
 
   const filteredRecs = filterBand === "all" ? recommendations : recommendations.filter((r) => r.band.toLowerCase() === filterBand);
 

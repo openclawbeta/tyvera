@@ -143,6 +143,38 @@ export function deriveBreakeven(yieldPct: number): number {
 }
 
 /**
+ * Estimate root (netuid 0) staking yield from the subnet yield distribution.
+ *
+ * Strategy: take the median of mature subnets' yields and apply a conservative
+ * discount. Root delegation typically produces a lower effective APY than
+ * active subnet emissions, so we discount rather than match.
+ *
+ * Falls back to 14.5% (the hardcoded UI baseline in subnet-compare-panel)
+ * when the subnet set is empty. Returns null when no meaningful estimate
+ * can be produced so callers can omit root rather than show fake numbers.
+ */
+export function deriveRootYield(
+  subnets: { yield: number; liquidity: number; age: number }[],
+  discount: number,
+): number | null {
+  if (!Array.isArray(subnets) || subnets.length === 0) return 14.5;
+
+  const mature = subnets
+    .filter((s) => s.liquidity >= 100_000 && s.age >= 60 && s.yield > 0 && s.yield < 60)
+    .map((s) => s.yield)
+    .sort((a, b) => a - b);
+
+  if (mature.length === 0) return null;
+
+  const mid = Math.floor(mature.length / 2);
+  const median = mature.length % 2 === 1
+    ? mature[mid]
+    : (mature[mid - 1] + mature[mid]) / 2;
+
+  return +(median * discount).toFixed(2);
+}
+
+/**
  * Derive dTAO yield percentage.
  * Formula: (daily_tao_emitted / total_tao_in_subnet) × 365 × 100
  *

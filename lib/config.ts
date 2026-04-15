@@ -64,6 +64,36 @@ export const MONTHLY_DURATION_DAYS = 30;
 /** Annual subscription duration in days */
 export const ANNUAL_DURATION_DAYS = 365;
 
+/* ── Recommendations ─────────────────────────────────────────────────────── */
+
+/**
+ * Ceiling for a target subnet's post-move share of the caller's wallet.
+ * Targets already at or above this fraction are excluded from recommendations.
+ * Personalized path only — no effect on anonymous recommendations.
+ */
+export const RECOMMENDATION_CONCENTRATION_CEILING = 0.35;
+
+/**
+ * Default fraction of a held position to propose moving per recommendation.
+ * e.g. 0.18 = suggest reallocating 18% of what the caller holds in the source.
+ */
+export const RECOMMENDATION_DEFAULT_MOVE_FRACTION = 0.18;
+
+/**
+ * Minimum and maximum amount (in TAO) a personalized recommendation will
+ * propose. Keeps dust moves and oversized moves out of the suggestion list.
+ */
+export const RECOMMENDATION_MIN_AMOUNT_TAO = 0.05;
+export const RECOMMENDATION_MAX_AMOUNT_TAO = 50;
+
+/**
+ * Conservative discount applied to the median mature-subnet yield to estimate
+ * root (netuid 0) yield when no chain-derived root APY is available.
+ * This is intentionally lower than subnet yields because root delegation
+ * typically produces less alpha per TAO than active subnet emissions.
+ */
+export const ROOT_YIELD_DISCOUNT = 0.6;
+
 /** Payment intent expiry — 24 hours */
 export const PAYMENT_INTENT_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
