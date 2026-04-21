@@ -133,13 +133,12 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen" style={{ background: "#FAF9F7", color: "#0F0F12" }}>
+    <div className="tyvera-landing min-h-screen" style={{ background: "var(--aurora-cream)", color: "var(--aurora-ink)" }}>
       {/* ── NAV ── */}
       <nav
-        className="fixed inset-x-0 top-0 z-50 flex h-16 items-center backdrop-blur"
+        className="tyvera-landing-nav fixed inset-x-0 top-0 z-50 flex h-16 items-center backdrop-blur"
         style={{
-          background: "rgba(250,249,247,0.82)",
-          borderBottom: "1px solid #ECEBE7",
+          borderBottom: "1px solid var(--aurora-hair)",
         }}
       >
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 md:px-8">
@@ -150,31 +149,33 @@ export default function HomePage() {
                 background: "linear-gradient(135deg, #C9B8FF 0%, #FFD7BA 50%, #A7F0D2 100%)",
               }}
             >
-              <Zap className="h-4 w-4" style={{ color: "#0F0F12" }} strokeWidth={2.5} />
+              <Zap className="h-4 w-4" style={{ color: "var(--aurora-ink)" }} strokeWidth={2.5} />
             </div>
-            <span className="font-semibold" style={{ color: "#0F0F12", letterSpacing: "-0.02em" }}>
+            <span className="font-semibold" style={{ color: "var(--aurora-ink)", letterSpacing: "-0.02em" }}>
               Tyvera
             </span>
           </Link>
 
-          <div className="hidden items-center gap-1 lg:flex">
-            <Link href="/subnets" className="rounded-full px-4 py-2 text-[13px] font-medium transition-all hover:bg-[#F2F0EB]" style={{ color: "#6B6860" }}>
-              Subnets
-            </Link>
-            <Link href="/metrics" className="rounded-full px-4 py-2 text-[13px] font-medium transition-all hover:bg-[#F2F0EB]" style={{ color: "#6B6860" }}>
-              Metrics
-            </Link>
-            <Link href="/pricing" className="rounded-full px-4 py-2 text-[13px] font-medium transition-all hover:bg-[#F2F0EB]" style={{ color: "#6B6860" }}>
-              Pricing
-            </Link>
-            <Link href="/developers" className="rounded-full px-4 py-2 text-[13px] font-medium transition-all hover:bg-[#F2F0EB]" style={{ color: "#6B6860" }}>
-              Developers
-            </Link>
-            <Link href="/signup" className="ml-2">
-              <button className="btn-primary text-[13px]">
-                Enter Workspace <ArrowRight className="h-3.5 w-3.5" />
-              </button>
-            </Link>
+          <div className="flex items-center gap-1">
+            <div className="hidden items-center gap-1 lg:flex">
+              <Link href="/subnets" className="tyvera-landing-navlink rounded-full px-4 py-2 text-[13px] font-medium transition-all" style={{ color: "var(--aurora-sub)" }}>
+                Subnets
+              </Link>
+              <Link href="/metrics" className="tyvera-landing-navlink rounded-full px-4 py-2 text-[13px] font-medium transition-all" style={{ color: "var(--aurora-sub)" }}>
+                Metrics
+              </Link>
+              <Link href="/pricing" className="tyvera-landing-navlink rounded-full px-4 py-2 text-[13px] font-medium transition-all" style={{ color: "var(--aurora-sub)" }}>
+                Pricing
+              </Link>
+              <Link href="/developers" className="tyvera-landing-navlink rounded-full px-4 py-2 text-[13px] font-medium transition-all" style={{ color: "var(--aurora-sub)" }}>
+                Developers
+              </Link>
+              <Link href="/signup" className="ml-2">
+                <button className="btn-primary text-[13px]">
+                  Enter Workspace <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              </Link>
+            </div>
             <div className="ml-1">
               <ThemeToggle size="sm" />
             </div>
@@ -194,7 +195,7 @@ export default function HomePage() {
                 className="mb-8 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 chip"
               >
                 <span className="h-1.5 w-1.5 rounded-full animate-pulse-dot" style={{ background: "#0B8F5A" }} />
-                <span className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "#6B6860", fontFamily: "'JetBrains Mono', monospace" }}>
+                <span className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--aurora-sub)", fontFamily: "'JetBrains Mono', monospace" }}>
                   Live on Bittensor Mainnet
                 </span>
               </motion.div>
@@ -204,10 +205,10 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.07, ease: [0.22, 1, 0.36, 1] }}
                 className="mb-7 max-w-4xl font-semibold leading-[0.98]"
-                style={{ fontSize: "clamp(46px, 7vw, 88px)", letterSpacing: "-0.035em", color: "#0F0F12" }}
+                style={{ fontSize: "clamp(46px, 7vw, 88px)", letterSpacing: "-0.035em", color: "var(--aurora-ink)" }}
               >
                 <span className="block">Operate Bittensor</span>
-                <span className="block serif" style={{ color: "#6B6860" }}>
+                <span className="block serif" style={{ color: "var(--aurora-sub)" }}>
                   like a market terminal.
                 </span>
               </motion.h1>
@@ -217,7 +218,7 @@ export default function HomePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.55, delay: 0.14, ease: [0.22, 1, 0.36, 1] }}
                 className="mb-10 max-w-2xl text-[18px] leading-relaxed md:text-[20px]"
-                style={{ color: "#6B6860", letterSpacing: "-0.01em" }}
+                style={{ color: "var(--aurora-sub)", letterSpacing: "-0.01em" }}
               >
                 Tyvera brings subnet discovery, holder flows, validator coverage, portfolio intelligence, and review-based execution into one premium operating surface — sharp, source-aware, and built for real allocation decisions.
               </motion.p>
@@ -252,8 +253,8 @@ export default function HomePage() {
                   ["Allocator-grade", "Built for decision speed"],
                 ].map(([title, sub]) => (
                   <div key={title} className="glass px-4 py-4">
-                    <div className="text-sm font-semibold" style={{ color: "#0F0F12" }}>{title}</div>
-                    <div className="mt-1 text-xs" style={{ color: "#6B6860" }}>{sub}</div>
+                    <div className="text-sm font-semibold" style={{ color: "var(--aurora-ink)" }}>{title}</div>
+                    <div className="mt-1 text-xs" style={{ color: "var(--aurora-sub)" }}>{sub}</div>
                   </div>
                 ))}
               </motion.div>
@@ -266,15 +267,15 @@ export default function HomePage() {
               className="relative"
             >
               <div className="glass-lg p-6 aurora-soft">
-                <div className="mb-6 flex items-center justify-between border-b pb-5" style={{ borderColor: "#ECEBE7" }}>
+                <div className="mb-6 flex items-center justify-between border-b pb-5" style={{ borderColor: "var(--aurora-hair)" }}>
                   <div>
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: "#6B6860", fontFamily: "'JetBrains Mono', monospace" }}>
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--aurora-sub)", fontFamily: "'JetBrains Mono', monospace" }}>
                       Platform snapshot
                     </div>
-                    <h2 className="mt-2 text-[24px] font-semibold tracking-[-0.03em]" style={{ color: "#0F0F12" }}>
+                    <h2 className="mt-2 text-[24px] font-semibold tracking-[-0.03em]" style={{ color: "var(--aurora-ink)" }}>
                       Why Tyvera feels different
                     </h2>
-                    <p className="mt-2 max-w-sm text-sm leading-relaxed" style={{ color: "#6B6860" }}>
+                    <p className="mt-2 max-w-sm text-sm leading-relaxed" style={{ color: "var(--aurora-sub)" }}>
                       A calmer, institutional Bittensor terminal built around honest execution boundaries and high-signal operating views.
                     </p>
                   </div>
@@ -291,11 +292,11 @@ export default function HomePage() {
                     { icon: Wallet, title: "Operator flow", text: "From discovery to review to wallet approval, the path stays clear and accountable." },
                   ].map(({ icon: Icon, title, text }) => (
                     <div key={title} className="glass p-4">
-                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "#F2F0EB", border: "1px solid #ECEBE7" }}>
+                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "var(--surface-3)", border: "1px solid var(--aurora-hair)" }}>
                         <Icon className="h-4 w-4" style={{ color: "#5B3FBF" }} />
                       </div>
-                      <div className="text-sm font-semibold tracking-tight" style={{ color: "#0F0F12" }}>{title}</div>
-                      <p className="mt-2 text-sm leading-relaxed" style={{ color: "#6B6860" }}>{text}</p>
+                      <div className="text-sm font-semibold tracking-tight" style={{ color: "var(--aurora-ink)" }}>{title}</div>
+                      <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--aurora-sub)" }}>{text}</p>
                     </div>
                   ))}
                 </div>
@@ -306,7 +307,7 @@ export default function HomePage() {
       </section>
 
       {/* ── TICKER ── */}
-      <div style={{ borderTop: "1px solid #ECEBE7", borderBottom: "1px solid #ECEBE7", background: "#FFFFFF", overflow: "hidden" }}>
+      <div style={{ borderTop: "1px solid var(--aurora-hair)", borderBottom: "1px solid var(--aurora-hair)", background: "var(--surface-1)", overflow: "hidden" }}>
         <div
           className="flex py-2.5"
           style={{ animation: "ticker-scroll 30s linear infinite", width: "max-content" }}
@@ -315,9 +316,9 @@ export default function HomePage() {
             <div
               key={`${item.name}-${i}`}
               className="flex shrink-0 items-center gap-3 px-6"
-              style={{ borderRight: "1px solid #ECEBE7" }}
+              style={{ borderRight: "1px solid var(--aurora-hair)" }}
             >
-              <span className="whitespace-nowrap text-[11px] font-medium" style={{ color: "#6B6860" }}>{item.name}</span>
+              <span className="whitespace-nowrap text-[11px] font-medium" style={{ color: "var(--aurora-sub)" }}>{item.name}</span>
               <span className={cn("font-mono tabular-nums text-[11px] font-bold", item.up ? "text-[#0B8F5A]" : "text-[#C0392B]")}>
                 {item.up ? "▲" : "▼"}&thinsp;{item.yield}
               </span>
@@ -336,11 +337,11 @@ export default function HomePage() {
             { label: "Wallet Extensions", value: "3", sub: "supported" },
           ].map((m) => (
             <div key={m.label} className="text-center">
-              <div className="mb-1 text-[36px] font-semibold" style={{ letterSpacing: "-0.03em", color: "#0F0F12" }}>
+              <div className="mb-1 text-[36px] font-semibold" style={{ letterSpacing: "-0.03em", color: "var(--aurora-ink)" }}>
                 {m.value}
               </div>
-              <div className="mb-0.5 text-[12px] font-semibold" style={{ color: "#0F0F12" }}>{m.label}</div>
-              <div className="text-[11px]" style={{ color: "#6B6860" }}>{m.sub}</div>
+              <div className="mb-0.5 text-[12px] font-semibold" style={{ color: "var(--aurora-ink)" }}>{m.label}</div>
+              <div className="text-[11px]" style={{ color: "var(--aurora-sub)" }}>{m.sub}</div>
             </div>
           ))}
         </div>
@@ -351,13 +352,13 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl">
           <FadeIn>
             <div className="mb-14 text-center">
-              <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: "#6B6860", fontFamily: "'JetBrains Mono', monospace" }}>
+              <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--aurora-sub)", fontFamily: "'JetBrains Mono', monospace" }}>
                 Live Opportunities
               </div>
-              <h2 className="text-[40px] font-semibold" style={{ letterSpacing: "-0.03em", color: "#0F0F12" }}>
-                Top Performing <span className="serif" style={{ color: "#6B6860" }}>Subnets</span>
+              <h2 className="text-[40px] font-semibold" style={{ letterSpacing: "-0.03em", color: "var(--aurora-ink)" }}>
+                Top Performing <span className="serif" style={{ color: "var(--aurora-sub)" }}>Subnets</span>
               </h2>
-              <p className="mt-3 text-[14px]" style={{ color: "#6B6860" }}>Ranked by composite score. Updated continuously.</p>
+              <p className="mt-3 text-[14px]" style={{ color: "var(--aurora-sub)" }}>Ranked by composite score. Updated continuously.</p>
             </div>
           </FadeIn>
 
@@ -389,24 +390,24 @@ export default function HomePage() {
                   <div className="relative mb-5 flex items-center gap-3">
                     <div
                       className={cn("flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br text-sm font-bold", s.grad)}
-                      style={{ color: "#0F0F12" }}
+                      style={{ color: "var(--aurora-ink)" }}
                     >
                       {s.netuid}
                     </div>
                     <div>
-                      <div className="text-[14px] font-semibold" style={{ letterSpacing: "-0.015em", color: "#0F0F12" }}>
+                      <div className="text-[14px] font-semibold" style={{ letterSpacing: "-0.015em", color: "var(--aurora-ink)" }}>
                         {s.name}
                       </div>
-                      <div className="text-[10px]" style={{ color: "#6B6860", fontFamily: "'JetBrains Mono', monospace" }}>
+                      <div className="text-[10px]" style={{ color: "var(--aurora-sub)", fontFamily: "'JetBrains Mono', monospace" }}>
                         SN{s.netuid}
                       </div>
                     </div>
                   </div>
 
-                  <div className="mb-0.5 text-[32px] font-semibold tabular-nums" style={{ letterSpacing: "-0.03em", color: "#0F0F12", fontFamily: "'JetBrains Mono', monospace" }}>
+                  <div className="mb-0.5 text-[32px] font-semibold tabular-nums" style={{ letterSpacing: "-0.03em", color: "var(--aurora-ink)", fontFamily: "'JetBrains Mono', monospace" }}>
                     {s.yield}
                   </div>
-                  <div className="mb-4 text-[11px]" style={{ color: "#6B6860" }}>daily yield vs τ staked</div>
+                  <div className="mb-4 text-[11px]" style={{ color: "var(--aurora-sub)" }}>daily yield vs τ staked</div>
 
                   <div className="mb-4 divider" />
 
@@ -415,7 +416,7 @@ export default function HomePage() {
                     <span className="text-[11px] font-semibold tabular-nums" style={{ color: "#5B3FBF", fontFamily: "'JetBrains Mono', monospace" }}>
                       {s.delta}
                     </span>
-                    <span className="ml-auto text-[11px] tabular-nums" style={{ color: "#6B6860" }}>
+                    <span className="ml-auto text-[11px] tabular-nums" style={{ color: "var(--aurora-sub)" }}>
                       {s.liquidity} staked
                     </span>
                   </div>
@@ -427,15 +428,15 @@ export default function HomePage() {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section className="border-t px-8 py-24" style={{ borderColor: "#ECEBE7" }}>
+      <section className="border-t px-8 py-24" style={{ borderColor: "var(--aurora-hair)" }}>
         <div className="mx-auto max-w-5xl">
           <FadeIn>
             <div className="mb-16 text-center">
-              <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: "#6B6860", fontFamily: "'JetBrains Mono', monospace" }}>
+              <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--aurora-sub)", fontFamily: "'JetBrains Mono', monospace" }}>
                 How It Works
               </div>
-              <h2 className="text-[40px] font-semibold" style={{ letterSpacing: "-0.03em", color: "#0F0F12" }}>
-                From data to decision, <span className="serif" style={{ color: "#6B6860" }}>honestly.</span>
+              <h2 className="text-[40px] font-semibold" style={{ letterSpacing: "-0.03em", color: "var(--aurora-ink)" }}>
+                From data to decision, <span className="serif" style={{ color: "var(--aurora-sub)" }}>honestly.</span>
               </h2>
             </div>
           </FadeIn>
@@ -447,19 +448,19 @@ export default function HomePage() {
                   {i < STEPS.length - 1 && (
                     <div
                       className="absolute left-full top-[28px] hidden h-px w-full xl:block"
-                      style={{ background: "linear-gradient(90deg, #ECEBE7, transparent)" }}
+                      style={{ background: "linear-gradient(90deg, var(--aurora-hair), transparent)" }}
                     />
                   )}
                   <div
                     className="mb-4 serif text-[56px] leading-none"
-                    style={{ color: "#6B6860" }}
+                    style={{ color: "var(--aurora-sub)" }}
                   >
                     {step.n}
                   </div>
-                  <h3 className="mb-2 text-[16px] font-semibold" style={{ letterSpacing: "-0.01em", color: "#0F0F12" }}>
+                  <h3 className="mb-2 text-[16px] font-semibold" style={{ letterSpacing: "-0.01em", color: "var(--aurora-ink)" }}>
                     {step.title}
                   </h3>
-                  <p className="text-[13px] leading-relaxed" style={{ color: "#6B6860" }}>{step.desc}</p>
+                  <p className="text-[13px] leading-relaxed" style={{ color: "var(--aurora-sub)" }}>{step.desc}</p>
                 </div>
               </FadeIn>
             ))}
@@ -468,15 +469,15 @@ export default function HomePage() {
       </section>
 
       {/* ── FEATURE GRID ── */}
-      <section className="border-t px-8 py-24" style={{ borderColor: "#ECEBE7" }}>
+      <section className="border-t px-8 py-24" style={{ borderColor: "var(--aurora-hair)" }}>
         <div className="mx-auto max-w-6xl">
           <FadeIn>
             <div className="mb-16 text-center">
-              <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: "#6B6860", fontFamily: "'JetBrains Mono', monospace" }}>
+              <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--aurora-sub)", fontFamily: "'JetBrains Mono', monospace" }}>
                 Platform
               </div>
-              <h2 className="text-[40px] font-semibold" style={{ letterSpacing: "-0.03em", color: "#0F0F12" }}>
-                Built for <span className="serif" style={{ color: "#6B6860" }}>serious TAO stakers.</span>
+              <h2 className="text-[40px] font-semibold" style={{ letterSpacing: "-0.03em", color: "var(--aurora-ink)" }}>
+                Built for <span className="serif" style={{ color: "var(--aurora-sub)" }}>serious TAO stakers.</span>
               </h2>
             </div>
           </FadeIn>
@@ -493,10 +494,10 @@ export default function HomePage() {
                     >
                       <Icon style={{ width: 20, height: 20, color: f.accent }} />
                     </div>
-                    <h3 className="mb-2 text-[17px] font-semibold" style={{ letterSpacing: "-0.015em", color: "#0F0F12" }}>
+                    <h3 className="mb-2 text-[17px] font-semibold" style={{ letterSpacing: "-0.015em", color: "var(--aurora-ink)" }}>
                       {f.title}
                     </h3>
-                    <p className="text-[14px] leading-relaxed" style={{ color: "#6B6860" }}>{f.desc}</p>
+                    <p className="text-[14px] leading-relaxed" style={{ color: "var(--aurora-sub)" }}>{f.desc}</p>
                   </div>
                 </FadeIn>
               );
@@ -506,7 +507,7 @@ export default function HomePage() {
       </section>
 
       {/* ── TRUST / KEYS ── */}
-      <section className="border-t px-8 py-24" style={{ borderColor: "#ECEBE7" }}>
+      <section className="border-t px-8 py-24" style={{ borderColor: "var(--aurora-hair)" }}>
         <div className="mx-auto max-w-4xl">
           <FadeIn>
             <div className="glass-lg aurora-soft relative overflow-hidden p-10">
@@ -517,10 +518,10 @@ export default function HomePage() {
                 >
                   <Shield className="h-6 w-6" style={{ color: "#0B8F5A" }} />
                 </div>
-                <h2 className="mb-3 text-[32px] font-semibold" style={{ letterSpacing: "-0.025em", color: "#0F0F12" }}>
-                  Your keys. Your stake. <span className="serif" style={{ color: "#6B6860" }}>Your control.</span>
+                <h2 className="mb-3 text-[32px] font-semibold" style={{ letterSpacing: "-0.025em", color: "var(--aurora-ink)" }}>
+                  Your keys. Your stake. <span className="serif" style={{ color: "var(--aurora-sub)" }}>Your control.</span>
                 </h2>
-                <p className="mx-auto max-w-lg text-[14px] leading-relaxed" style={{ color: "#6B6860" }}>
+                <p className="mx-auto max-w-lg text-[14px] leading-relaxed" style={{ color: "var(--aurora-sub)" }}>
                   Tyvera is a read-and-recommend platform. We analyze data and surface opportunities. Every move requires your explicit approval in your own wallet.
                 </p>
               </div>
@@ -530,7 +531,7 @@ export default function HomePage() {
                   <div
                     key={text}
                     className="flex items-start gap-3.5 rounded-2xl p-4"
-                    style={{ background: "#FFFFFF", border: "1px solid #ECEBE7" }}
+                    style={{ background: "var(--surface-1)", border: "1px solid var(--aurora-hair)" }}
                   >
                     <div
                       className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
@@ -539,10 +540,10 @@ export default function HomePage() {
                       <Icon className="h-4 w-4" style={{ color: "#0B8F5A" }} />
                     </div>
                     <div>
-                      <p className="mb-0.5 text-[14px] font-semibold" style={{ letterSpacing: "-0.01em", color: "#0F0F12" }}>
+                      <p className="mb-0.5 text-[14px] font-semibold" style={{ letterSpacing: "-0.01em", color: "var(--aurora-ink)" }}>
                         {text}
                       </p>
-                      <p className="text-[12px]" style={{ color: "#6B6860" }}>{sub}</p>
+                      <p className="text-[12px]" style={{ color: "var(--aurora-sub)" }}>{sub}</p>
                     </div>
                   </div>
                 ))}
@@ -553,21 +554,21 @@ export default function HomePage() {
       </section>
 
       {/* ── FINAL CTA ── */}
-      <section className="relative overflow-hidden border-t px-8 py-24 aurora-bg" style={{ borderColor: "#ECEBE7" }}>
+      <section className="relative overflow-hidden border-t px-8 py-24 aurora-bg" style={{ borderColor: "var(--aurora-hair)" }}>
         <div className="relative mx-auto max-w-3xl text-center">
           <FadeIn>
             <div className="chip mb-8 inline-flex items-center gap-2 px-3.5 py-1.5">
               <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#B88A00" }} />
-              <span className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "#6B6860", fontFamily: "'JetBrains Mono', monospace" }}>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--aurora-sub)", fontFamily: "'JetBrains Mono', monospace" }}>
                 Plans
               </span>
             </div>
 
-            <h2 className="mb-5 text-[56px] font-semibold" style={{ letterSpacing: "-0.035em", lineHeight: 1.03, color: "#0F0F12" }}>
-              Start free. <span className="serif" style={{ color: "#6B6860" }}>Upgrade when the</span>
+            <h2 className="mb-5 text-[56px] font-semibold" style={{ letterSpacing: "-0.035em", lineHeight: 1.03, color: "var(--aurora-ink)" }}>
+              Start free. <span className="serif" style={{ color: "var(--aurora-sub)" }}>Upgrade when the</span>
               <span className="block">edge is worth paying for.</span>
             </h2>
-            <p className="mb-10 text-[16px] leading-relaxed" style={{ color: "#6B6860" }}>
+            <p className="mb-10 text-[16px] leading-relaxed" style={{ color: "var(--aurora-sub)" }}>
               Explorer gets you into the product. Paid plans unlock deeper analytics, recommendations, and portfolio workflows. TAO-native settlement, no fake urgency, and no hidden custody.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
@@ -582,7 +583,7 @@ export default function HomePage() {
                 </button>
               </Link>
             </div>
-            <p className="mt-6 text-[11px]" style={{ color: "#6B6860" }}>
+            <p className="mt-6 text-[11px]" style={{ color: "var(--aurora-sub)" }}>
               Nothing executes automatically. You stay in control of wallet approval and final submission.
             </p>
           </FadeIn>
@@ -590,18 +591,18 @@ export default function HomePage() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ borderTop: "1px solid #ECEBE7", padding: "40px 32px", background: "#FFFFFF" }}>
+      <footer style={{ borderTop: "1px solid var(--aurora-hair)", padding: "40px 32px", background: "var(--surface-1)" }}>
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <div
               className="flex h-6 w-6 items-center justify-center rounded-lg"
               style={{ background: "linear-gradient(135deg, #C9B8FF 0%, #FFD7BA 50%, #A7F0D2 100%)" }}
             >
-              <Zap className="h-3 w-3" style={{ color: "#0F0F12" }} />
+              <Zap className="h-3 w-3" style={{ color: "var(--aurora-ink)" }} />
             </div>
-            <span className="text-[13px] font-semibold" style={{ color: "#0F0F12" }}>Tyvera</span>
+            <span className="text-[13px] font-semibold" style={{ color: "var(--aurora-ink)" }}>Tyvera</span>
           </div>
-          <p className="text-[11px]" style={{ color: "#6B6860" }}>Not financial advice. You approve every move.</p>
+          <p className="text-[11px]" style={{ color: "var(--aurora-sub)" }}>Not financial advice. You approve every move.</p>
           <div className="flex flex-wrap gap-5">
             {[
               { label: "Subnets", href: "/subnets" },
@@ -611,7 +612,7 @@ export default function HomePage() {
               { label: "Terms", href: "/terms" },
               { label: "Risk Disclosure", href: "/risk-disclosure" },
             ].map(({ label, href }) => (
-              <Link key={label} href={href} className="text-[11px] transition-colors duration-150" style={{ color: "#6B6860" }}>
+              <Link key={label} href={href} className="text-[11px] transition-colors duration-150" style={{ color: "var(--aurora-sub)" }}>
                 {label}
               </Link>
             ))}

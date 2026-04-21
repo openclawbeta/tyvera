@@ -791,3 +791,19 @@
   background: var(--surface-2);
   color: var(--aurora-ink);
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Landing page (app/page.tsx) — dual-mode backdrop + hover
+   Landing root has class "tyvera-landing"
+   ───────────────────────────────────────────────────────────── */
+.tyvera-landing-nav {
+  background: rgba(250, 249, 247, 0.82);
+}
+.dark .tyvera-landing-nav {
+  background: rgba(18, 16, 26, 0.82);
+}
+.tyvera-landing-navlink:hover {
+  background: var(--surface-3);
+  color: var(--aurora-ink) !important;
+}
+
