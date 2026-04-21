@@ -44,7 +44,10 @@ import {
 import {
   getRootMetricsCache,
   isRootMetricsCacheFresh,
+  setRootMetricsCache,
+  type RootMetrics,
 } from "@/lib/chain/root-metrics";
+import { getChainKv } from "@/lib/db/chain-kv";
 import { isAllowedInternalOrigin } from "@/lib/api/internal-origin";
 import {
   DATA_SOURCES,
@@ -54,6 +57,24 @@ import {
 
 const SNAPSHOT_MAX_AGE_HOURS = 2;
 const SUBTENSOR_SNAPSHOT_PATH = join(process.cwd(), "public", "data", "subnets.json");
+
+/** Max age for DB-persisted root metrics before we treat them as stale. */
+const ROOT_KV_MAX_AGE_MS = 60 * 60 * 1000; // 1h — cron runs every 5 min, generous buffer
+
+/**
+ * Try to hydrate the root-metrics in-memory cache from the durable chain_kv
+ * store. This is the cross-lambda hand-off: sync-chain writes to DB, any
+ * request-handling lambda can read it back and surface live root APR even
+ * on cold starts.
+ */
+async function hydrateRootFromDb(): Promise<void> {
+  if (isRootMetricsCacheFresh()) return;
+  const row = await getChainKv<RootMetrics>("root_metrics");
+  if (!row) return;
+  if (row.ageMs > ROOT_KV_MAX_AGE_MS) return;
+  // Trust the value — sync-chain writes it with a fresh `fetchedAt`.
+  setRootMetricsCache(row.value);
+}
 
 interface SubtensorPayload {
   _meta?: {
@@ -201,6 +222,11 @@ export async function GET(request: NextRequest) {
     return apiErrorResponse("This endpoint is for Tyvera frontend use only.", 403);
   }
 
+  // Best-effort: hydrate root-metrics from DB if in-memory is cold.
+  // Cheap (single KV row) and unlocks root injection on both the
+  // chain-cache and snapshot serving paths below.
+  await hydrateRootFromDb().catch(() => { /* non-fatal */ });
+
   const chainCache = getSubnetCache();
   if (chainCache && isSubnetCacheFresh()) {
     let chainSubnets = chainCache.subnets
@@ -287,7 +313,17 @@ export async function GET(request: NextRequest) {
       ).catch(() => false);
     }
 
-    const enriched = enrichWithMarketData(snapshot.subnets);
+    // Inject live root (netuid 0) from the DB-hydrated cache. The
+    // committed subnets.json snapshot does not contain root, so without
+    // this step the snapshot path returns 128 alpha subnets and no
+    // baseline — which breaks the landing page's "Root baseline" chip.
+    let subnets = snapshot.subnets;
+    const rootEntry = buildRootSubnetEntry();
+    if (rootEntry && (netuidFilter == null || netuidFilter === 0)) {
+      subnets = netuidFilter === 0 ? [rootEntry] : [rootEntry, ...subnets];
+    }
+
+    const enriched = enrichWithMarketData(subnets);
 
     return apiResponse(
       { subnets: enriched },
@@ -300,13 +336,20 @@ export async function GET(request: NextRequest) {
         extraHeaders: {
           "X-Subnet-Count": String(enriched.length),
           "X-Market-Enriched": String(isMarketCacheFresh()),
+          "X-Root-Live": rootEntry ? "true" : "false",
         },
       },
     );
   }
 
   if (snapshot) {
-    const enriched = enrichWithMarketData(snapshot.subnets);
+    let subnets = snapshot.subnets;
+    const rootEntry = buildRootSubnetEntry();
+    if (rootEntry && (netuidFilter == null || netuidFilter === 0)) {
+      subnets = netuidFilter === 0 ? [rootEntry] : [rootEntry, ...subnets];
+    }
+
+    const enriched = enrichWithMarketData(subnets);
     return apiResponse(
       { subnets: enriched },
       {
@@ -320,6 +363,7 @@ export async function GET(request: NextRequest) {
         extraHeaders: {
           "X-Subnet-Count": String(enriched.length),
           "X-Market-Enriched": String(isMarketCacheFresh()),
+          "X-Root-Live": rootEntry ? "true" : "false",
         },
       },
     );

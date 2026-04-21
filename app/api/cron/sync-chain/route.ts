@@ -31,6 +31,7 @@ import { syncPricesFromChain } from "@/lib/chain/price-engine";
 import { scanRecentTransfers } from "@/lib/chain/transfer-scanner";
 import { logCronRun, pruneCronRuns } from "@/lib/db/cron-log";
 import { recordSubnetHistoryBatch } from "@/lib/db/subnet-history";
+import { setChainKv } from "@/lib/db/chain-kv";
 import { runCronHealthCheck } from "@/lib/cron/health-check";
 import { timingSafeEqual } from "crypto";
 
@@ -160,6 +161,13 @@ export async function GET(request: NextRequest) {
       const rootMetrics = await fetchRootMetricsFromChain();
       if (rootMetrics) {
         setRootMetricsCache(rootMetrics);
+        // Persist to DB so other lambda instances (which have their own
+        // empty in-memory caches) can still surface live root APR. Without
+        // this the /api/subnets response omits root whenever it falls
+        // through to the snapshot-file path.
+        await setChainKv("root_metrics", rootMetrics).catch((err) =>
+          console.warn("[cron/sync-chain] root metrics DB write failed:", err),
+        );
         results.rootMetrics = {
           liquidity: rootMetrics.liquidity,
           yield: rootMetrics.yield,

@@ -295,6 +295,18 @@ export const SCHEMA_SQL = `
   CREATE INDEX IF NOT EXISTS idx_sh_netuid_date
     ON subnet_history(netuid, snapshot_date DESC);
 
+  -- Chain KV: durable key-value store for chain-derived metrics that must
+  -- survive across Vercel lambda invocations. Writes come from the
+  -- sync-chain cron; reads happen in request paths when the in-memory
+  -- cache is empty (cold start / different lambda instance).
+  --
+  -- Values are stored as JSON text; callers parse on read.
+  CREATE TABLE IF NOT EXISTS chain_kv (
+    key             TEXT    PRIMARY KEY,
+    value_json      TEXT    NOT NULL,
+    updated_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+
   -- Payment history: completed payment records for billing page
   CREATE TABLE IF NOT EXISTS payment_history (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
