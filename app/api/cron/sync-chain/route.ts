@@ -25,6 +25,7 @@ import { refreshMarketCache } from "@/lib/chain/market-cache";
 import { syncPricesFromChain } from "@/lib/chain/price-engine";
 import { scanRecentTransfers } from "@/lib/chain/transfer-scanner";
 import { logCronRun, pruneCronRuns } from "@/lib/db/cron-log";
+import { runCronHealthCheck } from "@/lib/cron/health-check";
 import { timingSafeEqual } from "crypto";
 
 export const maxDuration = 60; // Vercel Pro allows up to 60s
@@ -133,6 +134,9 @@ export async function GET(request: NextRequest) {
       result: results as Record<string, unknown>,
     });
     pruneCronRuns().catch(() => {}); // best-effort cleanup
+
+    // Best-effort: check sibling cron health and alert if issues
+    runCronHealthCheck().catch(() => {});
 
     return NextResponse.json(results);
   } catch (err) {

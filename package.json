@@ -19,14 +19,16 @@
     "test:recs": "node scripts/test-recommendations.mjs",
     "test:entitlements": "node scripts/test-entitlements.mjs",
     "test:payments": "node scripts/test-payment-verify.mjs",
-    "test": "node scripts/test-entitlements.mjs && node scripts/test-wallet-auth.mjs && node scripts/test-recommendations.mjs && node scripts/test-payment-verify.mjs"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:smoke": "node scripts/test-entitlements.mjs && node scripts/test-wallet-auth.mjs && node scripts/test-recommendations.mjs && node scripts/test-payment-verify.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.17.2",
     "@polkadot/extension-dapp": "^0.63.1",
+    "@polkadot/keyring": "^14.0.3",
     "@polkadot/util": "^14.0.3",
     "@polkadot/util-crypto": "^14.0.3",
-    "@polkadot/keyring": "^14.0.3",
     "@radix-ui/react-avatar": "^1.1.0",
     "@radix-ui/react-dialog": "^1.1.0",
     "@radix-ui/react-dropdown-menu": "^2.1.0",
@@ -59,6 +61,7 @@
     "eslint-config-next": "^15.0.0",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.4",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "vitest": "^4.1.4"
   }
 }
