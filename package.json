@@ -16,7 +16,10 @@
     "build-validator-snapshot": "node scripts/build-validator-snapshot.mjs",
     "refresh-intel": "node scripts/refresh-intel.mjs",
     "test:auth": "node scripts/test-wallet-auth.mjs",
-    "test:recs": "node scripts/test-recommendations.mjs"
+    "test:recs": "node scripts/test-recommendations.mjs",
+    "test:entitlements": "node scripts/test-entitlements.mjs",
+    "test:payments": "node scripts/test-payment-verify.mjs",
+    "test": "node scripts/test-entitlements.mjs && node scripts/test-wallet-auth.mjs && node scripts/test-recommendations.mjs && node scripts/test-payment-verify.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.17.2",
