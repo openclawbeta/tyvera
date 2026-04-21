@@ -5,6 +5,7 @@ import { DataFreshnessIndicator } from "@/components/layout/data-freshness";
 import { MobileNavToggle } from "@/components/layout/mobile-nav";
 import { RateLimitBanner } from "@/components/ui-custom/rate-limit-banner";
 import { PageTracker } from "@/components/layout/page-tracker";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
@@ -12,8 +13,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       className="aurora-shell min-h-screen"
       style={{
         background:
-          "radial-gradient(circle at 20% -10%, rgba(201,184,255,0.22), transparent 42%), radial-gradient(circle at 80% -5%, rgba(255,215,186,0.18), transparent 40%), #FAF9F7",
-        color: "#0F0F12",
+          "radial-gradient(circle at 20% -10%, rgba(201,184,255,0.22), transparent 42%), radial-gradient(circle at 80% -5%, rgba(255,215,186,0.18), transparent 40%), var(--aurora-cream)",
+        color: "var(--aurora-ink)",
       }}
     >
       <PageTracker />
@@ -23,9 +24,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <aside
           className="sticky top-8 hidden min-h-[calc(100vh-2rem)] shrink-0 self-start lg:flex lg:w-[248px] xl:w-[276px]"
           style={{
-            borderRight: "1px solid #ECEBE7",
-            background:
-              "linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0))",
+            borderRight: "1px solid var(--aurora-hair)",
+            background: "var(--surface-1)",
             backdropFilter: "blur(12px)",
           }}
         >
@@ -34,11 +34,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
         <div className="min-w-0 flex-1 overflow-x-hidden">
           <div
-            className="sticky top-8 z-20"
+            className="sticky top-8 z-20 tyvera-topbar"
             style={{
-              borderBottom: "1px solid #ECEBE7",
-              background:
-                "linear-gradient(180deg, rgba(250,249,247,0.92), rgba(250,249,247,0.76))",
+              borderBottom: "1px solid var(--aurora-hair)",
               backdropFilter: "blur(14px)",
             }}
           >
@@ -48,13 +46,13 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 <div>
                   <div
                     className="text-[10px] font-bold uppercase tracking-[0.22em]"
-                    style={{ color: "#6B6860" }}
+                    style={{ color: "var(--aurora-sub)" }}
                   >
                     Tyvera Terminal
                   </div>
                   <div
                     className="mt-1 text-sm tracking-tight"
-                    style={{ color: "#0F0F12" }}
+                    style={{ color: "var(--aurora-ink)" }}
                   >
                     Bittensor intelligence workspace
                   </div>
@@ -63,31 +61,38 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
               <div
                 className="hidden items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] md:flex"
-                style={{ color: "#6B6860" }}
+                style={{ color: "var(--aurora-sub)" }}
               >
                 <DataFreshnessIndicator />
                 <span
                   className="rounded-full px-3 py-1.5"
-                  style={{ border: "1px solid #ECEBE7", background: "#F7F5F1" }}
+                  style={{
+                    border: "1px solid var(--aurora-hair)",
+                    background: "var(--surface-2)",
+                  }}
                 >
                   Live routes
                 </span>
                 <span
                   className="rounded-full px-3 py-1.5"
                   style={{
-                    border: "1px solid #D9CEFF",
-                    background: "#EFE8FF",
-                    color: "#5B4BC9",
+                    border: "1px solid rgba(201,184,255,0.35)",
+                    background: "rgba(201,184,255,0.18)",
+                    color: "var(--aurora-lavender)",
                   }}
                 >
                   Source aware
                 </span>
                 <span
                   className="rounded-full px-3 py-1.5"
-                  style={{ border: "1px solid #ECEBE7", background: "#F7F5F1" }}
+                  style={{
+                    border: "1px solid var(--aurora-hair)",
+                    background: "var(--surface-2)",
+                  }}
                 >
                   Beta
                 </span>
+                <ThemeToggle size="sm" />
               </div>
             </div>
           </div>
@@ -96,12 +101,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
           <div className="mx-auto w-full max-w-[1600px] px-3 py-6 sm:px-5 lg:px-6 lg:py-8 xl:px-8">
             <div
-              className="min-h-[calc(100vh-9rem)] overflow-x-hidden rounded-[30px]"
+              className="min-h-[calc(100vh-9rem)] overflow-x-hidden rounded-[30px] tyvera-content-card"
               style={{
-                border: "1px solid #ECEBE7",
-                background: "#FFFFFF",
-                boxShadow:
-                  "0 1px 2px rgba(15,15,18,0.04), 0 12px 40px rgba(15,15,18,0.05)",
+                border: "1px solid var(--aurora-hair)",
+                background: "var(--surface-1)",
               }}
             >
               <div className="min-w-0 p-4 sm:p-5 lg:p-7 xl:p-8">{children}</div>

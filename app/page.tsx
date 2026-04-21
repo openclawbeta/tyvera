@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { FadeIn } from "@/components/ui-custom/fade-in";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 /* ─── CONTENT (unchanged from original) ─────────────────── */
 
@@ -174,6 +175,9 @@ export default function HomePage() {
                 Enter Workspace <ArrowRight className="h-3.5 w-3.5" />
               </button>
             </Link>
+            <div className="ml-1">
+              <ThemeToggle size="sm" />
+            </div>
           </div>
         </div>
       </nav>

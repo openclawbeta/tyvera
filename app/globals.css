@@ -63,6 +63,56 @@
     --aurora-down: #C0392B;
     --aurora-warn: #B88A00;
   }
+
+  /* ═══════════════════════════════════════════════════════════════
+     AURORA DARK — warm deep canvas + brightened pastels
+     Activated by `html.dark` (toggled via ThemeToggle component)
+     ═══════════════════════════════════════════════════════════════ */
+  .dark {
+    --background: 252 20% 8%;          /* #12101A */
+    --foreground: 42 24% 92%;          /* #F1EEE7 */
+    --card: 254 16% 13%;               /* #1E1B27 */
+    --card-foreground: 42 24% 92%;
+    --popover: 254 16% 13%;
+    --popover-foreground: 42 24% 92%;
+
+    --primary: 42 24% 92%;             /* inverted: bright text-style buttons */
+    --primary-foreground: 252 20% 8%;
+    --secondary: 254 14% 18%;          /* #2A2733 chip */
+    --secondary-foreground: 42 24% 92%;
+
+    --muted: 254 14% 18%;
+    --muted-foreground: 38 8% 62%;     /* #A39E94 */
+
+    --accent: 264 100% 86%;            /* lavender stays */
+    --accent-foreground: 252 20% 8%;
+
+    --destructive: 5 95% 71%;          /* #FF7A6B brighter for dark */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 254 14% 20%;             /* #2E2B37 */
+    --input: 254 14% 20%;
+    --ring: 264 100% 78%;
+
+    /* Surface tokens */
+    --surface-0: #12101A;
+    --surface-1: #1E1B27;
+    --surface-2: #1A1822;
+    --surface-3: #24212D;
+    --surface-elevated: #24212D;
+
+    /* Aurora palette — dark variants */
+    --aurora-cream: #12101A;           /* canvas (name kept for continuity) */
+    --aurora-ink: #F1EEE7;             /* text primary */
+    --aurora-sub: #A39E94;             /* text secondary */
+    --aurora-hair: #2E2B37;            /* borders */
+    --aurora-lavender: #C9B8FF;
+    --aurora-peach: #FFB894;
+    --aurora-mint: #8ED9B6;
+    --aurora-up: #4DD096;
+    --aurora-down: #FF7A6B;
+    --aurora-warn: #E5B84A;
+  }
 }
 
 @layer base {
@@ -77,6 +127,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
+    transition: background-color 220ms ease, color 220ms ease;
   }
 
   html {
@@ -563,4 +614,180 @@
 /* Backdrop blur divs that were dark — strip */
 .aurora-shell .backdrop-blur-2xl[class*="bg-["] {
   background: rgba(250,249,247,0.78) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   AURORA SHELL — DARK MODE counterpart
+   Re-maps the same legacy classes to dark Aurora palette.
+   ═══════════════════════════════════════════════════════════════ */
+
+.dark .aurora-shell { color: var(--aurora-ink); }
+
+.dark .aurora-shell .text-white,
+.dark .aurora-shell .text-slate-50,
+.dark .aurora-shell .text-slate-100,
+.dark .aurora-shell .text-slate-200 { color: var(--aurora-ink) !important; }
+
+.dark .aurora-shell .text-slate-300 { color: #D7D2C8 !important; }
+.dark .aurora-shell .text-slate-400,
+.dark .aurora-shell .text-slate-500 { color: var(--aurora-sub) !important; }
+.dark .aurora-shell .text-slate-600,
+.dark .aurora-shell .text-slate-700 { color: #7A766C !important; }
+
+.dark .aurora-shell .placeholder-slate-500::placeholder,
+.dark .aurora-shell .placeholder-slate-400::placeholder,
+.dark .aurora-shell ::placeholder { color: #7A766C !important; }
+
+.dark .aurora-shell .text-cyan-200,
+.dark .aurora-shell .text-cyan-300,
+.dark .aurora-shell .text-cyan-400 { color: var(--aurora-lavender) !important; }
+
+.dark .aurora-shell .text-amber-300,
+.dark .aurora-shell .text-amber-400 { color: var(--aurora-warn) !important; }
+
+.dark .aurora-shell .text-emerald-300,
+.dark .aurora-shell .text-emerald-400 { color: var(--aurora-up) !important; }
+
+.dark .aurora-shell .text-red-300,
+.dark .aurora-shell .text-red-400,
+.dark .aurora-shell .text-rose-300,
+.dark .aurora-shell .text-rose-400 { color: var(--aurora-down) !important; }
+
+.dark .aurora-shell .text-violet-300,
+.dark .aurora-shell .text-violet-400,
+.dark .aurora-shell .text-purple-300,
+.dark .aurora-shell .text-purple-400 { color: var(--aurora-lavender) !important; }
+
+.dark .aurora-shell [class*="bg-white/[0.0"],
+.dark .aurora-shell .bg-white\/\[0\.022\],
+.dark .aurora-shell .bg-white\/\[0\.03\],
+.dark .aurora-shell .bg-white\/\[0\.034\],
+.dark .aurora-shell .bg-white\/\[0\.04\],
+.dark .aurora-shell .bg-white\/\[0\.045\],
+.dark .aurora-shell .bg-white\/\[0\.05\],
+.dark .aurora-shell .bg-white\/5,
+.dark .aurora-shell .bg-white\/6,
+.dark .aurora-shell .bg-white\/8,
+.dark .aurora-shell .bg-white\/10 {
+  background: var(--surface-1) !important;
+}
+
+.dark .aurora-shell [class*="border-white/[0.0"],
+.dark .aurora-shell .border-white\/5,
+.dark .aurora-shell .border-white\/6,
+.dark .aurora-shell .border-white\/8,
+.dark .aurora-shell .border-white\/10,
+.dark .aurora-shell .border-white\/12,
+.dark .aurora-shell .border-white\/\[0\.08\],
+.dark .aurora-shell .border-white\/\[0\.1\] {
+  border-color: var(--aurora-hair) !important;
+}
+
+.dark .aurora-shell [class*="bg-slate-8"],
+.dark .aurora-shell [class*="bg-slate-9"],
+.dark .aurora-shell .bg-slate-800\/30,
+.dark .aurora-shell .bg-slate-800\/40,
+.dark .aurora-shell .bg-slate-800\/50,
+.dark .aurora-shell .bg-slate-900\/50 {
+  background: var(--surface-2) !important;
+}
+.dark .aurora-shell [class*="border-slate-7"],
+.dark .aurora-shell [class*="border-slate-8"],
+.dark .aurora-shell .border-slate-700\/50 {
+  border-color: var(--aurora-hair) !important;
+}
+
+.dark .aurora-shell .bg-cyan-400\/\[0\.05\],
+.dark .aurora-shell .bg-cyan-400\/\[0\.08\],
+.dark .aurora-shell .bg-cyan-500\/10,
+.dark .aurora-shell .bg-cyan-500\/20,
+.dark .aurora-shell [class*="bg-cyan-"] {
+  background: rgba(201,184,255,0.12) !important;
+}
+.dark .aurora-shell [class*="border-cyan-"] {
+  border-color: rgba(201,184,255,0.28) !important;
+}
+
+.dark .aurora-shell [style*="#0f172a"],
+.dark .aurora-shell [style*="#1a1f35"],
+.dark .aurora-shell [style*="#070a12"],
+.dark .aurora-shell [style*="#0a0d14"],
+.dark .aurora-shell [style*="rgba(255,255,255,0.018)"],
+.dark .aurora-shell [style*="rgba(255,255,255,0.028)"],
+.dark .aurora-shell [style*="rgba(255,255,255,0.03)"],
+.dark .aurora-shell [style*="rgba(255,255,255,0.014)"] {
+  background: var(--surface-1) !important;
+  background-image: none !important;
+  color: var(--aurora-ink);
+}
+
+.dark .aurora-shell [class*="shadow-[0_"] {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 12px 32px rgba(0,0,0,0.35) !important;
+}
+
+.dark .aurora-shell input,
+.dark .aurora-shell textarea,
+.dark .aurora-shell select {
+  background: var(--surface-2);
+  color: var(--aurora-ink);
+  border-color: var(--aurora-hair);
+}
+.dark .aurora-shell input:focus,
+.dark .aurora-shell textarea:focus,
+.dark .aurora-shell select:focus {
+  border-color: var(--aurora-lavender);
+  box-shadow: 0 0 0 3px rgba(201,184,255,0.25);
+  outline: none;
+}
+
+.dark .aurora-shell .glass,
+.dark .aurora-shell .panel,
+.dark .aurora-shell .card-elevated {
+  background: var(--surface-1) !important;
+  border-color: var(--aurora-hair) !important;
+  color: var(--aurora-ink);
+}
+
+.dark .aurora-shell .backdrop-blur-2xl[class*="bg-["] {
+  background: rgba(18,16,26,0.78) !important;
+}
+
+/* Topbar + content card — mode-aware translucent surfaces */
+.tyvera-topbar {
+  background: linear-gradient(180deg, rgba(250,249,247,0.92), rgba(250,249,247,0.76));
+}
+.dark .tyvera-topbar {
+  background: linear-gradient(180deg, rgba(18,16,26,0.92), rgba(18,16,26,0.76));
+}
+
+.tyvera-content-card {
+  box-shadow: 0 1px 2px rgba(15,15,18,0.04), 0 12px 40px rgba(15,15,18,0.05);
+}
+.dark .tyvera-content-card {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 12px 40px rgba(0,0,0,0.35);
+}
+
+/* Sidebar nav items — dual-mode active pill */
+.nav-active-aware {
+  color: var(--aurora-sub);
+  border: 1px solid transparent;
+  background: transparent;
+}
+.nav-active-aware[data-active="true"] {
+  background: var(--aurora-ink);
+  color: var(--aurora-cream);
+  border-color: var(--aurora-ink);
+}
+.nav-active-aware .nav-icon {
+  color: var(--aurora-sub);
+}
+.nav-active-aware[data-active="true"] .nav-icon {
+  color: var(--aurora-cream);
+}
+.nav-active-aware .nav-spark {
+  color: var(--aurora-lavender);
+}
+.nav-active-aware:hover:not([data-active="true"]) {
+  background: var(--surface-2);
+  color: var(--aurora-ink);
 }
