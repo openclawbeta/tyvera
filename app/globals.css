@@ -8,37 +8,110 @@
   100% { transform: translateX(-50%); }
 }
 
-@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&family=JetBrains+Mono:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Serif&display=swap");
+
+/* ─────────────────────────────────────────────────────────────
+   AURORA THEME — warm cream canvas + aurora pastels
+   Kept the same CSS variable names so existing components
+   inherit the new look without code changes.
+   ───────────────────────────────────────────────────────────── */
 
 @layer base {
   :root {
-    --background: 222 47% 4%;
-    --foreground: 213 31% 91%;
-    --card: 222 47% 5.5%;
-    --card-foreground: 213 31% 91%;
-    --popover: 222 47% 5%;
-    --popover-foreground: 213 31% 91%;
-    --primary: 189 94% 53%;
-    --primary-foreground: 222 47% 4%;
-    --secondary: 222 47% 10%;
-    --secondary-foreground: 213 31% 91%;
-    --muted: 222 47% 8%;
-    --muted-foreground: 215 20% 42%;
-    --accent: 222 47% 10%;
-    --accent-foreground: 213 31% 91%;
-    --destructive: 346 87% 60%;
-    --destructive-foreground: 213 31% 91%;
-    --border: 222 47% 11%;
-    --input: 222 47% 9%;
-    --ring: 189 94% 53%;
-    --radius: 0.75rem;
+    --background: 42 24% 97%;          /* #FAF9F7 cream */
+    --foreground: 240 8% 7%;           /* #0F0F12 ink */
+    --card: 0 0% 100%;                 /* #FFFFFF */
+    --card-foreground: 240 8% 7%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 8% 7%;
+
+    --primary: 240 8% 7%;              /* ink buttons */
+    --primary-foreground: 42 24% 97%;
+    --secondary: 42 14% 93%;           /* #F2F0EB chip */
+    --secondary-foreground: 240 8% 7%;
+
+    --muted: 42 14% 93%;
+    --muted-foreground: 32 6% 40%;     /* #6B6860 */
+
+    --accent: 264 100% 86%;            /* #C9B8FF lavender */
+    --accent-foreground: 240 8% 7%;
+
+    --destructive: 5 62% 47%;          /* #C0392B */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 36 18% 92%;              /* #ECEBE7 */
+    --input: 36 18% 92%;
+    --ring: 264 70% 68%;               /* lavender focus */
+    --radius: 1rem;                    /* 16px */
 
     /* Surface tokens */
-    --surface-0: #04060d;
-    --surface-1: #070a12;
-    --surface-2: #090c17;
-    --surface-3: #0c1020;
-    --surface-elevated: #0f1428;
+    --surface-0: #FAF9F7;
+    --surface-1: #FFFFFF;
+    --surface-2: #F7F5F1;
+    --surface-3: #F2F0EB;
+    --surface-elevated: #FFFFFF;
+
+    /* Aurora palette */
+    --aurora-cream: #FAF9F7;
+    --aurora-ink: #0F0F12;
+    --aurora-sub: #6B6860;
+    --aurora-hair: #ECEBE7;
+    --aurora-lavender: #C9B8FF;
+    --aurora-peach: #FFD7BA;
+    --aurora-mint: #A7F0D2;
+    --aurora-up: #0B8F5A;
+    --aurora-down: #C0392B;
+    --aurora-warn: #B88A00;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     AURORA DARK — warm deep canvas + brightened pastels
+     Activated by `html.dark` (toggled via ThemeToggle component)
+     ═══════════════════════════════════════════════════════════════ */
+  .dark {
+    --background: 252 20% 8%;          /* #12101A */
+    --foreground: 42 24% 92%;          /* #F1EEE7 */
+    --card: 254 16% 13%;               /* #1E1B27 */
+    --card-foreground: 42 24% 92%;
+    --popover: 254 16% 13%;
+    --popover-foreground: 42 24% 92%;
+
+    --primary: 42 24% 92%;             /* inverted: bright text-style buttons */
+    --primary-foreground: 252 20% 8%;
+    --secondary: 254 14% 18%;          /* #2A2733 chip */
+    --secondary-foreground: 42 24% 92%;
+
+    --muted: 254 14% 18%;
+    --muted-foreground: 38 8% 62%;     /* #A39E94 */
+
+    --accent: 264 100% 86%;            /* lavender stays */
+    --accent-foreground: 252 20% 8%;
+
+    --destructive: 5 95% 71%;          /* #FF7A6B brighter for dark */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 254 14% 20%;             /* #2E2B37 */
+    --input: 254 14% 20%;
+    --ring: 264 100% 78%;
+
+    /* Surface tokens */
+    --surface-0: #12101A;
+    --surface-1: #1E1B27;
+    --surface-2: #1A1822;
+    --surface-3: #24212D;
+    --surface-elevated: #24212D;
+
+    /* Aurora palette — dark variants */
+    --aurora-cream: #12101A;           /* canvas (name kept for continuity) */
+    --aurora-ink: #F1EEE7;             /* text primary */
+    --aurora-sub: #A39E94;             /* text secondary */
+    --aurora-hair: #2E2B37;            /* borders */
+    --aurora-lavender: #C9B8FF;
+    --aurora-peach: #FFB894;
+    --aurora-mint: #8ED9B6;
+    --aurora-up: #4DD096;
+    --aurora-down: #FF7A6B;
+    --aurora-warn: #E5B84A;
   }
 }
 
@@ -48,321 +121,271 @@
   }
 
   body {
-    background-color: var(--surface-1);
-    @apply text-slate-100 antialiased;
-    font-family: "Inter", system-ui, sans-serif;
-    font-feature-settings: "cv11", "ss01", "ss03";
+    background-color: var(--aurora-cream);
+    color: var(--aurora-ink);
+    font-family: "Space Grotesk", "Inter", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Prevent horizontal overflow on all screen sizes */
     overflow-x: hidden;
+    transition: background-color 220ms ease, color 220ms ease;
   }
 
   html {
-    color-scheme: dark;
+    color-scheme: light;
     scroll-behavior: smooth;
     overflow-x: hidden;
   }
 
-  /* Ultra-thin scrollbar */
+  /* Warm thin scrollbar */
   ::-webkit-scrollbar {
-    width: 3px;
-    height: 3px;
+    width: 8px;
+    height: 8px;
   }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
+  ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(15,15,18,0.12);
     border-radius: 100px;
   }
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.14);
-  }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(15,15,18,0.22); }
 
-  /* Selection */
+  /* Selection — lavender */
   ::selection {
-    background: rgba(34, 211, 238, 0.18);
-    color: #67e8f9;
+    background: rgba(201,184,255,0.45);
+    color: #0F0F12;
   }
 
-  /* Focus visible */
+  /* Focus ring — warm */
   :focus-visible {
-    outline: 1.5px solid rgba(34, 211, 238, 0.5);
+    outline: 1.5px solid rgba(139,92,246,0.55);
     outline-offset: 2px;
-    border-radius: 6px;
+    border-radius: 8px;
+  }
+
+  .serif, .aurora-serif {
+    font-family: "Instrument Serif", serif;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -0.01em;
   }
 }
 
 @layer components {
 
-  /* GLASS SURFACES */
+  /* ─────────── SURFACES (rebranded for Aurora) ─────────── */
   .glass {
     @apply rounded-2xl;
-    background: linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.032) 0%,
-      rgba(255, 255, 255, 0.018) 100%
-    );
-    border: 1px solid rgba(255, 255, 255, 0.072);
+    background: var(--surface-1);
+    border: 1px solid var(--aurora-hair);
     box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.045) inset,
-      0 -1px 0 rgba(0, 0, 0, 0.3) inset,
-      0 4px 24px rgba(0, 0, 0, 0.28),
-      0 1px 4px rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(16px) saturate(1.4);
+      0 1px 0 rgba(16,16,20,0.02),
+      0 8px 28px -18px rgba(16,16,20,0.10);
   }
-
   .glass:hover {
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: #D8D5CE;
     box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.055) inset,
-      0 -1px 0 rgba(0, 0, 0, 0.3) inset,
-      0 8px 32px rgba(0, 0, 0, 0.32),
-      0 1px 4px rgba(0, 0, 0, 0.2);
+      0 1px 0 rgba(16,16,20,0.02),
+      0 14px 36px -18px rgba(16,16,20,0.14);
   }
 
   .glass-lg {
-    @apply rounded-2xl;
-    background: linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.04) 0%,
-      rgba(255, 255, 255, 0.022) 100%
-    );
-    border: 1px solid rgba(255, 255, 255, 0.085);
+    @apply rounded-3xl;
+    background: var(--surface-1);
+    border: 1px solid var(--aurora-hair);
     box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.06) inset,
-      0 -1px 0 rgba(0, 0, 0, 0.35) inset,
-      0 12px 48px rgba(0, 0, 0, 0.42),
-      0 2px 8px rgba(0, 0, 0, 0.25);
-    backdrop-filter: blur(24px) saturate(1.5);
+      0 1px 0 rgba(16,16,20,0.02),
+      0 20px 60px -30px rgba(16,16,20,0.15);
   }
 
-  /* Panel */
   .panel {
     @apply rounded-2xl;
-    background: rgba(11, 15, 28, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.065);
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.04) inset,
-      0 4px 24px rgba(0, 0, 0, 0.3);
+    background: var(--surface-1);
+    border: 1px solid var(--aurora-hair);
+    box-shadow: 0 1px 0 rgba(16,16,20,0.02);
   }
 
-  /* Elevated card */
   .card-elevated {
     @apply rounded-2xl;
-    background: linear-gradient(
-      160deg,
-      rgba(17, 22, 38, 0.95) 0%,
-      rgba(10, 14, 26, 0.95) 100%
-    );
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #FFFFFF;
+    border: 1px solid #ECEBE7;
     box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.05) inset,
-      0 0 0 1px rgba(0, 0, 0, 0.4),
-      0 8px 32px rgba(0, 0, 0, 0.4);
+      0 1px 0 rgba(16,16,20,0.02),
+      0 12px 40px -22px rgba(16,16,20,0.14);
   }
 
-  /* GRADIENT TEXT */
-  .text-gradient-cyan {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #67e8f9 0%, #22d3ee 45%, #38bdf8 100%);
+  /* Aurora-tinted card (for banners) */
+  .aurora-banner {
+    @apply rounded-2xl;
+    background:
+      radial-gradient(ellipse 60% 100% at 90% 50%, #FFE5D0 0%, transparent 60%),
+      radial-gradient(ellipse 80% 100% at 10% 100%, #E4DBFF 0%, transparent 55%),
+      #FFFFFF;
+    border: 1px solid #ECEBE7;
   }
 
-  .text-gradient-violet {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #c4b5fd 0%, #8b5cf6 50%, #a78bfa 100%);
-  }
-
-  .text-gradient-hero {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(160deg, #f8fafc 0%, #ffffff 40%, #bae6fd 100%);
-  }
-
+  /* ─────────── GRADIENT TEXT ─────────── */
+  .text-gradient-cyan,
+  .text-gradient-violet,
+  .text-gradient-hero,
   .text-gradient-gold {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #fde68a 0%, #f59e0b 50%, #fbbf24 100%);
   }
+  .text-gradient-cyan   { background-image: linear-gradient(135deg, #0F0F12 0%, #6B6860 100%); }
+  .text-gradient-violet { background-image: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%); }
+  .text-gradient-hero   { background-image: linear-gradient(135deg, #0F0F12 0%, #26252A 55%, #6B6860 100%); }
+  .text-gradient-gold   { background-image: linear-gradient(135deg, #B88A00 0%, #F0B90B 100%); }
 
-  /* SKELETON */
+  /* ─────────── SKELETON ─────────── */
   .skeleton {
     background: linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0.025) 0%,
-      rgba(255, 255, 255, 0.06) 50%,
-      rgba(255, 255, 255, 0.025) 100%
+      rgba(15,15,18,0.04) 0%,
+      rgba(15,15,18,0.09) 50%,
+      rgba(15,15,18,0.04) 100%
     );
     background-size: 200% 100%;
     @apply animate-shimmer rounded-lg;
   }
 
-  /* NAVIGATION */
+  /* ─────────── NAVIGATION ─────────── */
   .nav-item {
-    @apply flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] font-medium text-slate-500
-    transition-all duration-200 cursor-pointer select-none relative;
+    @apply flex items-center gap-3 px-3 py-2 rounded-full text-[13px] font-medium transition-all duration-200 cursor-pointer select-none relative;
+    color: #6B6860;
     letter-spacing: -0.005em;
   }
-
   .nav-item:hover {
-    @apply text-slate-200;
-    background: rgba(255, 255, 255, 0.045);
+    color: #0F0F12;
+    background: #F2F0EB;
   }
-
   .nav-item.active {
-    color: #a5f3fc;
-    background: linear-gradient(
-      135deg,
-      rgba(34, 211, 238, 0.1) 0%,
-      rgba(34, 211, 238, 0.05) 100%
-    );
-    border: 1px solid rgba(34, 211, 238, 0.18);
-    box-shadow: 0 0 12px rgba(34, 211, 238, 0.06);
+    color: #FAF9F7;
+    background: #0F0F12;
+    border: 1px solid #0F0F12;
   }
+  .nav-item.active svg { color: #FAF9F7; }
 
-  .nav-item.active svg {
-    color: #22d3ee;
-  }
+  /* ─────────── METRICS ─────────── */
+  .metric-up   { color: #0B8F5A; }
+  .metric-down { color: #C0392B; }
 
-  /* METRICS */
-  .metric-up { @apply text-emerald-400; }
-  .metric-down { @apply text-rose-400; }
-
-  /* DATA TABLE ROWS */
+  /* ─────────── DATA TABLE ─────────── */
   .data-row {
-    @apply border-b border-white/[0.035] transition-colors duration-150;
+    @apply transition-colors duration-150;
+    border-bottom: 1px solid #ECEBE7;
   }
+  .data-row:hover { background: #F7F5F1; }
+  .data-row:last-child { border-bottom: 0; }
 
-  .data-row:hover {
-    background: rgba(255, 255, 255, 0.02);
-  }
-
-  .data-row:last-child {
-    @apply border-b-0;
-  }
-
-  /* Table header cells */
   .th {
-    @apply text-[10px] font-semibold text-slate-600 uppercase tracking-widest py-3 px-4;
+    @apply text-[10px] font-semibold uppercase tracking-widest py-3 px-4;
+    color: #6B6860;
     letter-spacing: 0.08em;
+    font-family: "JetBrains Mono", monospace;
   }
-
   .td {
-    @apply text-xs text-slate-300 py-3 px-4;
+    @apply text-xs py-3 px-4;
+    color: #0F0F12;
   }
 
-  /* BUTTONS */
+  /* ─────────── BUTTONS ─────────── */
   .btn-primary {
-    @apply inline-flex items-center gap-2 rounded-xl font-semibold text-sm
-    transition-all duration-200 cursor-pointer select-none;
+    @apply inline-flex items-center gap-2 font-semibold text-sm transition-all duration-200 cursor-pointer select-none;
     padding: 10px 20px;
-    background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%);
-    color: #04060d;
-    box-shadow:
-      0 0 0 1px rgba(34, 211, 238, 0.4),
-      0 4px 16px rgba(34, 211, 238, 0.2),
-      0 1px 0 rgba(255, 255, 255, 0.2) inset;
+    border-radius: 999px;
+    background: #0F0F12;
+    color: #FAF9F7;
+    box-shadow: 0 1px 0 rgba(16,16,20,0.05), 0 4px 16px -8px rgba(16,16,20,0.25);
   }
-
   .btn-primary:hover {
-    background: linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%);
-    box-shadow:
-      0 0 0 1px rgba(34, 211, 238, 0.5),
-      0 6px 20px rgba(34, 211, 238, 0.28),
-      0 1px 0 rgba(255, 255, 255, 0.25) inset;
+    background: #26252A;
     transform: translateY(-0.5px);
   }
-
-  .btn-primary:active {
-    transform: translateY(0);
-    box-shadow:
-      0 0 0 1px rgba(34, 211, 238, 0.35),
-      0 2px 8px rgba(34, 211, 238, 0.15);
-  }
+  .btn-primary:active { transform: translateY(0); }
 
   .btn-secondary {
-    @apply inline-flex items-center gap-2 rounded-xl font-medium text-sm text-slate-200
-    transition-all duration-200 cursor-pointer select-none;
+    @apply inline-flex items-center gap-2 font-medium text-sm transition-all duration-200 cursor-pointer select-none;
     padding: 10px 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+    border-radius: 999px;
+    background: #FFFFFF;
+    color: #0F0F12;
+    border: 1px solid #ECEBE7;
   }
-
   .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.16);
+    background: #FFFFFF;
+    border-color: #D8D5CE;
     transform: translateY(-0.5px);
   }
 
   .btn-ghost {
-    @apply inline-flex items-center gap-2 px-3 py-2 rounded-lg text-slate-500 text-xs
-    font-medium transition-all duration-150 cursor-pointer;
+    @apply inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium transition-all duration-150 cursor-pointer;
+    color: #6B6860;
   }
-
   .btn-ghost:hover {
-    @apply text-slate-200;
-    background: rgba(255, 255, 255, 0.045);
+    color: #0F0F12;
+    background: #F2F0EB;
   }
 
-  /* Danger variant */
   .btn-danger {
-    @apply inline-flex items-center gap-2 rounded-xl font-medium text-sm text-rose-300
-    transition-all duration-200 cursor-pointer;
+    @apply inline-flex items-center gap-2 font-medium text-sm transition-all duration-200 cursor-pointer;
     padding: 10px 20px;
-    background: rgba(244, 63, 94, 0.08);
-    border: 1px solid rgba(244, 63, 94, 0.2);
+    border-radius: 999px;
+    background: #FDECEA;
+    color: #C0392B;
+    border: 1px solid #F6BDB6;
   }
-
   .btn-danger:hover {
-    background: rgba(244, 63, 94, 0.14);
-    border-color: rgba(244, 63, 94, 0.3);
+    background: #F9D9D5;
+    border-color: #C0392B;
   }
 
-  /* CYAN GLOW BORDER */
+  /* ─────────── CHIP / PILL ─────────── */
+  .chip {
+    background: #F2F0EB;
+    border: 1px solid #ECEBE7;
+    border-radius: 999px;
+  }
+  .pill { border-radius: 999px; }
+
+  /* ─────────── Legacy cyan-ring (selected state, now lavender) ─────────── */
   .cyan-glow-border {
-    box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.28), 0 0 24px rgba(34, 211, 238, 0.1);
+    box-shadow: 0 0 0 1px rgba(139,92,246,0.35);
   }
-
   .cyan-ring-selected {
-    border-color: rgba(34, 211, 238, 0.35) !important;
-    box-shadow:
-      0 0 0 1px rgba(34, 211, 238, 0.2),
-      0 0 24px rgba(34, 211, 238, 0.08),
-      0 1px 0 rgba(255, 255, 255, 0.05) inset;
-    background: rgba(34, 211, 238, 0.04) !important;
+    border-color: rgba(139,92,246,0.45) !important;
+    box-shadow: 0 0 0 1px rgba(139,92,246,0.25);
+    background: rgba(201,184,255,0.10) !important;
   }
 
-  /* TAGS / BADGES */
+  /* ─────────── TAGS / BADGES ─────────── */
   .tag {
-    @apply inline-flex items-center gap-1.5 rounded-lg text-[10px] font-semibold;
-    padding: 3px 8px;
+    @apply inline-flex items-center gap-1.5 text-[10px] font-semibold;
+    padding: 3px 10px;
+    border-radius: 999px;
     letter-spacing: 0.02em;
+    font-family: "JetBrains Mono", monospace;
   }
+  .tag-cyan    { @apply tag; background: #E4DBFF; color: #5B3FBF; border: 1px solid #C9B8FF; }
+  .tag-violet  { @apply tag; background: #E4DBFF; color: #5B3FBF; border: 1px solid #C9B8FF; }
+  .tag-emerald { @apply tag; background: #E5F7EE; color: #0B8F5A; border: 1px solid #A7F0D2; }
+  .tag-amber   { @apply tag; background: #FFF6DC; color: #B88A00; border: 1px solid #F0D890; }
+  .tag-rose    { @apply tag; background: #FDECEA; color: #C0392B; border: 1px solid #F6BDB6; }
+  .tag-slate   { @apply tag; background: #F2F0EB; color: #6B6860; border: 1px solid #ECEBE7; }
 
-  .tag-cyan    { @apply tag bg-cyan-400/[0.1] text-cyan-300 border border-cyan-400/[0.22]; }
-  .tag-violet  { @apply tag bg-violet-400/[0.1] text-violet-300 border border-violet-400/[0.22]; }
-  .tag-emerald { @apply tag bg-emerald-400/[0.1] text-emerald-300 border border-emerald-400/[0.22]; }
-  .tag-amber   { @apply tag bg-amber-400/[0.1] text-amber-300 border border-amber-400/[0.22]; }
-  .tag-rose    { @apply tag bg-rose-400/[0.1] text-rose-300 border border-rose-400/[0.22]; }
-  .tag-slate   { @apply tag bg-white/[0.05] text-slate-400 border border-white/[0.09]; }
-
-  /* DIVIDER */
+  /* ─────────── DIVIDER ─────────── */
   .divider {
     @apply h-px w-full;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0.06) 70%, transparent);
+    background: #ECEBE7;
   }
 
-  /* GLOW ORBS */
+  /* ─────────── GLOW ORBS (muted on cream) ─────────── */
   .glow-orb-cyan {
-    background: radial-gradient(ellipse, rgba(34, 211, 238, 0.12) 0%, transparent 70%);
+    background: radial-gradient(ellipse, rgba(201,184,255,0.35) 0%, transparent 70%);
   }
-
   .glow-orb-violet {
-    background: radial-gradient(ellipse, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+    background: radial-gradient(ellipse, rgba(255,215,186,0.35) 0%, transparent 70%);
   }
 }
 
-/* PAGE TRANSITION */
+/* ─────────── PAGE TRANSITION ─────────── */
 .page-enter {
   animation: fadeInUp 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
@@ -382,34 +405,437 @@
   100% { transform: translate3d(-50%, 0, 0); }
 }
 
-.animate-pulse-dot {
-  animation: pulseDot 1.6s ease-in-out infinite;
-}
+.animate-pulse-dot { animation: pulseDot 1.6s ease-in-out infinite; }
+.ticker-track { animation: tickerMove 64s linear infinite; }
+.ticker-track:hover { animation-play-state: paused; }
 
-.ticker-track {
-  animation: tickerMove 64s linear infinite;
-}
-
-.ticker-track:hover {
-  animation-play-state: paused;
-}
-
-/* CHART OVERRIDES */
+/* ─────────── CHART OVERRIDES (warm grid) ─────────── */
 .recharts-tooltip-wrapper { outline: none !important; }
-.recharts-tooltip-cursor  { fill: rgba(255,255,255,0.03) !important; }
+.recharts-tooltip-cursor  { fill: rgba(15,15,18,0.04) !important; }
 .recharts-cartesian-grid-horizontal line,
 .recharts-cartesian-grid-vertical line {
-  stroke: rgba(255,255,255,0.035) !important;
+  stroke: rgba(15,15,18,0.06) !important;
 }
 
-/* NOISE TEXTURE OVERLAY */
+/* ─────────── AURORA BACKGROUNDS (utility) ─────────── */
+.aurora-bg {
+  background:
+    radial-gradient(ellipse 60% 80% at 15% 20%, #FFD7BA 0%, transparent 55%),
+    radial-gradient(ellipse 70% 60% at 85% 25%, #C9B8FF 0%, transparent 60%),
+    radial-gradient(ellipse 70% 70% at 50% 95%, #A7F0D2 0%, transparent 55%),
+    #FAF9F7;
+}
+.aurora-soft {
+  background:
+    radial-gradient(ellipse 50% 60% at 100% 0%, #FFE5D0 0%, transparent 55%),
+    radial-gradient(ellipse 60% 60% at 0% 100%, #E4DBFF 0%, transparent 55%),
+    #FFFFFF;
+}
+.aurora-pill-grad {
+  background: linear-gradient(135deg, #C9B8FF 0%, #FFD7BA 50%, #A7F0D2 100%);
+}
+
+/* Dark mode — dim the pastel wash and swap cream canvas to dark */
+.dark .aurora-bg {
+  background:
+    radial-gradient(ellipse 60% 80% at 15% 20%, rgba(255, 215, 186, 0.18) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 60% at 85% 25%, rgba(201, 184, 255, 0.22) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 70% at 50% 95%, rgba(167, 240, 210, 0.14) 0%, transparent 55%),
+    #12101A;
+}
+.dark .aurora-soft {
+  background:
+    radial-gradient(ellipse 50% 60% at 100% 0%, rgba(255, 229, 208, 0.12) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 60% at 0% 100%, rgba(228, 219, 255, 0.16) 0%, transparent 55%),
+    #1E1B27;
+}
+
+/* ─────────── NOISE OVERLAY (lighter for cream) ─────────── */
 .noise::after {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
   background-size: 200px 200px;
   pointer-events: none;
   border-radius: inherit;
-  opacity: 0.5;
-  }
+  opacity: 0.35;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   AURORA SHELL — scoped overrides for legacy dark-theme tailwind
+   classes inside the authenticated app. Pages still use class names
+   like `text-slate-300`, `bg-white/[0.03]`, `border-white/8`, etc.
+   These rules rebind them to the warm palette without rewriting
+   every page file. Scoped with `.aurora-shell` so landing /login /
+   signup (outside the shell) are unaffected.
+   ═══════════════════════════════════════════════════════════════ */
+
+.aurora-shell {
+  color: var(--aurora-ink);
+}
+
+/* Text colors — dark-theme slate/white → ink + sub */
+.aurora-shell .text-white,
+.aurora-shell .text-slate-50,
+.aurora-shell .text-slate-100,
+.aurora-shell .text-slate-200 { color: var(--aurora-ink) !important; }
+
+.aurora-shell .text-slate-300 { color: #2B2A26 !important; }
+.aurora-shell .text-slate-400,
+.aurora-shell .text-slate-500 { color: var(--aurora-sub) !important; }
+.aurora-shell .text-slate-600,
+.aurora-shell .text-slate-700 { color: #8A8578 !important; }
+
+/* Placeholder text */
+.aurora-shell .placeholder-slate-500::placeholder,
+.aurora-shell .placeholder-slate-400::placeholder,
+.aurora-shell ::placeholder { color: #8A8578 !important; }
+
+/* Cyan accents (primary action) → ink or lavender */
+.aurora-shell .text-cyan-200,
+.aurora-shell .text-cyan-300,
+.aurora-shell .text-cyan-400 { color: #5B4BC9 !important; }
+
+/* Amber accents → warm brown */
+.aurora-shell .text-amber-300,
+.aurora-shell .text-amber-400 { color: #B88A00 !important; }
+
+/* Emerald accents → aurora up */
+.aurora-shell .text-emerald-300,
+.aurora-shell .text-emerald-400 { color: var(--aurora-up) !important; }
+
+/* Red accents → aurora down */
+.aurora-shell .text-red-300,
+.aurora-shell .text-red-400,
+.aurora-shell .text-rose-300,
+.aurora-shell .text-rose-400 { color: var(--aurora-down) !important; }
+
+/* Violet → lavender */
+.aurora-shell .text-violet-300,
+.aurora-shell .text-violet-400,
+.aurora-shell .text-purple-300,
+.aurora-shell .text-purple-400 { color: #5B4BC9 !important; }
+
+/* Semi-transparent white surfaces — become soft cream panels */
+.aurora-shell [class*="bg-white/[0.0"],
+.aurora-shell .bg-white\/\[0\.022\],
+.aurora-shell .bg-white\/\[0\.03\],
+.aurora-shell .bg-white\/\[0\.034\],
+.aurora-shell .bg-white\/\[0\.04\],
+.aurora-shell .bg-white\/\[0\.045\],
+.aurora-shell .bg-white\/\[0\.05\],
+.aurora-shell .bg-white\/5,
+.aurora-shell .bg-white\/6,
+.aurora-shell .bg-white\/8,
+.aurora-shell .bg-white\/10 {
+  background: #FFFFFF !important;
+}
+
+/* Semi-transparent white borders — become hair border */
+.aurora-shell [class*="border-white/[0.0"],
+.aurora-shell .border-white\/5,
+.aurora-shell .border-white\/6,
+.aurora-shell .border-white\/8,
+.aurora-shell .border-white\/10,
+.aurora-shell .border-white\/12,
+.aurora-shell .border-white\/\[0\.08\],
+.aurora-shell .border-white\/\[0\.1\] {
+  border-color: var(--aurora-hair) !important;
+}
+
+/* Slate fills (skeleton, inputs, buttons) */
+.aurora-shell [class*="bg-slate-8"],
+.aurora-shell [class*="bg-slate-9"],
+.aurora-shell .bg-slate-800\/30,
+.aurora-shell .bg-slate-800\/40,
+.aurora-shell .bg-slate-800\/50,
+.aurora-shell .bg-slate-900\/50 {
+  background: #F2F0EB !important;
+}
+.aurora-shell [class*="border-slate-7"],
+.aurora-shell [class*="border-slate-8"],
+.aurora-shell .border-slate-700\/50 {
+  border-color: var(--aurora-hair) !important;
+}
+
+/* Cyan/blue fills → lavender tint */
+.aurora-shell .bg-cyan-400\/\[0\.05\],
+.aurora-shell .bg-cyan-400\/\[0\.08\],
+.aurora-shell .bg-cyan-500\/10,
+.aurora-shell .bg-cyan-500\/20,
+.aurora-shell [class*="bg-cyan-"] {
+  background: #EFE8FF !important;
+}
+.aurora-shell [class*="border-cyan-"] {
+  border-color: #D9CEFF !important;
+}
+
+/* Hero/page chrome dark fills (hardcoded inline + tailwind arbitrary) */
+.aurora-shell [style*="#0f172a"],
+.aurora-shell [style*="#1a1f35"],
+.aurora-shell [style*="#070a12"],
+.aurora-shell [style*="#0a0d14"],
+.aurora-shell [style*="rgba(255,255,255,0.018)"],
+.aurora-shell [style*="rgba(255,255,255,0.028)"],
+.aurora-shell [style*="rgba(255,255,255,0.03)"],
+.aurora-shell [style*="rgba(255,255,255,0.014)"] {
+  background: #FFFFFF !important;
+  background-image: none !important;
+  color: var(--aurora-ink);
+}
+
+/* Heavy dark drop shadows — soften */
+.aurora-shell [class*="shadow-[0_"],
+.aurora-shell .shadow-\[0_18px_40px_rgba\(0\,0\,0\,0\.28\)\],
+.aurora-shell .shadow-\[0_30px_100px_rgba\(0\,0\,0\,0\.42\)\,0_0_0_1px_rgba\(255\,255\,255\,0\.025\)_inset\,0_0_34px_rgba\(79\,124\,255\,0\.04\)\] {
+  box-shadow: 0 1px 2px rgba(15,15,18,0.04), 0 12px 32px rgba(15,15,18,0.05) !important;
+}
+
+/* Generic inline `color: "#94a3b8"` (slate-400) — handled via override above */
+
+/* Inputs & form fields */
+.aurora-shell input,
+.aurora-shell textarea,
+.aurora-shell select {
+  background: #FFFFFF;
+  color: var(--aurora-ink);
+  border-color: var(--aurora-hair);
+}
+.aurora-shell input:focus,
+.aurora-shell textarea:focus,
+.aurora-shell select:focus {
+  border-color: #C9B8FF;
+  box-shadow: 0 0 0 3px rgba(201,184,255,0.25);
+  outline: none;
+}
+
+/* Cards already defined — reinforce for .glass/.panel nested in shell */
+.aurora-shell .glass,
+.aurora-shell .panel,
+.aurora-shell .card-elevated {
+  background: #FFFFFF !important;
+  border-color: var(--aurora-hair) !important;
+  color: var(--aurora-ink);
+}
+
+/* Code blocks remain dark on purpose (dev docs pattern) */
+.aurora-shell pre,
+.aurora-shell code.dark,
+.aurora-shell .code-dark {
+  color: #e8e5dd;
+}
+
+/* Backdrop blur divs that were dark — strip */
+.aurora-shell .backdrop-blur-2xl[class*="bg-["] {
+  background: rgba(250,249,247,0.78) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   AURORA SHELL — DARK MODE counterpart
+   Re-maps the same legacy classes to dark Aurora palette.
+   ═══════════════════════════════════════════════════════════════ */
+
+.dark .aurora-shell { color: var(--aurora-ink); }
+
+.dark .aurora-shell .text-white,
+.dark .aurora-shell .text-slate-50,
+.dark .aurora-shell .text-slate-100,
+.dark .aurora-shell .text-slate-200 { color: var(--aurora-ink) !important; }
+
+.dark .aurora-shell .text-slate-300 { color: #D7D2C8 !important; }
+.dark .aurora-shell .text-slate-400,
+.dark .aurora-shell .text-slate-500 { color: var(--aurora-sub) !important; }
+.dark .aurora-shell .text-slate-600,
+.dark .aurora-shell .text-slate-700 { color: #7A766C !important; }
+
+.dark .aurora-shell .placeholder-slate-500::placeholder,
+.dark .aurora-shell .placeholder-slate-400::placeholder,
+.dark .aurora-shell ::placeholder { color: #7A766C !important; }
+
+.dark .aurora-shell .text-cyan-200,
+.dark .aurora-shell .text-cyan-300,
+.dark .aurora-shell .text-cyan-400 { color: var(--aurora-lavender) !important; }
+
+.dark .aurora-shell .text-amber-300,
+.dark .aurora-shell .text-amber-400 { color: var(--aurora-warn) !important; }
+
+.dark .aurora-shell .text-emerald-300,
+.dark .aurora-shell .text-emerald-400 { color: var(--aurora-up) !important; }
+
+.dark .aurora-shell .text-red-300,
+.dark .aurora-shell .text-red-400,
+.dark .aurora-shell .text-rose-300,
+.dark .aurora-shell .text-rose-400 { color: var(--aurora-down) !important; }
+
+.dark .aurora-shell .text-violet-300,
+.dark .aurora-shell .text-violet-400,
+.dark .aurora-shell .text-purple-300,
+.dark .aurora-shell .text-purple-400 { color: var(--aurora-lavender) !important; }
+
+.dark .aurora-shell [class*="bg-white/[0.0"],
+.dark .aurora-shell .bg-white\/\[0\.022\],
+.dark .aurora-shell .bg-white\/\[0\.03\],
+.dark .aurora-shell .bg-white\/\[0\.034\],
+.dark .aurora-shell .bg-white\/\[0\.04\],
+.dark .aurora-shell .bg-white\/\[0\.045\],
+.dark .aurora-shell .bg-white\/\[0\.05\],
+.dark .aurora-shell .bg-white\/5,
+.dark .aurora-shell .bg-white\/6,
+.dark .aurora-shell .bg-white\/8,
+.dark .aurora-shell .bg-white\/10 {
+  background: var(--surface-1) !important;
+}
+
+.dark .aurora-shell [class*="border-white/[0.0"],
+.dark .aurora-shell .border-white\/5,
+.dark .aurora-shell .border-white\/6,
+.dark .aurora-shell .border-white\/8,
+.dark .aurora-shell .border-white\/10,
+.dark .aurora-shell .border-white\/12,
+.dark .aurora-shell .border-white\/\[0\.08\],
+.dark .aurora-shell .border-white\/\[0\.1\] {
+  border-color: var(--aurora-hair) !important;
+}
+
+.dark .aurora-shell [class*="bg-slate-8"],
+.dark .aurora-shell [class*="bg-slate-9"],
+.dark .aurora-shell .bg-slate-800\/30,
+.dark .aurora-shell .bg-slate-800\/40,
+.dark .aurora-shell .bg-slate-800\/50,
+.dark .aurora-shell .bg-slate-900\/50 {
+  background: var(--surface-2) !important;
+}
+.dark .aurora-shell [class*="border-slate-7"],
+.dark .aurora-shell [class*="border-slate-8"],
+.dark .aurora-shell .border-slate-700\/50 {
+  border-color: var(--aurora-hair) !important;
+}
+
+.dark .aurora-shell .bg-cyan-400\/\[0\.05\],
+.dark .aurora-shell .bg-cyan-400\/\[0\.08\],
+.dark .aurora-shell .bg-cyan-500\/10,
+.dark .aurora-shell .bg-cyan-500\/20,
+.dark .aurora-shell [class*="bg-cyan-"] {
+  background: rgba(201,184,255,0.12) !important;
+}
+.dark .aurora-shell [class*="border-cyan-"] {
+  border-color: rgba(201,184,255,0.28) !important;
+}
+
+.dark .aurora-shell [style*="#0f172a"],
+.dark .aurora-shell [style*="#1a1f35"],
+.dark .aurora-shell [style*="#070a12"],
+.dark .aurora-shell [style*="#0a0d14"],
+.dark .aurora-shell [style*="rgba(255,255,255,0.018)"],
+.dark .aurora-shell [style*="rgba(255,255,255,0.028)"],
+.dark .aurora-shell [style*="rgba(255,255,255,0.03)"],
+.dark .aurora-shell [style*="rgba(255,255,255,0.014)"] {
+  background: var(--surface-1) !important;
+  background-image: none !important;
+  color: var(--aurora-ink);
+}
+
+.dark .aurora-shell [class*="shadow-[0_"] {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 12px 32px rgba(0,0,0,0.35) !important;
+}
+
+.dark .aurora-shell input,
+.dark .aurora-shell textarea,
+.dark .aurora-shell select {
+  background: var(--surface-2);
+  color: var(--aurora-ink);
+  border-color: var(--aurora-hair);
+}
+.dark .aurora-shell input:focus,
+.dark .aurora-shell textarea:focus,
+.dark .aurora-shell select:focus {
+  border-color: var(--aurora-lavender);
+  box-shadow: 0 0 0 3px rgba(201,184,255,0.25);
+  outline: none;
+}
+
+.dark .aurora-shell .glass,
+.dark .aurora-shell .panel,
+.dark .aurora-shell .card-elevated {
+  background: var(--surface-1) !important;
+  border-color: var(--aurora-hair) !important;
+  color: var(--aurora-ink);
+}
+
+/* Dark-mode hover + elevated shadows for .glass / .glass-lg / .panel
+   (scoped globally — works on landing + app shell) */
+.dark .glass:hover,
+.dark .glass-lg:hover {
+  border-color: #3A3646;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.03) inset,
+    0 14px 40px -18px rgba(0,0,0,0.5);
+}
+.dark .glass,
+.dark .glass-lg,
+.dark .panel {
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.025) inset,
+    0 10px 32px -20px rgba(0,0,0,0.45);
+}
+
+.dark .aurora-shell .backdrop-blur-2xl[class*="bg-["] {
+  background: rgba(18,16,26,0.78) !important;
+}
+
+/* Topbar + content card — mode-aware translucent surfaces */
+.tyvera-topbar {
+  background: linear-gradient(180deg, rgba(250,249,247,0.92), rgba(250,249,247,0.76));
+}
+.dark .tyvera-topbar {
+  background: linear-gradient(180deg, rgba(18,16,26,0.92), rgba(18,16,26,0.76));
+}
+
+.tyvera-content-card {
+  box-shadow: 0 1px 2px rgba(15,15,18,0.04), 0 12px 40px rgba(15,15,18,0.05);
+}
+.dark .tyvera-content-card {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 12px 40px rgba(0,0,0,0.35);
+}
+
+/* Sidebar nav items — dual-mode active pill */
+.nav-active-aware {
+  color: var(--aurora-sub);
+  border: 1px solid transparent;
+  background: transparent;
+}
+.nav-active-aware[data-active="true"] {
+  background: var(--aurora-ink);
+  color: var(--aurora-cream);
+  border-color: var(--aurora-ink);
+}
+.nav-active-aware .nav-icon {
+  color: var(--aurora-sub);
+}
+.nav-active-aware[data-active="true"] .nav-icon {
+  color: var(--aurora-cream);
+}
+.nav-active-aware .nav-spark {
+  color: var(--aurora-lavender);
+}
+.nav-active-aware:hover:not([data-active="true"]) {
+  background: var(--surface-2);
+  color: var(--aurora-ink);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Landing page (app/page.tsx) — dual-mode backdrop + hover
+   Landing root has class "tyvera-landing"
+   ───────────────────────────────────────────────────────────── */
+.tyvera-landing-nav {
+  background: rgba(250, 249, 247, 0.82);
+}
+.dark .tyvera-landing-nav {
+  background: rgba(18, 16, 26, 0.82);
+}
+.tyvera-landing-navlink:hover {
+  background: var(--surface-3);
+  color: var(--aurora-ink) !important;
+}
+

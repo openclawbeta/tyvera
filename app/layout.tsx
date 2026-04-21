@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { WalletProvider } from "@/lib/wallet-context";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -53,8 +55,13 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen bg-[#070a12] text-slate-100 antialiased">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <Script id="tyvera-theme-init" strategy="beforeInteractive">
+          {THEME_INIT_SCRIPT}
+        </Script>
+      </head>
+      <body className="min-h-screen antialiased">
         <WalletProvider>
           {children}
         </WalletProvider>

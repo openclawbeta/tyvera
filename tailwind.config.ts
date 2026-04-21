@@ -36,6 +36,20 @@ const config: Config = {
           600: "#0891b2",
           700: "#0e7490",
         },
+        aurora: {
+          cream: "#FAF9F7",
+          ink: "#0F0F12",
+          sub: "#6B6860",
+          hair: "#ECEBE7",
+          chip: "#F2F0EB",
+          soft: "#F7F5F1",
+          lavender: "#C9B8FF",
+          peach: "#FFD7BA",
+          mint: "#A7F0D2",
+          up: "#0B8F5A",
+          down: "#C0392B",
+          warn: "#B88A00",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -62,7 +76,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Space Grotesk", "Inter", "system-ui", "sans-serif"],
+        display: ["Space Grotesk", "Inter", "system-ui", "sans-serif"],
+        serif: ["Instrument Serif", "serif"],
         mono: ["JetBrains Mono", "Fira Code", "monospace"],
       },
       fontSize: {
