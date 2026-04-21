@@ -4,13 +4,13 @@
 /* GET /api/activity?address=5...&page=1&limit=50                      */
 /* Returns on-chain events for the given SS58 address.                 */
 /*                                                                     */
-/* Data source: ON-CHAIN ONLY via transfer-scanner event buffer.       */
-/* No external API dependencies (no TaoStats).                         */
+/* Data source priority:                                               */
+/*   1. chain_events DB table  (durable, survives cold starts)         */
+/*   2. In-memory event buffer (hot cache, same-instance only)         */
 /*                                                                     */
-/* Limitations:                                                        */
-/*   - History depth depends on how long the cron has been running     */
-/*   - Buffer holds up to 2000 events (rolling window)                 */
-/*   - Returns empty gracefully when buffer is cold                    */
+/* Both sources are populated by the transfer-scanner during           */
+/* cron/sync-chain. The DB is the primary source; the buffer is        */
+/* a fast fallback if the DB read fails.                               */
 /* ─────────────────────────────────────────────────────────────────── */
 
 import { NextRequest } from "next/server";
@@ -26,6 +26,7 @@ import {
   getLastScannedBlock,
   type ChainEvent,
 } from "@/lib/chain/transfer-scanner";
+import { queryChainEvents } from "@/lib/db/chain-events";
 
 function mapChainEvent(e: ChainEvent): ActivityEvent {
   return {
@@ -53,6 +54,29 @@ export async function GET(request: NextRequest) {
     return apiErrorResponse("Valid SS58 address required", 400);
   }
 
+  // ── Strategy 1: Read from DB (durable, survives cold starts) ────
+  try {
+    const { events: dbEvents, total } = await queryChainEvents(address, page, limit);
+
+    if (total > 0) {
+      const events: ActivityEvent[] = dbEvents.map(mapChainEvent);
+      const lastBlock = getLastScannedBlock();
+
+      return apiResponse(
+        { events, total, page, limit },
+        {
+          source: DATA_SOURCES.CHAIN_LIVE,
+          fetchedAt: new Date().toISOString(),
+          blockHeight: lastBlock > 0 ? lastBlock : undefined,
+          note: `${total} events from DB, last scanned block ${lastBlock}`,
+        },
+      );
+    }
+  } catch (err) {
+    console.warn("[Activity] DB query failed, falling back to buffer:", err);
+  }
+
+  // ── Strategy 2: Fall back to in-memory buffer ───────────────────
   try {
     const { events: chainEvents, total } = getEventsForAddress(address, page, limit);
     const events: ActivityEvent[] = chainEvents.map(mapChainEvent);
@@ -65,21 +89,21 @@ export async function GET(request: NextRequest) {
         source: bufferSize > 0 ? DATA_SOURCES.CHAIN_CACHE : DATA_SOURCES.SYNTHETIC,
         fetchedAt: new Date().toISOString(),
         blockHeight: lastBlock > 0 ? lastBlock : undefined,
-        fallbackUsed: bufferSize === 0,
+        fallbackUsed: true,
         ...(bufferSize === 0
           ? { note: "Event buffer is empty — chain scanner has not run yet. History builds over time via cron." }
-          : { note: `${bufferSize} events in buffer, last scanned block ${lastBlock}` }),
+          : { note: `${bufferSize} events in buffer (DB fallback), last scanned block ${lastBlock}` }),
       },
     );
   } catch (err) {
-    console.error("[Activity] Failed:", err);
+    console.error("[Activity] Both DB and buffer failed:", err);
     return apiResponse(
       { events: [] as ActivityEvent[], total: 0, page, limit },
       {
         source: DATA_SOURCES.CHAIN_CACHE,
         fetchedAt: new Date().toISOString(),
         fallbackUsed: true,
-        note: "Error reading event buffer — returning empty",
+        note: "Error reading activity data — returning empty",
       },
     );
   }

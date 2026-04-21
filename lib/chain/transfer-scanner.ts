@@ -17,6 +17,7 @@
  */
 
 import { ApiPromise, WsProvider } from "@polkadot/api";
+import { persistChainEvents, getLastPersistedBlock } from "@/lib/db/chain-events";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Constants                                                            */
@@ -81,6 +82,7 @@ export interface TransferScanResult {
 
 const eventBuffer: ChainEvent[] = [];
 let lastScannedBlock = 0;
+let _dbSeeded = false;
 
 /** Get events for a specific address from the buffer. */
 export function getEventsForAddress(
@@ -186,6 +188,21 @@ export async function scanRecentTransfers(): Promise<TransferScanResult | null> 
   let api: ApiPromise | null = null;
 
   try {
+    // On first scan after cold start, seed lastScannedBlock from DB
+    // so we don't re-scan blocks that are already persisted.
+    if (!_dbSeeded) {
+      try {
+        const dbBlock = await getLastPersistedBlock();
+        if (dbBlock > lastScannedBlock) {
+          lastScannedBlock = dbBlock;
+          console.log(`[transfer-scanner] Seeded lastScannedBlock=${dbBlock} from DB`);
+        }
+      } catch (err) {
+        console.warn("[transfer-scanner] DB seed failed, starting from chain head:", err);
+      }
+      _dbSeeded = true;
+    }
+
     api = await connect();
 
     const header = await api.rpc.chain.getHeader();
@@ -311,6 +328,16 @@ export async function scanRecentTransfers(): Promise<TransferScanResult | null> 
 
     lastScannedBlock = toBlock;
 
+    // Persist to DB (best-effort — buffer is the hot path, DB is durable)
+    let persisted = 0;
+    if (newEvents.length > 0) {
+      try {
+        persisted = await persistChainEvents(newEvents);
+      } catch (err) {
+        console.warn("[transfer-scanner] DB persist failed (events still in buffer):", err);
+      }
+    }
+
     const result: TransferScanResult = {
       events: newEvents,
       scannedBlocks: toBlock - fromBlock + 1,
@@ -321,7 +348,7 @@ export async function scanRecentTransfers(): Promise<TransferScanResult | null> 
 
     console.log(
       `[transfer-scanner] Scanned blocks ${fromBlock}–${toBlock}, ` +
-      `found ${newEvents.length} events, buffer size ${eventBuffer.length}, ` +
+      `found ${newEvents.length} events (${persisted} persisted), buffer size ${eventBuffer.length}, ` +
       `took ${result.scanDurationMs}ms`,
     );
 

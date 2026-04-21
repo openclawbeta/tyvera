@@ -115,4 +115,26 @@ export const SCHEMA_SQL = `
   CREATE INDEX IF NOT EXISTS idx_alerts_wallet ON alerts(wallet_address);
   CREATE INDEX IF NOT EXISTS idx_alerts_read ON alerts(wallet_address, read);
   CREATE INDEX IF NOT EXISTS idx_alerts_created ON alerts(created_at);
+
+  -- Chain events: persisted on-chain activity (transfers, stakes, etc.)
+  -- Populated by the transfer-scanner during cron/sync-chain.
+  -- Survives cold starts — the in-memory buffer is a hot cache only.
+  CREATE TABLE IF NOT EXISTS chain_events (
+    id              TEXT PRIMARY KEY,
+    block_number    INTEGER NOT NULL,
+    timestamp       TEXT    NOT NULL,
+    type            TEXT    NOT NULL,
+    from_address    TEXT    NOT NULL,
+    to_address      TEXT    NOT NULL,
+    amount_tao      REAL    NOT NULL DEFAULT 0,
+    fee             REAL    NOT NULL DEFAULT 0,
+    subnet          TEXT,
+    tx_hash         TEXT    NOT NULL,
+    status          TEXT    NOT NULL DEFAULT 'CONFIRMED',
+    created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_ce_from ON chain_events(from_address, block_number DESC);
+  CREATE INDEX IF NOT EXISTS idx_ce_to ON chain_events(to_address, block_number DESC);
+  CREATE INDEX IF NOT EXISTS idx_ce_block ON chain_events(block_number DESC);
 `;
