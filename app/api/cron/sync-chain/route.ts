@@ -20,11 +20,17 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { fetchSubnetsFromChain, setSubnetCache } from "@/lib/chain";
-import { refreshMarketCache } from "@/lib/chain/market-cache";
+import {
+  fetchSubnetsFromChain,
+  setSubnetCache,
+  fetchRootMetricsFromChain,
+  setRootMetricsCache,
+} from "@/lib/chain";
+import { refreshMarketCache, getMarketData } from "@/lib/chain/market-cache";
 import { syncPricesFromChain } from "@/lib/chain/price-engine";
 import { scanRecentTransfers } from "@/lib/chain/transfer-scanner";
 import { logCronRun, pruneCronRuns } from "@/lib/db/cron-log";
+import { recordSubnetHistoryBatch } from "@/lib/db/subnet-history";
 import { runCronHealthCheck } from "@/lib/cron/health-check";
 import { timingSafeEqual } from "crypto";
 
@@ -123,6 +129,49 @@ export async function GET(request: NextRequest) {
     } catch (err) {
       console.warn("[cron/sync-chain] Transfer scan failed:", err);
       results.transferScan = false;
+    }
+
+    // Step 4b: Persist a daily subnet_history row per netuid (best-effort).
+    // Idempotent per UTC day — repeat cron ticks in the same day overwrite.
+    try {
+      const historyEntries = snapshot.subnets
+        .filter((s) => s.netuid !== 0)
+        .map((s) => {
+          const market = getMarketData(s.netuid);
+          return {
+            netuid: s.netuid,
+            yieldPct: s.taoIn > 0 ? (s.emissionPerDay * 365 / s.taoIn) * 100 : 0,
+            taoIn: s.taoIn,
+            emissionPerDay: s.emissionPerDay,
+            stakers: s.stakers,
+            alphaPrice: market?.alphaPrice ?? null,
+          };
+        });
+      const written = await recordSubnetHistoryBatch(historyEntries);
+      results.subnetHistory = { rows: written };
+    } catch (err) {
+      console.warn("[cron/sync-chain] Subnet history write failed:", err);
+      results.subnetHistory = false;
+    }
+
+    // Step 5: Root metrics (best-effort).
+    // Powers the "subnet vs root staking" comparison in the recommender.
+    try {
+      const rootMetrics = await fetchRootMetricsFromChain();
+      if (rootMetrics) {
+        setRootMetricsCache(rootMetrics);
+        results.rootMetrics = {
+          liquidity: rootMetrics.liquidity,
+          yield: rootMetrics.yield,
+          dailyEmission: rootMetrics.dailyEmission,
+          source: rootMetrics.source,
+        };
+      } else {
+        results.rootMetrics = false;
+      }
+    } catch (err) {
+      console.warn("[cron/sync-chain] Root metrics fetch failed:", err);
+      results.rootMetrics = false;
     }
 
     // Log success + periodic prune

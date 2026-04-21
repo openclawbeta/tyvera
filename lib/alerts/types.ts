@@ -9,7 +9,8 @@
 
 export type AlertCategory = "staking" | "risk" | "whale" | "price";
 
-export type AlertType =
+/** User-configurable alert types (have rules, thresholds, presets). */
+export type ConfigurableAlertType =
   // Staking alerts
   | "yield_drop"
   | "yield_spike"
@@ -28,12 +29,20 @@ export type AlertType =
   | "tao_price_below"
   | "alpha_price_change";
 
+/** System-generated alert types (no rules, pushed by backend jobs). */
+export type SystemAlertType =
+  | "subscription_expiring"
+  | "subscription_grace"
+  | "subscription_expired";
+
+export type AlertType = ConfigurableAlertType | SystemAlertType;
+
 export type AlertSeverity = "info" | "warning" | "critical";
 
 // ── Alert metadata per type ─────────────────────────────────────────────────
 
 export interface AlertTypeMeta {
-  type: AlertType;
+  type: ConfigurableAlertType;
   category: AlertCategory;
   label: string;
   description: string;
@@ -44,7 +53,7 @@ export interface AlertTypeMeta {
   step: number;
 }
 
-export const ALERT_TYPE_META: Record<AlertType, AlertTypeMeta> = {
+export const ALERT_TYPE_META: Record<ConfigurableAlertType, AlertTypeMeta> = {
   // ── Staking ───────────────────────────────────────────────────────
   yield_drop: {
     type: "yield_drop",
@@ -225,8 +234,11 @@ export interface Alert {
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-export function alertCategory(type: AlertType): AlertCategory {
-  return ALERT_TYPE_META[type].category;
+export function alertCategory(type: AlertType): AlertCategory | "system" {
+  if (type in ALERT_TYPE_META) {
+    return ALERT_TYPE_META[type as ConfigurableAlertType].category;
+  }
+  return "system";
 }
 
 export function severityColor(severity: AlertSeverity): string {
@@ -237,11 +249,12 @@ export function severityColor(severity: AlertSeverity): string {
   }
 }
 
-export function categoryIcon(category: AlertCategory): string {
+export function categoryIcon(category: AlertCategory | "system"): string {
   switch (category) {
     case "staking": return "📊";
     case "risk":    return "⚠️";
     case "whale":   return "🐋";
     case "price":   return "💰";
+    case "system":  return "🔔";
   }
 }

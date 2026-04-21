@@ -3,6 +3,7 @@ import {
   mapPortfolioActivityDto,
 } from "@/lib/adapters/portfolio";
 import { getSubnets } from "@/lib/api/subnets";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import type { WatchlistItemModel } from "@/lib/types/portfolio";
 
 /**
@@ -68,6 +69,31 @@ export function getPortfolioHistory(_address?: string, _range = "30d") {
       yield: points.map((p) => ({ label: p.day, value: p.yield })),
     },
   });
+}
+
+/**
+ * Fetch the real daily portfolio snapshot series for a wallet from
+ * /api/portfolio/history. Returns null on any failure so the caller can
+ * fall back to the synchronous placeholder without surfacing the error.
+ */
+export async function fetchPortfolioHistory(
+  address?: string | null,
+  range: "7d" | "14d" | "30d" | "90d" = "30d",
+) {
+  if (!address) return null;
+  try {
+    const resp = await fetchWithTimeout(
+      `/api/portfolio/history?address=${encodeURIComponent(address)}&range=${range}`,
+      { cache: "no-store", timeoutMs: 8_000 },
+    );
+    if (!resp.ok) return null;
+    const body = await resp.json();
+    const series = body?.series;
+    if (!series) return null;
+    return mapPortfolioHistoryDto({ series });
+  } catch {
+    return null;
+  }
 }
 
 export function getPortfolioActivity(_address?: string) {

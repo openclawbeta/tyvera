@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resetDailyCounters } from "@/lib/db/api-keys";
 import { pruneDailyUsage } from "@/lib/db/daily-usage";
+import { pruneDeliveryLog } from "@/lib/db/webhooks";
 import { logCronRun } from "@/lib/db/cron-log";
 import { timingSafeEqual } from "crypto";
 
@@ -45,18 +46,31 @@ export async function GET(request: NextRequest) {
   try {
     await resetDailyCounters();
     await pruneDailyUsage().catch(() => {});
+    // Keep the webhook delivery log from growing without bound. Runs daily so
+    // the per-webhook keep window (500 most recent rows) is roomy enough for
+    // a week+ of traffic against even the noisiest endpoint.
+    let deliveriesPruned = 0;
+    try {
+      deliveriesPruned = await pruneDeliveryLog(500);
+    } catch (err) {
+      console.warn("[cron/reset-counters] pruneDeliveryLog failed:", err);
+    }
 
     await logCronRun({
       jobName: "reset-counters",
       startedAt,
       durationMs: Date.now() - cronStart,
       status: "ok",
-      result: { message: "Daily API key counters reset, stale usage rows pruned" },
+      result: {
+        message: "Daily API key counters reset, stale usage + delivery rows pruned",
+        deliveriesPruned,
+      },
     }).catch(() => {});
 
     return NextResponse.json({
       ok: true,
       message: "Daily API key counters reset",
+      deliveriesPruned,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
@@ -71,7 +85,7 @@ export async function GET(request: NextRequest) {
     }).catch(() => {});
 
     return NextResponse.json(
-      { ok: false, error: String(err) },
+      { ok: false, error: "reset_counters_failed" },
       { status: 500 },
     );
   }

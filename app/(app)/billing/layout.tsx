@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Billing — Tyvera",
+  title: "Billing",
   description:
     "Manage your Tyvera subscription — view payment history, current tier, and renewal status.",
-  openGraph: {
-    title: "Billing — Tyvera",
-    description: "Manage your Tyvera subscription tier, payment history, and renewal status.",
-  },
+  robots: { index: false, follow: false },
 };
 
 export default function BillingLayout({ children }: { children: React.ReactNode }) {

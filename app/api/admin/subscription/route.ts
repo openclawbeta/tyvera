@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
 import { adminGrantSubscription, getEntitlement } from "@/lib/db/subscriptions";
+import { logAdminActionFromRequest } from "@/lib/db/admin-audit";
+import { parseAdminGrantBody } from "@/lib/api/validation";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Admin subscription management                                       */
@@ -49,21 +51,29 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
-    const { walletAddress, planId, reason, durationDays } = body;
-
-    if (!walletAddress || !planId) {
-      return NextResponse.json(
-        { error: "Missing required fields: walletAddress, planId" },
-        { status: 400 },
-      );
+    const raw = await request.json().catch(() => null);
+    const parsed = parseAdminGrantBody(raw);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const { walletAddress, planId, reason, durationDays } = parsed.value;
 
     await adminGrantSubscription({
       walletAddress,
       planId,
       reason: reason ?? "Manual admin grant",
       durationDays: durationDays ?? 30,
+    });
+
+    await logAdminActionFromRequest(request, {
+      action: "grant_subscription",
+      target: walletAddress,
+      status: 200,
+      metadata: {
+        planId,
+        durationDays: durationDays ?? 30,
+        reason: reason ?? "Manual admin grant",
+      },
     });
 
     return NextResponse.json({
@@ -92,6 +102,11 @@ export async function GET(request: NextRequest) {
 
   try {
     const entitlement = await getEntitlement(address);
+    await logAdminActionFromRequest(request, {
+      action: "check_entitlement",
+      target: address,
+      status: 200,
+    });
     return NextResponse.json({
       address,
       entitlement: entitlement ?? { tier: "explorer", plan_id: null, status: "none" },

@@ -13,12 +13,15 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 
-/* ── Aurora palette ──────────────────────────────────────────────── */
-const INK = "#0F0F12";
-const SUB = "#6B6860";
-const HAIR = "#ECEBE7";
-const CHIP = "#F2F0EB";
-const SOFT = "#F7F5F1";
+/* ── Aurora palette (CSS vars so dark mode switches automatically) ── */
+const INK = "var(--aurora-ink)";
+const SUB = "var(--aurora-sub)";
+const HAIR = "var(--aurora-hair)";
+const CHIP = "var(--surface-3)";
+const SOFT = "var(--surface-2)";
+const PANEL_BG = "var(--surface-1)";
+const CANVAS = "var(--aurora-cream)";
+const NAV_ACTIVE_FG = "var(--aurora-cream)"; // inverted fg on active pill
 
 /* ── Section nav ─────────────────────────────────────────────────── */
 const SECTIONS = [
@@ -35,8 +38,12 @@ type SectionId = (typeof SECTIONS)[number]["id"];
 function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
     <div
-      className={`rounded-2xl border bg-white p-6 sm:p-8 ${className}`}
-      style={{ borderColor: HAIR, boxShadow: "0 1px 2px rgba(15,15,18,0.04)" }}
+      className={`rounded-2xl border p-6 sm:p-8 ${className}`}
+      style={{
+        background: PANEL_BG,
+        borderColor: HAIR,
+        boxShadow: "0 1px 2px rgba(15,15,18,0.04)",
+      }}
     >
       {children}
     </div>
@@ -168,7 +175,7 @@ export default function DevelopersPage() {
   const [activeSection, setActiveSection] = useState<SectionId>("auth");
 
   return (
-    <div className="min-h-screen w-full" style={{ background: "#FAF9F7", color: INK }}>
+    <div className="min-h-screen w-full" style={{ background: CANVAS, color: INK }}>
       <div className="p-6 lg:p-8 max-w-5xl mx-auto">
         <PageHeader
           title="Developer Documentation"
@@ -189,7 +196,7 @@ export default function DevelopersPage() {
                   style={{
                     background: isActive ? INK : "transparent",
                     border: `1px solid ${isActive ? INK : HAIR}`,
-                    color: isActive ? "#FAF9F7" : SUB,
+                    color: isActive ? NAV_ACTIVE_FG : SUB,
                     fontWeight: isActive ? 600 : 500,
                   }}
                   aria-label={`${s.label} documentation`}
@@ -247,15 +254,15 @@ export default function DevelopersPage() {
                     <h3 className="text-sm font-semibold mb-2" style={{ color: INK }}>Error Responses</h3>
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-3 text-xs">
-                        <code className="font-mono font-semibold" style={{ color: "#B88A00" }}>401</code>
+                        <code className="font-mono font-semibold" style={{ color: "var(--aurora-warn)" }}>401</code>
                         <span style={{ color: SUB }}>Missing or invalid wallet headers</span>
                       </div>
                       <div className="flex items-center gap-3 text-xs">
-                        <code className="font-mono font-semibold" style={{ color: "#B88A00" }}>403</code>
+                        <code className="font-mono font-semibold" style={{ color: "var(--aurora-warn)" }}>403</code>
                         <span style={{ color: SUB }}>Insufficient tier for requested resource</span>
                       </div>
                       <div className="flex items-center gap-3 text-xs">
-                        <code className="font-mono font-semibold" style={{ color: "#B88A00" }}>429</code>
+                        <code className="font-mono font-semibold" style={{ color: "var(--aurora-warn)" }}>429</code>
                         <span style={{ color: SUB }}>Rate limit exceeded</span>
                       </div>
                     </div>
@@ -503,9 +510,9 @@ function verifySignature(body, signature, secret) {
                           {row.tiers.map((has, i) => (
                             <td key={i} className="px-3 py-2.5 text-center">
                               {has ? (
-                                <CheckCircle className="w-4 h-4 mx-auto" style={{ color: "#0B8F5A" }} />
+                                <CheckCircle className="w-4 h-4 mx-auto" style={{ color: "var(--aurora-up)" }} />
                               ) : (
-                                <span style={{ color: "#C9C5BC" }}>—</span>
+                                <span style={{ color: "var(--aurora-sub)", opacity: 0.5 }}>—</span>
                               )}
                             </td>
                           ))}

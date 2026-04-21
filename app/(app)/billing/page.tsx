@@ -25,6 +25,12 @@ import { FadeIn } from "@/components/ui-custom/fade-in";
 import { useWallet } from "@/lib/wallet-context";
 import { useEntitlement } from "@/lib/hooks/use-entitlement";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
+import {
+  FEATURE_LABELS,
+  TIER_DEFINITIONS,
+  getTierDefinition,
+  type Tier,
+} from "@/lib/types/tiers";
 
 interface PaymentRecord {
   id: number;
@@ -65,6 +71,7 @@ function StatusBadge({ status }: { status: string }) {
     status === "active" ? { bg: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.2)", color: "#34d399", label: "Active" } :
     status === "grace" ? { bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.2)", color: "#fbbf24", label: "Grace Period" } :
     status === "expired" ? { bg: "rgba(239,68,68,0.1)", border: "rgba(239,68,68,0.2)", color: "#f87171", label: "Expired" } :
+    status === "free" ? { bg: "rgba(34,211,238,0.08)", border: "rgba(34,211,238,0.2)", color: "#22d3ee", label: "Free" } :
     { bg: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.08)", color: "#94a3b8", label: status };
 
   return (
@@ -90,7 +97,7 @@ export default function BillingPage() {
     if (!address || walletState !== "verified") return;
     setLoading(true);
     try {
-      const authHeaders = await getAuthHeaders();
+      const authHeaders = await getAuthHeaders({ method: "GET", pathname: "/api/billing" });
       const res = await fetchWithTimeout("/api/billing", {
         timeoutMs: 8000,
         headers: authHeaders,
@@ -144,6 +151,17 @@ export default function BillingPage() {
   const isPaid = billing?.status === "connected_premium" || billing?.status === "connected_grace";
   const tierName = entitlement.tier ? entitlement.tier.charAt(0).toUpperCase() + entitlement.tier.slice(1) : "Explorer";
 
+  // Resolve tier definition to list features included in the current plan.
+  const currentTierId: Tier = (entitlement.tier as Tier) ?? "explorer";
+  const currentTierDef = getTierDefinition(currentTierId) ?? TIER_DEFINITIONS[0];
+  const includedFeatures = currentTierDef.features;
+
+  // Expiration warning: surface when <= 7 days remaining or in grace.
+  const daysLeft = billing?.daysRemaining ?? null;
+  const inGrace = billing?.status === "connected_grace";
+  const showExpiryBanner =
+    isPaid && (inGrace || (daysLeft != null && daysLeft <= 7));
+
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <PageHeader title="Billing & Account" subtitle="Manage your subscription, view payment history, and upgrade your plan" />
@@ -155,6 +173,51 @@ export default function BillingPage() {
         </GlassCard>
       ) : (
         <>
+          {/* ── Expiration warning banner ───────────────────────── */}
+          {showExpiryBanner && (
+            <FadeIn>
+              <div
+                className="flex flex-col gap-3 rounded-2xl border p-5 sm:flex-row sm:items-center sm:justify-between"
+                style={{
+                  borderColor: inGrace ? "rgba(239,68,68,0.25)" : "rgba(251,191,36,0.25)",
+                  background: inGrace
+                    ? "linear-gradient(135deg, rgba(239,68,68,0.08), rgba(239,68,68,0.03))"
+                    : "linear-gradient(135deg, rgba(251,191,36,0.08), rgba(251,191,36,0.03))",
+                }}
+              >
+                <div className="flex items-start gap-3">
+                  <AlertTriangle
+                    className="h-5 w-5 flex-shrink-0"
+                    style={{ color: inGrace ? "#f87171" : "#fbbf24" }}
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-white">
+                      {inGrace
+                        ? "Your subscription is in grace period"
+                        : `Your subscription expires in ${daysLeft} day${daysLeft === 1 ? "" : "s"}`}
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                      {inGrace
+                        ? "Send a renewal payment to restore full access. After the grace window ends you'll drop to the free Explorer tier."
+                        : "Send your renewal TAO before the expiry date to avoid losing access to premium features."}
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href="/pricing"
+                  className="inline-flex flex-shrink-0 items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all hover:scale-[1.02]"
+                  style={{
+                    background: "linear-gradient(135deg, #22d3ee, #0ea5e9)",
+                    color: "#04060d",
+                  }}
+                >
+                  Renew now
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </FadeIn>
+          )}
+
           {/* ── Current Plan ────────────────────────────────────── */}
           <FadeIn>
             <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
@@ -252,6 +315,75 @@ export default function BillingPage() {
                 </GlassCard>
               </div>
             </div>
+          </FadeIn>
+
+          {/* ── Features included in current plan ──────────────── */}
+          <FadeIn>
+            <GlassCard padding="md">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    Included in {currentTierDef.displayName}
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Features you can access with your current plan.
+                  </p>
+                </div>
+                {currentTierId !== "institutional" && (
+                  <Link
+                    href="/pricing"
+                    className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all"
+                    style={{
+                      background: "rgba(34,211,238,0.1)",
+                      border: "1px solid rgba(34,211,238,0.22)",
+                      color: "#22d3ee",
+                    }}
+                  >
+                    See all plans
+                    <ArrowUpRight className="w-3 h-3" />
+                  </Link>
+                )}
+              </div>
+
+              <ul className="grid gap-2 sm:grid-cols-2">
+                {includedFeatures.map((f) => (
+                  <li
+                    key={f}
+                    className="flex items-start gap-2 rounded-lg border border-white/6 bg-white/[0.02] px-3 py-2"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0 text-emerald-400 mt-0.5" />
+                    <span className="text-xs text-slate-300">
+                      {FEATURE_LABELS[f] ?? f}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              {currentTierId === "explorer" && (
+                <div className="mt-5 rounded-xl border border-white/6 bg-white/[0.02] p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-white">
+                      Unlock AI recommendations, full subnet data, and smart alerts
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Analyst starts at 19.99τ/month. Strategist adds AI reallocation & API access.
+                    </p>
+                  </div>
+                  <Link
+                    href="/pricing"
+                    className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold transition-all hover:scale-[1.02]"
+                    style={{
+                      background: "linear-gradient(135deg, #22d3ee, #0ea5e9)",
+                      color: "#04060d",
+                    }}
+                  >
+                    Upgrade
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              )}
+            </GlassCard>
           </FadeIn>
 
           {/* ── Available Plans ──────────────────────────────────── */}

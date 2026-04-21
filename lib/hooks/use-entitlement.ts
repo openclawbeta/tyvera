@@ -48,7 +48,7 @@ export function useEntitlement(address: string | null): EntitlementState {
 
     setState((prev) => ({ ...prev, loading: true }));
 
-    getAuthHeaders()
+    getAuthHeaders({ method: "GET", pathname: "/api/entitlement" })
       .then((authHeaders) => fetchWithTimeout(`/api/entitlement?address=${encodeURIComponent(address)}`, {
         timeoutMs: 8_000,
         headers: authHeaders,

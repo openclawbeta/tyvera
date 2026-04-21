@@ -7,8 +7,10 @@ import { FadeIn } from "@/components/ui-custom/fade-in";
 import { RecommendationCard } from "@/components/recommendations/recommendation-card";
 import { ReviewPanel } from "@/components/recommendations/review-panel";
 import { getRecommendations } from "@/lib/api/recommendations";
+import { fetchSubnetsFromApi, getSubnets } from "@/lib/api/subnets";
 import { useWallet } from "@/lib/wallet-context";
 import { useEntitlement } from "@/lib/hooks/use-entitlement";
+import type { SubnetDetailModel } from "@/lib/types/subnets";
 import type {
   RecommendationUiModel as Recommendation,
   WalletHoldingsMap,
@@ -176,6 +178,26 @@ export default function RecommendationsPage() {
   const entitlement = useEntitlement(address);
   const [holdings, setHoldings] = useState<WalletHoldingsMap | null>(null);
   const [filterBand, setFilterBand] = useState<string>("all");
+  // Live subnet set (seed with static snapshot so first render has data).
+  const [liveSubnets, setLiveSubnets] = useState<SubnetDetailModel[]>(() => getSubnets());
+
+  // Pull the live subnet set (includes netuid 0 as root when chain-derived
+  // root metrics are fresh). Used by the recommender to compare root vs
+  // alpha subnets with real yields rather than a heuristic.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { subnets } = await fetchSubnetsFromApi();
+        if (!cancelled && subnets.length > 0) setLiveSubnets(subnets);
+      } catch {
+        // Silent — we already have the static snapshot.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Fetch wallet holdings when an address is available. We don't require
   // verification — a connected wallet is enough to personalize suggestions
@@ -214,8 +236,8 @@ export default function RecommendationsPage() {
   }, [address, walletState]);
 
   const recommendations = useMemo(
-    () => getRecommendations({ address, holdings }),
-    [address, holdings],
+    () => getRecommendations({ address, holdings, subnets: liveSubnets }),
+    [address, holdings, liveSubnets],
   );
 
   const [selected, setSelected] = useState<Recommendation | null>(null);

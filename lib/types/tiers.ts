@@ -263,3 +263,63 @@ export function getApiRateLimit(tier: Tier | string): number {
 
 /** Ordered tier hierarchy for upgrade comparisons */
 export const TIER_ORDER: Tier[] = ["explorer", "analyst", "strategist", "institutional"];
+
+/**
+ * Human-readable labels for every gated feature. Used wherever we show
+ * feature lists to end users (billing page, upgrade prompts, tier cards).
+ */
+export const FEATURE_LABELS: Record<GatedFeature, string> = {
+  subnet_list: "Subnet explorer (top 50)",
+  subnet_list_full: "Full subnet list (128+)",
+  subnet_detail: "Subnet detail pages",
+  subnet_cards: "Card and heatmap views",
+  subnet_heatmap: "Subnet heatmap",
+  subnet_categories: "Category filtering",
+  subnet_compare: "Side-by-side subnet comparison",
+  network_alerts: "Network-wide alerts",
+  validators_full: "Full validator analytics",
+  validator_grid: "Validator grid view",
+  recommendations: "AI reallocation recommendations",
+  guardrails: "Risk guardrails",
+  portfolio_basic: "Portfolio overview",
+  portfolio_analytics: "Portfolio analytics & history",
+  reallocation: "One-click reallocation",
+  yield_chart: "Yield chart (basic)",
+  yield_full: "Full yield analytics",
+  ai_intel: "Tyvera AI (5 questions/day)",
+  ai_intel_25: "Tyvera AI (25 questions/day)",
+  ai_intel_unlimited: "Tyvera AI (unlimited)",
+  history_30d: "30-day history",
+  history_all: "Unlimited history",
+  data_export: "CSV data export",
+  data_export_unlimited: "Unlimited data exports",
+  alerts_basic: "Smart alerts (5 active)",
+  alerts_unlimited: "Unlimited smart alerts",
+  alert_presets: "Alert presets",
+  watchlists: "Watchlists",
+  api_access: "API access (1,000 req/day)",
+  api_unlimited: "Unlimited API access",
+  webhooks: "Webhook integrations",
+  team_access: "Team seat management",
+  whitelabel: "White-label branding",
+  priority_support: "Priority support",
+  early_access: "Early access to new features",
+  backtesting: "Backtesting (7-day history)",
+  backtesting_all: "Full-history backtesting",
+  tax_real: "On-chain tax events",
+  tax_export: "Tax report CSV export",
+};
+
+/** Resolve a tier definition by id. */
+export function getTierDefinition(tier: Tier | string): TierDefinition | undefined {
+  const normalized = normalizeTier(tier as string);
+  return TIER_DEFINITIONS.find((d) => d.id === normalized);
+}
+
+/** Next tier above the given one, or null if already at the top. */
+export function getNextTier(tier: Tier | string): Tier | null {
+  const normalized = normalizeTier(tier as string);
+  const idx = TIER_ORDER.indexOf(normalized);
+  if (idx < 0 || idx >= TIER_ORDER.length - 1) return null;
+  return TIER_ORDER[idx + 1];
+}

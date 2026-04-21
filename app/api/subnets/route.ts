@@ -41,6 +41,10 @@ import {
   isSubnetCacheFresh,
   getSubnetCacheAgeMs,
 } from "@/lib/chain/cache";
+import {
+  getRootMetricsCache,
+  isRootMetricsCacheFresh,
+} from "@/lib/chain/root-metrics";
 import { isAllowedInternalOrigin } from "@/lib/api/internal-origin";
 import {
   DATA_SOURCES,
@@ -109,6 +113,64 @@ function readSubtensorSnapshot(netuidFilter?: number) {
   } catch {
     return null;
   }
+}
+
+/**
+ * Build a SubnetDetailModel entry representing root (netuid 0) from the
+ * live root-metrics cache. Returns null if there's no fresh data.
+ *
+ * Root is modeled as a pseudo-subnet so the rest of the UI stack
+ * (including the recommendations engine) can compare it uniformly against
+ * alpha subnets. Liquidity and yield are sourced from chain; volatility is
+ * zero because root doesn't experience the same 7d swings alpha pools do.
+ */
+function buildRootSubnetEntry(): SubnetDetailModel | null {
+  const root = getRootMetricsCache();
+  if (!root) return null;
+  if (!isRootMetricsCacheFresh()) return null;
+
+  const yieldPct = root.yield;
+  const liquidity = root.liquidity;
+  const stakers = root.stakers;
+
+  // Root has existed since genesis — cap age at 365d for scoring parity.
+  const age = 365;
+
+  return {
+    id: "sn0",
+    netuid: 0,
+    name: "Root (TAO staking)",
+    symbol: "τ",
+    score: 0, // Will be computed on the client via deriveScore when needed
+    yield: yieldPct,
+    rawYield: yieldPct,
+    yieldDelta7d: 0,
+    inflow: 0,
+    inflowPct: 0,
+    risk: "LOW",
+    liquidity,
+    stakers,
+    emissions: root.dailyEmission,
+    validatorTake: 18,
+    description:
+      "Root network (netuid 0). Staking here delegates TAO directly to validators " +
+      "and earns the root share of network emissions. Lower variance than alpha " +
+      "subnets; no alpha token exposure.",
+    summary: "TAO root staking — the network-wide baseline yield.",
+    thesis: [
+      "Lowest-variance yield in Bittensor — you earn the root emission share proportionally.",
+      "No alpha token exposure, no subnet-specific risk.",
+      "Liquidity figure is the total network stake across all hotkeys.",
+    ],
+    useCases: ["Baseline TAO yield", "Risk-off parking", "Idle treasury"],
+    links: {},
+    category: "Infrastructure",
+    confidence: 95,
+    momentum: Array.from({ length: 14 }, () => yieldPct),
+    isWatched: false,
+    breakeven: 1,
+    age,
+  };
 }
 
 function enrichWithMarketData(subnets: SubnetDetailModel[]): SubnetDetailModel[] {
@@ -181,6 +243,13 @@ export async function GET(request: NextRequest) {
         return hydrateSubnetMetadata(partial);
       });
 
+    // Inject live root (netuid 0) when root-metrics cache is fresh.
+    // This lets the UI and recommender treat root uniformly with alpha subnets.
+    const rootEntry = buildRootSubnetEntry();
+    if (rootEntry) {
+      chainSubnets = [rootEntry, ...chainSubnets];
+    }
+
     if (netuidFilter != null) {
       chainSubnets = chainSubnets.filter((s) => s.netuid === netuidFilter);
     }
@@ -199,6 +268,7 @@ export async function GET(request: NextRequest) {
         extraHeaders: {
           "X-Subnet-Count": String(enriched.length),
           "X-Market-Enriched": String(isMarketCacheFresh()),
+          "X-Root-Live": rootEntry ? "true" : "false",
         },
       },
     );

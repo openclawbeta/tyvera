@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Settings — Tyvera",
+  title: "Settings",
   description:
     "Manage your Tyvera account — wallet connection, subscription tier, team members, webhooks, and notification preferences.",
-  openGraph: {
-    title: "Settings — Tyvera",
-    description: "Account settings, team management, webhook configuration, and subscription management.",
-  },
+  robots: { index: false, follow: false },
 };
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {

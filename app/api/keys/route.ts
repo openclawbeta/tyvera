@@ -3,6 +3,7 @@ import { createApiKey, listApiKeys, revokeApiKey } from "@/lib/db/api-keys";
 import { getEntitlement } from "@/lib/db/subscriptions";
 import { normalizeTier, getApiRateLimit } from "@/lib/types/tiers";
 import { requireWalletAuth } from "@/lib/api/wallet-auth";
+import { safeParse } from "@/lib/api/validation";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* API Key management                                                  */
@@ -31,13 +32,19 @@ export async function POST(request: NextRequest) {
     if (auth.errorResponse) return auth.errorResponse;
     const address = auth.address!;
 
-    let body: { label?: string } = {};
-    try {
-      body = await request.json();
-    } catch {
-      // Empty body is fine — label falls back below.
+    const raw = await request.json().catch(() => ({}));
+    const parsed = safeParse(() => {
+      if (typeof raw !== "object" || raw === null) return { label: undefined as string | undefined };
+      const l = (raw as Record<string, unknown>).label;
+      if (l === undefined || l === null) return { label: undefined };
+      if (typeof l !== "string") throw new Error("'label' must be a string");
+      if (l.length > 60) throw new Error("'label' must be at most 60 chars");
+      return { label: l };
+    });
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
-    const { label } = body;
+    const { label } = parsed.value;
 
     // Check entitlement — must be strategist+ for API access
     const entitlement = await getEntitlement(address);
@@ -80,14 +87,20 @@ export async function DELETE(request: NextRequest) {
     if (auth.errorResponse) return auth.errorResponse;
     const address = auth.address!;
 
-    const body = await request.json();
-    const { id } = body;
-
-    if (!id) {
-      return NextResponse.json({ error: "Missing key id" }, { status: 400 });
+    const raw = await request.json().catch(() => null);
+    const parsed = safeParse(() => {
+      if (typeof raw !== "object" || raw === null) throw new Error("request body must be an object");
+      const id = (raw as Record<string, unknown>).id;
+      if (typeof id !== "number" || !Number.isInteger(id) || id <= 0) {
+        throw new Error("'id' must be a positive integer");
+      }
+      return { id };
+    });
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
 
-    const revoked = await revokeApiKey(id, address);
+    const revoked = await revokeApiKey(parsed.value.id, address);
     if (!revoked) {
       return NextResponse.json({ error: "Key not found or already revoked" }, { status: 404 });
     }

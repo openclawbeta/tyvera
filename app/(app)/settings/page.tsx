@@ -37,6 +37,7 @@ import { useWallet } from "@/lib/wallet-context";
 import { useEntitlement } from "@/lib/hooks/use-entitlement";
 import { truncateAddress } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { FeatureLockCard } from "@/components/ui-custom/feature-lock-card";
 
 function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
@@ -675,7 +676,7 @@ function TeamSection() {
   async function fetchTeam() {
     if (!canManageTeam || walletState !== "verified") return;
     try {
-      const authHeaders = await getAuthHeaders();
+      const authHeaders = await getAuthHeaders({ method: "GET", pathname: "/api/team" });
       const res = await fetchWithTimeout("/api/team", { timeoutMs: 8000, headers: authHeaders });
       if (res.ok) {
         const data = await res.json();
@@ -691,7 +692,7 @@ function TeamSection() {
     setLoading(true);
     setError(null);
     try {
-      const authHeaders = await getAuthHeaders();
+      const authHeaders = await getAuthHeaders({ method: "POST", pathname: "/api/team" });
       const res = await fetchWithTimeout("/api/team", {
         timeoutMs: 8000,
         method: "POST",
@@ -715,7 +716,7 @@ function TeamSection() {
 
   async function removeMember(memberAddress: string) {
     try {
-      const authHeaders = await getAuthHeaders();
+      const authHeaders = await getAuthHeaders({ method: "DELETE", pathname: "/api/team" });
       await fetchWithTimeout("/api/team", {
         timeoutMs: 8000,
         method: "DELETE",
@@ -730,13 +731,11 @@ function TeamSection() {
     return (
       <Panel>
         <PanelHeader eyebrow="Team" title="Team Management" subtitle="Manage team members who share your subscription." />
-        <div className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.02] p-6">
-          <Lock className="h-5 w-5 text-slate-500" />
-          <div>
-            <p className="text-sm font-semibold text-slate-300">Institutional tier required</p>
-            <p className="mt-1 text-xs text-slate-500">Upgrade to Institutional to add team members who inherit your subscription tier.</p>
-          </div>
-        </div>
+        <FeatureLockCard
+          feature="team_access"
+          title="Team Management"
+          subtitle="Add wallet addresses that inherit your subscription tier. Available on Institutional."
+        />
       </Panel>
     );
   }
@@ -821,7 +820,7 @@ function WebhooksSection() {
   async function fetchWebhooks() {
     if (!canUseWebhooks || walletState !== "verified") return;
     try {
-      const authHeaders = await getAuthHeaders();
+      const authHeaders = await getAuthHeaders({ method: "GET", pathname: "/api/webhooks" });
       const res = await fetchWithTimeout("/api/webhooks", { timeoutMs: 8000, headers: authHeaders });
       if (res.ok) {
         const data = await res.json();
@@ -838,7 +837,7 @@ function WebhooksSection() {
     setError(null);
     setNewSecret(null);
     try {
-      const authHeaders = await getAuthHeaders();
+      const authHeaders = await getAuthHeaders({ method: "POST", pathname: "/api/webhooks" });
       const res = await fetchWithTimeout("/api/webhooks", {
         timeoutMs: 8000,
         method: "POST",
@@ -863,7 +862,7 @@ function WebhooksSection() {
 
   async function removeWebhook(id: number) {
     try {
-      const authHeaders = await getAuthHeaders();
+      const authHeaders = await getAuthHeaders({ method: "DELETE", pathname: "/api/webhooks" });
       await fetchWithTimeout("/api/webhooks", {
         timeoutMs: 8000,
         method: "DELETE",
@@ -878,13 +877,11 @@ function WebhooksSection() {
     return (
       <Panel>
         <PanelHeader eyebrow="Integrations" title="Webhooks" subtitle="Receive real-time event notifications via HTTP." />
-        <div className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.02] p-6">
-          <Lock className="h-5 w-5 text-slate-500" />
-          <div>
-            <p className="text-sm font-semibold text-slate-300">Institutional tier required</p>
-            <p className="mt-1 text-xs text-slate-500">Upgrade to Institutional to register webhook endpoints for alert and subscription events.</p>
-          </div>
-        </div>
+        <FeatureLockCard
+          feature="webhooks"
+          title="Webhook Endpoints"
+          subtitle="Register HTTPS endpoints to receive HMAC-signed alert and subscription events."
+        />
       </Panel>
     );
   }

@@ -13,6 +13,7 @@ import {
   RECOMMENDATION_MAX_AMOUNT_TAO,
   ROOT_YIELD_DISCOUNT,
 } from "@/lib/config";
+import type { SubnetDetailModel } from "@/lib/types/subnets";
 import type {
   RecommendationBand,
   RecommendationFactorBullet,
@@ -46,18 +47,38 @@ interface RecSubnet {
 }
 
 /**
- * Build a synthetic "subnet" row for root (netuid 0) so the rest of the
- * recommender can treat it uniformly. Returns null when no root yield can
- * be estimated — in that case root simply doesn't participate.
+ * Build a "subnet" row for root (netuid 0) so the rest of the recommender
+ * can treat it uniformly. Prefers live chain-derived root data when it's
+ * present in the pool (injected by /api/subnets when the root-metrics cache
+ * is fresh); falls back to a heuristic yield derived from subnet medians.
+ *
+ * Returns null when no meaningful yield can be produced — in that case root
+ * simply doesn't participate in recommendations.
  */
-function buildRootRow(subnets: RecSubnet[]): RecSubnet | null {
+function buildRootRow(
+  subnets: RecSubnet[],
+  liveRoot?: RecSubnet | null,
+): RecSubnet | null {
+  // Prefer live root data (liquidity + yield + stakers direct from chain).
+  if (liveRoot && liveRoot.yield > 0) {
+    const root: RecSubnet = {
+      ...liveRoot,
+      isRoot: true,
+    };
+    root.score = deriveScoreBreakdown(
+      root.liquidity,
+      root.yield,
+      root.stakers,
+      root.yieldDelta7d,
+      root.age,
+    ).total;
+    return root;
+  }
+
+  // Fallback: derive root yield from the subnet yield distribution.
   const rootYield = deriveRootYield(subnets, ROOT_YIELD_DISCOUNT);
   if (rootYield == null) return null;
 
-  // Synthetic root "subnet" characteristics:
-  // - high liquidity and staker count (root is the densest pool)
-  // - zero yield volatility (root doesn't have the same 7d swings)
-  // - infinite "age" proxy (root has existed as long as Bittensor)
   const root: RecSubnet = {
     netuid: 0,
     name: "Root (TAO staking)",
@@ -69,8 +90,6 @@ function buildRootRow(subnets: RecSubnet[]): RecSubnet | null {
     age: 365,
     isRoot: true,
   };
-  // Score root using the same rubric the other subnets use so comparisons
-  // are apples-to-apples.
   root.score = deriveScoreBreakdown(
     root.liquidity,
     root.yield,
@@ -86,6 +105,12 @@ export interface GetRecommendationsOptions {
   address?: string | null;
   /** Caller's per-netuid stake in TAO. Include `0` for root if known. */
   holdings?: WalletHoldingsMap | null;
+  /**
+   * Live subnet set to score against. When provided (typically the response
+   * from /api/subnets), root is sourced from this list via netuid 0 if present.
+   * When omitted, falls back to the compiled snapshot via `getSubnets()`.
+   */
+  subnets?: SubnetDetailModel[] | null;
 }
 
 /**
@@ -116,8 +141,27 @@ export function getRecommendations(
     holdings && Object.values(holdings).some((v) => v > 0)
   );
 
-  const allSubnets = getSubnets();
+  // Prefer caller-provided live subnets (which may include netuid 0 with live
+  // root metrics). Fall back to the compiled snapshot when nothing is passed.
+  const allSubnets = opts.subnets && opts.subnets.length > 0 ? opts.subnets : getSubnets();
   if (allSubnets.length === 0) return [];
+
+  // Extract a live root entry if the caller supplied one — it will be used
+  // by buildRootRow to avoid the median × discount heuristic.
+  const liveRootEntry = allSubnets.find((s) => s.netuid === 0 && s.liquidity > 0 && s.yield > 0);
+  const liveRoot: RecSubnet | null = liveRootEntry
+    ? {
+        netuid: 0,
+        name: liveRootEntry.name || "Root (TAO staking)",
+        yield: liveRootEntry.yield,
+        score: liveRootEntry.score ?? 0,
+        liquidity: liveRootEntry.liquidity,
+        stakers: liveRootEntry.stakers,
+        yieldDelta7d: liveRootEntry.yieldDelta7d ?? 0,
+        age: liveRootEntry.age ?? 365,
+        isRoot: true,
+      }
+    : null;
 
   // Base candidate set: non-root subnets with liquidity, ranked by score.
   const alphaSubnets: RecSubnet[] = allSubnets
@@ -135,7 +179,7 @@ export function getRecommendations(
 
   if (alphaSubnets.length === 0) return [];
 
-  const rootRow = buildRootRow(alphaSubnets);
+  const rootRow = buildRootRow(alphaSubnets, liveRoot);
   const fullPool = rootRow ? [rootRow, ...alphaSubnets] : alphaSubnets;
   const rankedPool = [...fullPool].sort((a, b) => b.score - a.score);
 

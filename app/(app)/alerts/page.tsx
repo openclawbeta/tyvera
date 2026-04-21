@@ -75,7 +75,7 @@ export default function AlertsPage() {
     if (!walletAddress || (walletState !== "verified" && walletState !== "pending_approval")) return;
     setFeedLoading(true);
     try {
-      const authHeaders = await getAuthHeaders();
+      const authHeaders = await getAuthHeaders({ method: "GET", pathname: "/api/alerts" });
       const unreadOnly = feedFilter === "unread" ? "&unread=1" : "";
       const res = await fetchWithTimeout(
         `/api/alerts?address=${encodeURIComponent(walletAddress)}&limit=50${unreadOnly}`,
@@ -102,7 +102,7 @@ export default function AlertsPage() {
     if (!walletAddress || (walletState !== "verified" && walletState !== "pending_approval")) return;
     setRulesLoading(true);
     try {
-      const authHeaders = await getAuthHeaders();
+      const authHeaders = await getAuthHeaders({ method: "GET", pathname: "/api/alert-rules" });
       const res = await fetchWithTimeout(
         `/api/alert-rules?address=${encodeURIComponent(walletAddress)}`,
         { timeoutMs: 8000, headers: authHeaders },
@@ -126,7 +126,7 @@ export default function AlertsPage() {
   const markAllRead = async () => {
     if (!walletAddress || (walletState !== "verified" && walletState !== "pending_approval")) return;
     try {
-      const authHeaders = await getAuthHeaders();
+      const authHeaders = await getAuthHeaders({ method: "POST", pathname: "/api/alerts" });
       await fetchWithTimeout("/api/alerts", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
@@ -143,7 +143,7 @@ export default function AlertsPage() {
   const initDefaults = async () => {
     if (!walletAddress || (walletState !== "verified" && walletState !== "pending_approval")) return;
     try {
-      const authHeaders = await getAuthHeaders();
+      const authHeaders = await getAuthHeaders({ method: "PUT", pathname: "/api/alert-rules" });
       const res = await fetchWithTimeout("/api/alert-rules", {
         method: "PUT",
         headers: { "Content-Type": "application/json", ...authHeaders },
@@ -162,7 +162,7 @@ export default function AlertsPage() {
   const updateRule = async (ruleId: number, alertType: AlertType, threshold: number, enabled: boolean) => {
     if (!walletAddress || (walletState !== "verified" && walletState !== "pending_approval")) return;
     try {
-      const authHeaders = await getAuthHeaders();
+      const authHeaders = await getAuthHeaders({ method: "POST", pathname: "/api/alert-rules" });
       await fetchWithTimeout("/api/alert-rules", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
@@ -183,7 +183,7 @@ export default function AlertsPage() {
   const deleteRule = async (ruleId: number) => {
     if (!walletAddress || (walletState !== "verified" && walletState !== "pending_approval")) return;
     try {
-      const authHeaders = await getAuthHeaders();
+      const authHeaders = await getAuthHeaders({ method: "DELETE", pathname: "/api/alert-rules" });
       await fetchWithTimeout("/api/alert-rules", {
         method: "DELETE",
         headers: { "Content-Type": "application/json", ...authHeaders },
@@ -200,7 +200,7 @@ export default function AlertsPage() {
     if (!walletAddress || (walletState !== "verified" && walletState !== "pending_approval")) return;
     setApplyingPreset(preset.id);
     try {
-      const authHeaders = await getAuthHeaders();
+      const authHeaders = await getAuthHeaders({ method: "POST", pathname: "/api/alert-presets" });
       const res = await fetchWithTimeout("/api/alert-presets", {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
@@ -223,7 +223,7 @@ export default function AlertsPage() {
     label: CATEGORY_LABELS[cat],
     icon: categoryIcon(cat),
     rules: rules.filter((r) => {
-      const meta = ALERT_TYPE_META[r.alert_type as AlertType];
+      const meta = ALERT_TYPE_META[r.alert_type as keyof typeof ALERT_TYPE_META];
       return meta?.category === cat;
     }),
   }));
@@ -580,7 +580,7 @@ export default function AlertsPage() {
                     ) : (
                       <div className="space-y-2">
                         {catRules.map((rule) => {
-                          const meta = ALERT_TYPE_META[rule.alert_type as AlertType];
+                          const meta = ALERT_TYPE_META[rule.alert_type as keyof typeof ALERT_TYPE_META];
                           if (!meta) return null;
                           const localThreshold = editingThresholds[rule.id] ?? rule.threshold;
 

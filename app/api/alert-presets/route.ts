@@ -34,14 +34,15 @@ export async function POST(req: NextRequest) {
   const auth = await requireWalletAuth(req);
   if (auth.errorResponse) return auth.errorResponse;
 
-  let body: { presetId?: string; address?: string };
-  try {
-    body = await req.json();
-  } catch {
+  const raw = await req.json().catch(() => null);
+  if (typeof raw !== "object" || raw === null) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
+  const bodyObj = raw as Record<string, unknown>;
+  const bodyAddress = typeof bodyObj.address === "string" ? bodyObj.address : null;
+  const presetId = bodyObj.presetId;
 
-  const address = getAuthenticatedAddress(req, auth, body.address);
+  const address = getAuthenticatedAddress(req, auth, bodyAddress);
   if (!address) {
     return NextResponse.json({ error: "address required" }, { status: 400 });
   }
@@ -64,8 +65,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { presetId } = body;
-  if (!presetId) {
+  if (typeof presetId !== "string" || presetId.length === 0 || presetId.length > 60) {
     return NextResponse.json({ error: "presetId is required" }, { status: 400 });
   }
 

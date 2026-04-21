@@ -1,12 +1,29 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Top Holders — Tyvera",
+  title: "Bittensor Top Holders: TAO Whale Wallets & Concentration Tracker",
   description:
-    "Explore the largest TAO holders across Bittensor subnets. Track whale wallets, concentration metrics, and holder distribution.",
+    "Explore the largest TAO holders across Bittensor subnets. Track whale wallets, staking concentration, and holder distribution in real time.",
+  keywords: [
+    "Bittensor holders",
+    "TAO whales",
+    "subnet concentration",
+    "Bittensor rich list",
+    "TAO distribution",
+  ],
+  alternates: { canonical: "/holders" },
   openGraph: {
-    title: "Top Holders — Tyvera",
-    description: "Track the largest TAO holders, whale wallets, and holder concentration across Bittensor subnets.",
+    title: "Bittensor Top Holders — Tyvera",
+    description:
+      "Track the largest TAO holders, whale wallets, and holder concentration across Bittensor subnets.",
+    url: "https://tyvera.ai/holders",
+    type: "website",
+    siteName: "Tyvera",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Bittensor Top Holders — Tyvera",
+    description: "TAO whale wallets and subnet concentration tracker.",
   },
 };
 

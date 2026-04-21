@@ -14,6 +14,8 @@ import {
   apiResponse,
   apiErrorResponse,
 } from "@/lib/data-source-policy";
+import { recordPortfolioSnapshot } from "@/lib/db/portfolio-snapshots";
+import { getLatestTaoPrice } from "@/lib/chain/price-engine";
 
 export async function GET(request: NextRequest) {
   const address = request.nextUrl.searchParams.get("address");
@@ -38,6 +40,19 @@ export async function GET(request: NextRequest) {
 
   try {
     const result = await fetchWalletStakes(address);
+
+    // Fire-and-forget daily snapshot. Deduped on (address, UTC day).
+    // Protects the chart from gaps even when the user visits only once per day.
+    const taoPoint = getLatestTaoPrice();
+    const taoUsd = taoPoint?.taoUsd ?? 0;
+    void recordPortfolioSnapshot({
+      walletAddress: address,
+      totalStakedTao: result.stats.totalStakedTao,
+      totalValueUsd: result.stats.totalValueUsd,
+      weightedYield: result.stats.weightedYield,
+      positionCount: result.stats.positionCount,
+      taoPriceUsd: taoUsd,
+    });
 
     return apiResponse(
       { ...result },

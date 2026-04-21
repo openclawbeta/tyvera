@@ -220,6 +220,66 @@ export async function markAlertsRead(
 }
 
 /**
+ * List every wallet address that owns at least one enabled alert rule.
+ * Used by the alert evaluator cron to scope work to wallets that opted in.
+ */
+export async function listWalletsWithEnabledRules(): Promise<string[]> {
+  const db = await getDb();
+  const results = await db.query(
+    `SELECT DISTINCT wallet_address FROM alert_rules WHERE enabled = 1`,
+  );
+  if (!results.length || !results[0].rows.length) return [];
+  return results[0].rows.map((row) => String(row[0]));
+}
+
+/**
+ * Count alerts of a given type (optionally scoped to a subnet memo) for a
+ * wallet that fired within the last N minutes. Used by the evaluator for
+ * cooldown/deduplication so the same condition doesn't spam the inbox.
+ */
+export async function countRecentAlerts(
+  walletAddress: string,
+  alertType: AlertType,
+  cooldownMinutes: number,
+  subnetHint?: string | null,
+): Promise<number> {
+  const db = await getDb();
+  const cutoff = new Date(Date.now() - cooldownMinutes * 60_000).toISOString();
+
+  if (subnetHint != null) {
+    // Metadata is JSON; look for either explicit netuid or subnet_label match.
+    // Include trailing boundary characters so that netuid "1" doesn't
+    // falsely match "10", "11", etc. JSON numbers can be followed by `,`
+    // or `}` in the serialised object, never another digit.
+    const results = await db.query(
+      `SELECT COUNT(*) FROM alerts
+       WHERE wallet_address = ?
+         AND alert_type = ?
+         AND created_at >= ?
+         AND (
+           metadata LIKE ? OR metadata LIKE ? OR metadata LIKE ?
+         )`,
+      [
+        walletAddress,
+        alertType,
+        cutoff,
+        `%"netuid":${subnetHint},%`,
+        `%"netuid":${subnetHint}}%`,
+        `%"subnet":"${subnetHint}"%`,
+      ],
+    );
+    return Number(results[0]?.rows?.[0]?.[0] ?? 0);
+  }
+
+  const results = await db.query(
+    `SELECT COUNT(*) FROM alerts
+     WHERE wallet_address = ? AND alert_type = ? AND created_at >= ?`,
+    [walletAddress, alertType, cutoff],
+  );
+  return Number(results[0]?.rows?.[0]?.[0] ?? 0);
+}
+
+/**
  * Delete old alerts (cleanup). Keeps the last N per wallet.
  */
 export async function pruneAlerts(walletAddress: string, keepCount: number = 200): Promise<void> {
