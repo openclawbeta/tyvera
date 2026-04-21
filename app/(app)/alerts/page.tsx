@@ -239,7 +239,7 @@ export default function AlertsPage() {
   // ── Not connected ─────────────────────────────────────────────────
   if (!walletAddress) {
     return (
-      <div className="min-h-screen w-full" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1a1f35 100%)" }}>
+      <div className="min-h-screen w-full">
         <div className="p-6 lg:p-8 max-w-5xl mx-auto">
           <PageHeader title="Smart Alerts" subtitle="Personalized notifications for your staked subnets" />
           <div className="mt-12 flex flex-col items-center text-center">
@@ -272,7 +272,7 @@ export default function AlertsPage() {
   }
 
   return (
-    <div className="min-h-screen w-full" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1a1f35 100%)" }}>
+    <div className="min-h-screen w-full">
       <div className="p-6 lg:p-8 max-w-5xl mx-auto">
         {/* Header */}
         <PageHeader title="Smart Alerts" subtitle="Personalized notifications for your staked subnets" />

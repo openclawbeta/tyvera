@@ -395,3 +395,172 @@
   border-radius: inherit;
   opacity: 0.35;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   AURORA SHELL — scoped overrides for legacy dark-theme tailwind
+   classes inside the authenticated app. Pages still use class names
+   like `text-slate-300`, `bg-white/[0.03]`, `border-white/8`, etc.
+   These rules rebind them to the warm palette without rewriting
+   every page file. Scoped with `.aurora-shell` so landing /login /
+   signup (outside the shell) are unaffected.
+   ═══════════════════════════════════════════════════════════════ */
+
+.aurora-shell {
+  color: var(--aurora-ink);
+}
+
+/* Text colors — dark-theme slate/white → ink + sub */
+.aurora-shell .text-white,
+.aurora-shell .text-slate-50,
+.aurora-shell .text-slate-100,
+.aurora-shell .text-slate-200 { color: var(--aurora-ink) !important; }
+
+.aurora-shell .text-slate-300 { color: #2B2A26 !important; }
+.aurora-shell .text-slate-400,
+.aurora-shell .text-slate-500 { color: var(--aurora-sub) !important; }
+.aurora-shell .text-slate-600,
+.aurora-shell .text-slate-700 { color: #8A8578 !important; }
+
+/* Placeholder text */
+.aurora-shell .placeholder-slate-500::placeholder,
+.aurora-shell .placeholder-slate-400::placeholder,
+.aurora-shell ::placeholder { color: #8A8578 !important; }
+
+/* Cyan accents (primary action) → ink or lavender */
+.aurora-shell .text-cyan-200,
+.aurora-shell .text-cyan-300,
+.aurora-shell .text-cyan-400 { color: #5B4BC9 !important; }
+
+/* Amber accents → warm brown */
+.aurora-shell .text-amber-300,
+.aurora-shell .text-amber-400 { color: #B88A00 !important; }
+
+/* Emerald accents → aurora up */
+.aurora-shell .text-emerald-300,
+.aurora-shell .text-emerald-400 { color: var(--aurora-up) !important; }
+
+/* Red accents → aurora down */
+.aurora-shell .text-red-300,
+.aurora-shell .text-red-400,
+.aurora-shell .text-rose-300,
+.aurora-shell .text-rose-400 { color: var(--aurora-down) !important; }
+
+/* Violet → lavender */
+.aurora-shell .text-violet-300,
+.aurora-shell .text-violet-400,
+.aurora-shell .text-purple-300,
+.aurora-shell .text-purple-400 { color: #5B4BC9 !important; }
+
+/* Semi-transparent white surfaces — become soft cream panels */
+.aurora-shell [class*="bg-white/[0.0"],
+.aurora-shell .bg-white\/\[0\.022\],
+.aurora-shell .bg-white\/\[0\.03\],
+.aurora-shell .bg-white\/\[0\.034\],
+.aurora-shell .bg-white\/\[0\.04\],
+.aurora-shell .bg-white\/\[0\.045\],
+.aurora-shell .bg-white\/\[0\.05\],
+.aurora-shell .bg-white\/5,
+.aurora-shell .bg-white\/6,
+.aurora-shell .bg-white\/8,
+.aurora-shell .bg-white\/10 {
+  background: #FFFFFF !important;
+}
+
+/* Semi-transparent white borders — become hair border */
+.aurora-shell [class*="border-white/[0.0"],
+.aurora-shell .border-white\/5,
+.aurora-shell .border-white\/6,
+.aurora-shell .border-white\/8,
+.aurora-shell .border-white\/10,
+.aurora-shell .border-white\/12,
+.aurora-shell .border-white\/\[0\.08\],
+.aurora-shell .border-white\/\[0\.1\] {
+  border-color: var(--aurora-hair) !important;
+}
+
+/* Slate fills (skeleton, inputs, buttons) */
+.aurora-shell [class*="bg-slate-8"],
+.aurora-shell [class*="bg-slate-9"],
+.aurora-shell .bg-slate-800\/30,
+.aurora-shell .bg-slate-800\/40,
+.aurora-shell .bg-slate-800\/50,
+.aurora-shell .bg-slate-900\/50 {
+  background: #F2F0EB !important;
+}
+.aurora-shell [class*="border-slate-7"],
+.aurora-shell [class*="border-slate-8"],
+.aurora-shell .border-slate-700\/50 {
+  border-color: var(--aurora-hair) !important;
+}
+
+/* Cyan/blue fills → lavender tint */
+.aurora-shell .bg-cyan-400\/\[0\.05\],
+.aurora-shell .bg-cyan-400\/\[0\.08\],
+.aurora-shell .bg-cyan-500\/10,
+.aurora-shell .bg-cyan-500\/20,
+.aurora-shell [class*="bg-cyan-"] {
+  background: #EFE8FF !important;
+}
+.aurora-shell [class*="border-cyan-"] {
+  border-color: #D9CEFF !important;
+}
+
+/* Hero/page chrome dark fills (hardcoded inline + tailwind arbitrary) */
+.aurora-shell [style*="#0f172a"],
+.aurora-shell [style*="#1a1f35"],
+.aurora-shell [style*="#070a12"],
+.aurora-shell [style*="#0a0d14"],
+.aurora-shell [style*="rgba(255,255,255,0.018)"],
+.aurora-shell [style*="rgba(255,255,255,0.028)"],
+.aurora-shell [style*="rgba(255,255,255,0.03)"],
+.aurora-shell [style*="rgba(255,255,255,0.014)"] {
+  background: #FFFFFF !important;
+  background-image: none !important;
+  color: var(--aurora-ink);
+}
+
+/* Heavy dark drop shadows — soften */
+.aurora-shell [class*="shadow-[0_"],
+.aurora-shell .shadow-\[0_18px_40px_rgba\(0\,0\,0\,0\.28\)\],
+.aurora-shell .shadow-\[0_30px_100px_rgba\(0\,0\,0\,0\.42\)\,0_0_0_1px_rgba\(255\,255\,255\,0\.025\)_inset\,0_0_34px_rgba\(79\,124\,255\,0\.04\)\] {
+  box-shadow: 0 1px 2px rgba(15,15,18,0.04), 0 12px 32px rgba(15,15,18,0.05) !important;
+}
+
+/* Generic inline `color: "#94a3b8"` (slate-400) — handled via override above */
+
+/* Inputs & form fields */
+.aurora-shell input,
+.aurora-shell textarea,
+.aurora-shell select {
+  background: #FFFFFF;
+  color: var(--aurora-ink);
+  border-color: var(--aurora-hair);
+}
+.aurora-shell input:focus,
+.aurora-shell textarea:focus,
+.aurora-shell select:focus {
+  border-color: #C9B8FF;
+  box-shadow: 0 0 0 3px rgba(201,184,255,0.25);
+  outline: none;
+}
+
+/* Cards already defined — reinforce for .glass/.panel nested in shell */
+.aurora-shell .glass,
+.aurora-shell .panel,
+.aurora-shell .card-elevated {
+  background: #FFFFFF !important;
+  border-color: var(--aurora-hair) !important;
+  color: var(--aurora-ink);
+}
+
+/* Code blocks remain dark on purpose (dev docs pattern) */
+.aurora-shell pre,
+.aurora-shell code.dark,
+.aurora-shell .code-dark {
+  color: #e8e5dd;
+}
+
+/* Backdrop blur divs that were dark — strip */
+.aurora-shell .backdrop-blur-2xl[class*="bg-["] {
+  background: rgba(250,249,247,0.78) !important;
+}
