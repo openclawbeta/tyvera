@@ -42,7 +42,7 @@ const STRATEGY_DESCRIPTIONS: Record<StrategyType, string> = {
 };
 
 const STRATEGY_COLORS: Record<StrategyType, string> = {
-  hold: "#22d3ee",
+  hold: "#5B4BC9",
   move: "#38bdf8",
   split: "#06b6d4",
   top_yield: "#0891b2",
@@ -327,8 +327,8 @@ export default function BacktestPage() {
                     <ComposedChart data={chartData}>
                       <defs>
                         <linearGradient id="stratGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.2} />
-                          <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
+                          <stop offset="0%" stopColor="#5B4BC9" stopOpacity={0.2} />
+                          <stop offset="100%" stopColor="#5B4BC9" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid
@@ -338,13 +338,13 @@ export default function BacktestPage() {
                       />
                       <XAxis
                         dataKey="date"
-                        tick={{ fill: "#475569", fontSize: 9 }}
+                        tick={{ fill: "var(--aurora-sub)", fontSize: 9 }}
                         axisLine={false}
                         tickLine={false}
                         interval="preserveStartEnd"
                       />
                       <YAxis
-                        tick={{ fill: "#475569", fontSize: 9 }}
+                        tick={{ fill: "var(--aurora-sub)", fontSize: 9 }}
                         axisLine={false}
                         tickLine={false}
                         tickFormatter={(v) => `${v.toFixed(1)} τ`}
@@ -357,7 +357,7 @@ export default function BacktestPage() {
                       <Area
                         type="monotone"
                         dataKey="value"
-                        stroke="#22d3ee"
+                        stroke="#5B4BC9"
                         strokeWidth={2}
                         fill="url(#stratGrad)"
                         dot={false}

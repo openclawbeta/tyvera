@@ -109,7 +109,7 @@ export default function PortfolioPage() {
                 border: "1px solid rgba(34,211,238,0.18)",
               }}
             >
-              <Wallet className="w-6 h-6" style={{ color: "#22d3ee" }} />
+              <Wallet className="w-6 h-6" style={{ color: "#5B4BC9" }} />
             </div>
 
             <h2 className="text-xl font-semibold text-white mb-2">
@@ -130,7 +130,7 @@ export default function PortfolioPage() {
               style={{
                 background: "linear-gradient(135deg, rgba(34,211,238,0.12), rgba(6,182,212,0.06))",
                 border: "1px solid rgba(34,211,238,0.2)",
-                color: "#22d3ee",
+                color: "#5B4BC9",
               }}
             >
               <Wallet className="w-4 h-4" />
@@ -189,7 +189,7 @@ export default function PortfolioPage() {
           }}
         >
           <Info className="w-4 h-4 flex-shrink-0 mt-0.5" style={{
-            color: source === "chain" ? "#22d3ee" : "#fbbf24"
+            color: source === "chain" ? "#5B4BC9" : "var(--aurora-warn)"
           }} />
           <div className="flex-1 min-w-0">
             <p className="text-[12px] text-slate-300">
@@ -282,7 +282,7 @@ export default function PortfolioPage() {
                           padding: "12px 16px",
                           textAlign: i === 0 || i === 4 ? "left" : "right",
                           fontWeight: 600,
-                          color: "#cbd5e1",
+                          color: "var(--aurora-ink)",
                           fontSize: "11px",
                           letterSpacing: "0.04em",
                           textTransform: "uppercase",
@@ -296,7 +296,7 @@ export default function PortfolioPage() {
                 <tbody>
                   {positions.map((pos, idx) => {
                     const riskColors: Record<string, string> = {
-                      LOW: "#34d399", MODERATE: "#f59e0b", HIGH: "#ef4444", SPECULATIVE: "#ec4899",
+                      LOW: "var(--aurora-up)", MODERATE: "#f59e0b", HIGH: "#ef4444", SPECULATIVE: "#ec4899",
                     };
                     return (
                       <tr
@@ -324,23 +324,23 @@ export default function PortfolioPage() {
                               {pos.netuid}
                             </div>
                             <div>
-                              <div style={{ color: "#e2e8f0", fontWeight: 500 }}>{pos.subnetName}</div>
-                              <div style={{ color: "#94a3b8", fontSize: "10px" }}>{pos.symbol}</div>
+                              <div style={{ color: "var(--aurora-ink)", fontWeight: 500 }}>{pos.subnetName}</div>
+                              <div style={{ color: "var(--aurora-sub)", fontSize: "10px" }}>{pos.symbol}</div>
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: "12px 16px", textAlign: "right", color: "#cbd5e1", fontWeight: 500 }}>
+                        <td style={{ padding: "12px 16px", textAlign: "right", color: "var(--aurora-ink)", fontWeight: 500 }}>
                           {pos.stakedTao.toFixed(3)} τ
                         </td>
-                        <td style={{ padding: "12px 16px", textAlign: "right", color: "#94a3b8", fontSize: "12px" }}>
+                        <td style={{ padding: "12px 16px", textAlign: "right", color: "var(--aurora-sub)", fontSize: "12px" }}>
                           {(pos.percentOfPortfolio ?? 0).toFixed(1)}%
                         </td>
-                        <td style={{ padding: "12px 16px", textAlign: "right", color: "#34d399", fontWeight: 500 }}>
+                        <td style={{ padding: "12px 16px", textAlign: "right", color: "var(--aurora-up)", fontWeight: 500 }}>
                           {pos.yieldPercent.toFixed(1)}%
                         </td>
                         <td style={{
                           padding: "12px 16px",
-                          color: riskColors[pos.risk] || "#94a3b8",
+                          color: riskColors[pos.risk] || "var(--aurora-sub)",
                           fontSize: "12px", fontWeight: 500,
                         }}>
                           {pos.risk}
@@ -357,7 +357,7 @@ export default function PortfolioPage() {
         <FadeIn delay={0.11}>
           <GlassCard padding="lg">
             <div className="text-center py-12">
-              <Wallet className="w-10 h-10 mx-auto mb-4" style={{ color: "#475569" }} />
+              <Wallet className="w-10 h-10 mx-auto mb-4" style={{ color: "var(--aurora-sub)" }} />
               <h3 className="text-base font-semibold text-slate-300 mb-2">
                 No Staked Positions
               </h3>
@@ -371,7 +371,7 @@ export default function PortfolioPage() {
                   style={{
                     background: "rgba(34,211,238,0.12)",
                     border: "1px solid rgba(34,211,238,0.22)",
-                    color: "#22d3ee",
+                    color: "#5B4BC9",
                   }}
                 >
                   Explore Subnets
@@ -403,8 +403,8 @@ export default function PortfolioPage() {
                 <div key={`dist-${pos.netuid}`} className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <span style={{ color: "#cbd5e1", fontSize: "12px" }}>{pos.subnetName}</span>
-                      <span style={{ color: "#94a3b8", fontSize: "11px", fontWeight: 500 }}>
+                      <span style={{ color: "var(--aurora-ink)", fontSize: "12px" }}>{pos.subnetName}</span>
+                      <span style={{ color: "var(--aurora-sub)", fontSize: "11px", fontWeight: 500 }}>
                         {(pos.percentOfPortfolio ?? 0).toFixed(1)}%
                       </span>
                     </div>

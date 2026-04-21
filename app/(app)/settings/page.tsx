@@ -111,7 +111,7 @@ function SystemEnforced() {
       style={{
         background: "rgba(52,211,153,0.1)",
         border: "1px solid rgba(52,211,153,0.22)",
-        color: "#34d399",
+        color: "var(--aurora-up)",
       }}
     >
       Always on
@@ -170,7 +170,7 @@ function WalletSection() {
                 onClick={openModal}
                 className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-all"
                 style={{
-                  background: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
+                  background: "linear-gradient(135deg, #5B4BC9 0%, #0ea5e9 100%)",
                   color: "#04060d",
                   boxShadow:
                     "0 0 0 1px rgba(34,211,238,0.4), 0 4px 16px rgba(34,211,238,0.2), inset 0 1px 0 rgba(255,255,255,0.2)",
@@ -222,7 +222,7 @@ function WalletSection() {
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold tracking-tight" style={{ color: isVerified ? "#67e8f9" : "#fbbf24" }}>
+                  <span className="text-sm font-semibold tracking-tight" style={{ color: isVerified ? "#5B4BC9" : "var(--aurora-warn)" }}>
                     {isVerified ? "Verified wallet" : "Verification still required"}
                   </span>
                   <span className="rounded-md border border-white/8 bg-black/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
@@ -333,10 +333,10 @@ function AccountSection() {
   })();
 
   const tierStyles: Record<string, { bg: string; border: string; color: string }> = {
-    EXPLORER: { bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.25)", color: "#94a3b8" },
-    ANALYST: { bg: "rgba(34,211,238,0.1)", border: "rgba(34,211,238,0.25)", color: "#22d3ee" },
+    EXPLORER: { bg: "rgba(107,104,96,$1)", border: "rgba(107,104,96,$1)", color: "var(--aurora-sub)" },
+    ANALYST: { bg: "rgba(34,211,238,0.1)", border: "rgba(34,211,238,0.25)", color: "#5B4BC9" },
     STRATEGIST: { bg: "rgba(139,92,246,0.1)", border: "rgba(139,92,246,0.25)", color: "#8b5cf6" },
-    INSTITUTIONAL: { bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.25)", color: "#fbbf24" },
+    INSTITUTIONAL: { bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.25)", color: "var(--aurora-warn)" },
   };
 
   const style = tierStyles[displayTier] || tierStyles.EXPLORER;
@@ -354,9 +354,9 @@ function AccountSection() {
         <div className="grid gap-3 md:grid-cols-4">
           {[
             { label: "Plan", value: displayTier, note: expiryNote, tone: style.color },
-            { label: "Wallet", value: address ? "Connected" : "Not connected", note: "Execution identity", tone: address ? "#67e8f9" : "#fbbf24" },
-            { label: "Mode", value: "Source-aware", note: "Trust-first product state", tone: "#34d399" },
-            { label: "Profile", value: "Operator", note: "Individual workflow", tone: "#c4b5fd" },
+            { label: "Wallet", value: address ? "Connected" : "Not connected", note: "Execution identity", tone: address ? "#5B4BC9" : "var(--aurora-warn)" },
+            { label: "Mode", value: "Source-aware", note: "Trust-first product state", tone: "var(--aurora-up)" },
+            { label: "Profile", value: "Operator", note: "Individual workflow", tone: "#5B4BC9" },
           ].map((card) => (
             <div key={card.label} className="rounded-2xl border border-white/8 bg-black/20 px-4 py-4">
               <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">{card.label}</div>
@@ -582,7 +582,7 @@ function GuardrailsSection() {
           onClick={saveGuardrails}
           className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all"
           style={{
-            background: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
+            background: "linear-gradient(135deg, #5B4BC9 0%, #0ea5e9 100%)",
             color: "#04060d",
             boxShadow:
               "0 0 0 1px rgba(34,211,238,0.4), 0 4px 12px rgba(34,211,238,0.18), inset 0 1px 0 rgba(255,255,255,0.2)",
@@ -1012,7 +1012,7 @@ export default function SettingsPage() {
                       ? "linear-gradient(135deg, rgba(34,211,238,0.1) 0%, rgba(34,211,238,0.05) 100%)"
                       : "rgba(255,255,255,0.02)",
                     border: isActive ? "1px solid rgba(34,211,238,0.18)" : "1px solid rgba(255,255,255,0.06)",
-                    color: isActive ? "#a5f3fc" : "#64748b",
+                    color: isActive ? "#a5f3fc" : "var(--aurora-sub)",
                     fontWeight: isActive ? 600 : 500,
                   }}
                 >

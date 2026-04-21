@@ -239,7 +239,7 @@ export default function MetricsPage() {
                 {filtered.slice(0, 16).map((subnet) => {
                   const left = Math.min(88, Math.max(8, (subnet.liquidity / Math.max(...filtered.map((s) => s.liquidity), 1)) * 100));
                   const top = Math.min(82, Math.max(10, 90 - (subnet.yield / Math.max(...filtered.map((s) => s.yield), 1)) * 70));
-                  const color = subnet.risk === "LOW" ? "#34d399" : subnet.risk === "MODERATE" ? "#fbbf24" : "#fb7185";
+                  const color = subnet.risk === "LOW" ? "var(--aurora-up)" : subnet.risk === "MODERATE" ? "var(--aurora-warn)" : "#fb7185";
                   return (
                     <div
                       key={subnet.netuid}
@@ -265,7 +265,7 @@ export default function MetricsPage() {
                 {filtered.slice(0, 16).map((subnet) => {
                   const left = Math.min(88, Math.max(8, subnet.score));
                   const top = Math.min(82, Math.max(10, 100 - riskRank(subnet.risk) * 22));
-                  const color = subnet.risk === "LOW" ? "#34d399" : subnet.risk === "MODERATE" ? "#fbbf24" : "#fb7185";
+                  const color = subnet.risk === "LOW" ? "var(--aurora-up)" : subnet.risk === "MODERATE" ? "var(--aurora-warn)" : "#fb7185";
                   return (
                     <div
                       key={subnet.netuid}

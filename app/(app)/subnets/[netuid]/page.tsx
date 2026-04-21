@@ -95,9 +95,9 @@ function buildInflowHistory(base: number): Array<{ label: string; value: number 
 // ── Risk color map ──────────────────────────────────────────────────────────
 
 const RISK_COLORS: Record<string, { text: string; glow: string }> = {
-  LOW:         { text: "#34d399", glow: "rgba(52,211,153,0.35)"  },
-  MODERATE:    { text: "#fbbf24", glow: "rgba(251,191,36,0.35)"  },
-  HIGH:        { text: "#f87171", glow: "rgba(248,113,113,0.35)" },
+  LOW:         { text: "var(--aurora-up)", glow: "rgba(52,211,153,0.35)"  },
+  MODERATE:    { text: "var(--aurora-warn)", glow: "rgba(251,191,36,0.35)"  },
+  HIGH:        { text: "var(--aurora-down)", glow: "rgba(248,113,113,0.35)" },
   SPECULATIVE: { text: "#e879f9", glow: "rgba(232,121,249,0.35)" },
 };
 
@@ -115,12 +115,12 @@ function MetricCard({
   accent?: "cyan" | "violet" | "emerald" | "amber" | "rose" | "slate";
 }) {
   const ACCENTS = {
-    cyan:    { color: "#22d3ee", bg: "rgba(34,211,238,0.07)",  bdr: "rgba(34,211,238,0.15)"  },
+    cyan:    { color: "#5B4BC9", bg: "rgba(34,211,238,0.07)",  bdr: "rgba(34,211,238,0.15)"  },
     violet:  { color: "#8b5cf6", bg: "rgba(139,92,246,0.07)",  bdr: "rgba(139,92,246,0.15)"  },
-    emerald: { color: "#34d399", bg: "rgba(52,211,153,0.07)",  bdr: "rgba(52,211,153,0.15)"  },
-    amber:   { color: "#fbbf24", bg: "rgba(251,191,36,0.07)",  bdr: "rgba(251,191,36,0.15)"  },
-    rose:    { color: "#f87171", bg: "rgba(248,113,113,0.07)", bdr: "rgba(248,113,113,0.15)" },
-    slate:   { color: "#94a3b8", bg: "rgba(255,255,255,0.03)", bdr: "rgba(255,255,255,0.07)" },
+    emerald: { color: "var(--aurora-up)", bg: "rgba(52,211,153,0.07)",  bdr: "rgba(52,211,153,0.15)"  },
+    amber:   { color: "var(--aurora-warn)", bg: "rgba(251,191,36,0.07)",  bdr: "rgba(251,191,36,0.15)"  },
+    rose:    { color: "var(--aurora-down)", bg: "rgba(248,113,113,0.07)", bdr: "rgba(248,113,113,0.15)" },
+    slate:   { color: "var(--aurora-sub)", bg: "rgba(255,255,255,0.03)", bdr: "rgba(255,255,255,0.07)" },
   };
   const a = ACCENTS[accent];
   return (
@@ -134,7 +134,7 @@ function MetricCard({
     >
       <div
         className="text-[9.5px] font-semibold uppercase"
-        style={{ letterSpacing: "0.09em", color: "#64748b" }}
+        style={{ letterSpacing: "0.09em", color: "var(--aurora-sub)" }}
       >
         {label}
       </div>
@@ -145,7 +145,7 @@ function MetricCard({
         {value}
       </div>
       {sub && (
-        <div className="text-[10px]" style={{ color: "#475569" }}>{sub}</div>
+        <div className="text-[10px]" style={{ color: "var(--aurora-sub)" }}>{sub}</div>
       )}
       <div
         className="h-[2px] w-8 rounded-full mt-auto"
@@ -345,7 +345,7 @@ export default function SubnetDetailPage() {
                   style={{
                     background: "rgba(255,255,255,0.07)",
                     border: "1px solid rgba(255,255,255,0.1)",
-                    color: "#94a3b8",
+                    color: "var(--aurora-sub)",
                     letterSpacing: "0.06em",
                   }}
                 >
@@ -356,7 +356,7 @@ export default function SubnetDetailPage() {
                   style={{
                     background: "rgba(255,255,255,0.05)",
                     border: "1px solid rgba(255,255,255,0.08)",
-                    color: "#64748b",
+                    color: "var(--aurora-sub)",
                     letterSpacing: "0.03em",
                   }}
                 >
@@ -393,7 +393,7 @@ export default function SubnetDetailPage() {
                       style={{
                         background: "rgba(255,255,255,0.04)",
                         border: "1px solid rgba(255,255,255,0.08)",
-                        color: "#cbd5e1",
+                        color: "var(--aurora-ink)",
                       }}
                     >
                       <Icon className="w-3.5 h-3.5" />
@@ -431,7 +431,7 @@ export default function SubnetDetailPage() {
                 style={{
                   background: watched ? "rgba(34,211,238,0.08)" : "rgba(255,255,255,0.05)",
                   border: watched ? "1px solid rgba(34,211,238,0.22)" : "1px solid rgba(255,255,255,0.1)",
-                  color: watched ? "#22d3ee" : "#94a3b8",
+                  color: watched ? "#5B4BC9" : "var(--aurora-sub)",
                 }}
                 aria-label={watched ? `Remove ${subnet.name} from watchlist` : `Add ${subnet.name} to watchlist`}
                 title={watched ? "Watching" : "Add to watchlist"}
@@ -446,7 +446,7 @@ export default function SubnetDetailPage() {
                 style={{
                   background: "rgba(139,92,246,0.08)",
                   border: "1px solid rgba(139,92,246,0.2)",
-                  color: "#a78bfa",
+                  color: "#5B4BC9",
                 }}
               >
                 <GitCompare className="w-3.5 h-3.5" />
@@ -518,7 +518,7 @@ export default function SubnetDetailPage() {
                     target="_blank"
                     rel="noreferrer"
                     className="flex items-center gap-2 rounded-xl px-3 py-3 transition-colors duration-150 hover:bg-white/[0.06]"
-                    style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)", color: "#cbd5e1" }}
+                    style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)", color: "var(--aurora-ink)" }}
                   >
                     <Icon className="w-3.5 h-3.5" />
                     <span className="text-[12px] font-medium">{label}</span>
@@ -627,7 +627,7 @@ export default function SubnetDetailPage() {
               title="Yield History"
               label="30-day modeled trend"
               data={yieldData}
-              color={isUp ? "#22d3ee" : "#f87171"}
+              color={isUp ? "#5B4BC9" : "var(--aurora-down)"}
               gradientId={`yield-detail-${subnet.netuid}`}
               suffix="%"
               height={180}
@@ -649,7 +649,7 @@ export default function SubnetDetailPage() {
               title="Stake Inflow"
               label="30d modeled"
               data={inflowData}
-              color={inflowTrend >= 0 ? "#34d399" : "#f87171"}
+              color={inflowTrend >= 0 ? "var(--aurora-up)" : "var(--aurora-down)"}
               gradientId={`inflow-${subnet.netuid}`}
               suffix=" τ"
               height={72}
@@ -738,7 +738,7 @@ export default function SubnetDetailPage() {
                         style={{
                           background: "rgba(255,255,255,0.04)",
                           border: "1px solid rgba(255,255,255,0.07)",
-                          color: "#cbd5e1",
+                          color: "var(--aurora-ink)",
                         }}
                       >
                         {item}
@@ -807,7 +807,7 @@ export default function SubnetDetailPage() {
                       style={{
                         fontSize: "9.5px",
                         letterSpacing: "0.1em",
-                        color: relatedRec.toSubnet.netuid === netuid ? "#22d3ee" : "#fbbf24",
+                        color: relatedRec.toSubnet.netuid === netuid ? "#5B4BC9" : "var(--aurora-warn)",
                       }}
                     >
                       {relatedRec.toSubnet.netuid === netuid
@@ -843,10 +843,10 @@ export default function SubnetDetailPage() {
                         className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0"
                         style={{
                           background: b.direction === "POSITIVE"
-                            ? "#34d399"
+                            ? "var(--aurora-up)"
                             : b.direction === "NEGATIVE"
-                            ? "#f87171"
-                            : "#64748b",
+                            ? "var(--aurora-down)"
+                            : "var(--aurora-sub)",
                         }}
                       />
                       <span className="text-[11px] text-slate-400 leading-relaxed">
@@ -884,7 +884,7 @@ export default function SubnetDetailPage() {
                   <button
                     className="w-full flex items-center justify-center gap-2 rounded-xl font-semibold text-[13px] py-2.5 transition-all duration-200"
                     style={{
-                      background: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
+                      background: "linear-gradient(135deg, #5B4BC9 0%, #0ea5e9 100%)",
                       color: "#04060d",
                       boxShadow: "0 0 0 1px rgba(34,211,238,0.35), 0 4px 14px rgba(34,211,238,0.18), inset 0 1px 0 rgba(255,255,255,0.2)",
                     }}
@@ -910,7 +910,7 @@ export default function SubnetDetailPage() {
                     border: "1px solid rgba(255,255,255,0.07)",
                   }}
                 >
-                  <Activity className="w-5 h-5" style={{ color: "#334155" }} />
+                  <Activity className="w-5 h-5" style={{ color: "var(--aurora-hair)" }} />
                 </div>
                 <div>
                   <p className="text-[13px] font-medium text-slate-500 mb-1">No active recommendation</p>

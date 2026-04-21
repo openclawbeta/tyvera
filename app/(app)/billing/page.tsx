@@ -68,11 +68,11 @@ function formatDate(dateStr: string): string {
 
 function StatusBadge({ status }: { status: string }) {
   const config =
-    status === "active" ? { bg: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.2)", color: "#34d399", label: "Active" } :
-    status === "grace" ? { bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.2)", color: "#fbbf24", label: "Grace Period" } :
-    status === "expired" ? { bg: "rgba(239,68,68,0.1)", border: "rgba(239,68,68,0.2)", color: "#f87171", label: "Expired" } :
-    status === "free" ? { bg: "rgba(34,211,238,0.08)", border: "rgba(34,211,238,0.2)", color: "#22d3ee", label: "Free" } :
-    { bg: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.08)", color: "#94a3b8", label: status };
+    status === "active" ? { bg: "rgba(52,211,153,0.1)", border: "rgba(52,211,153,0.2)", color: "var(--aurora-up)", label: "Active" } :
+    status === "grace" ? { bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.2)", color: "var(--aurora-warn)", label: "Grace Period" } :
+    status === "expired" ? { bg: "rgba(239,68,68,0.1)", border: "rgba(239,68,68,0.2)", color: "var(--aurora-down)", label: "Expired" } :
+    status === "free" ? { bg: "rgba(34,211,238,0.08)", border: "rgba(34,211,238,0.2)", color: "#5B4BC9", label: "Free" } :
+    { bg: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.08)", color: "var(--aurora-sub)", label: status };
 
   return (
     <span
@@ -129,16 +129,16 @@ export default function BillingPage() {
             className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
             style={{ background: "rgba(34,211,238,0.1)", border: "1px solid rgba(34,211,238,0.2)" }}
           >
-            <WalletCards className="w-7 h-7" style={{ color: "#22d3ee" }} />
+            <WalletCards className="w-7 h-7" style={{ color: "#5B4BC9" }} />
           </div>
           <h2 className="text-lg font-semibold text-white mb-2">Connect your wallet</h2>
-          <p className="text-sm max-w-md" style={{ color: "#94a3b8" }}>
+          <p className="text-sm max-w-md" style={{ color: "var(--aurora-sub)" }}>
             Connect your Bittensor wallet to view your subscription status, payment history, and manage your plan.
           </p>
           <button
             onClick={openModal}
             className="mt-6 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all"
-            style={{ background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.22)", color: "#22d3ee" }}
+            style={{ background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.22)", color: "#5B4BC9" }}
           >
             <WalletCards className="w-4 h-4" />
             Connect Wallet
@@ -169,7 +169,7 @@ export default function BillingPage() {
       {loading && !billing ? (
         <GlassCard padding="lg" className="text-center py-16">
           <Loader2 className="w-6 h-6 mx-auto animate-spin text-cyan-400 mb-3" />
-          <p className="text-sm" style={{ color: "#64748b" }}>Loading billing info…</p>
+          <p className="text-sm" style={{ color: "var(--aurora-sub)" }}>Loading billing info…</p>
         </GlassCard>
       ) : (
         <>
@@ -188,7 +188,7 @@ export default function BillingPage() {
                 <div className="flex items-start gap-3">
                   <AlertTriangle
                     className="h-5 w-5 flex-shrink-0"
-                    style={{ color: inGrace ? "#f87171" : "#fbbf24" }}
+                    style={{ color: inGrace ? "var(--aurora-down)" : "var(--aurora-warn)" }}
                   />
                   <div>
                     <p className="text-sm font-semibold text-white">
@@ -207,7 +207,7 @@ export default function BillingPage() {
                   href="/pricing"
                   className="inline-flex flex-shrink-0 items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all hover:scale-[1.02]"
                   style={{
-                    background: "linear-gradient(135deg, #22d3ee, #0ea5e9)",
+                    background: "linear-gradient(135deg, #5B4BC9, #0ea5e9)",
                     color: "#04060d",
                   }}
                 >
@@ -239,7 +239,7 @@ export default function BillingPage() {
                   </div>
                   <div className="rounded-xl border border-white/6 bg-white/[0.02] p-4">
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Days Left</div>
-                    <div className="mt-1 text-sm font-semibold" style={{ color: (billing?.daysRemaining ?? 0) <= 7 ? "#f87171" : "#22d3ee" }}>
+                    <div className="mt-1 text-sm font-semibold" style={{ color: (billing?.daysRemaining ?? 0) <= 7 ? "var(--aurora-down)" : "#5B4BC9" }}>
                       {billing?.daysRemaining != null ? `${billing.daysRemaining} days` : "—"}
                     </div>
                   </div>
@@ -250,7 +250,7 @@ export default function BillingPage() {
                     <Link
                       href="/pricing"
                       className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all"
-                      style={{ background: "linear-gradient(135deg, #22d3ee, #0ea5e9)", color: "#04060d" }}
+                      style={{ background: "linear-gradient(135deg, #5B4BC9, #0ea5e9)", color: "#04060d" }}
                     >
                       <Zap className="w-4 h-4" />
                       Upgrade Plan
@@ -299,7 +299,7 @@ export default function BillingPage() {
                       <div className="text-sm font-semibold text-white">TAO On-chain</div>
                     </div>
                   </div>
-                  <p className="text-xs" style={{ color: "#64748b" }}>All payments settle on-chain via Bittensor transfer with memo matching.</p>
+                  <p className="text-xs" style={{ color: "var(--aurora-sub)" }}>All payments settle on-chain via Bittensor transfer with memo matching.</p>
                 </GlassCard>
 
                 <GlassCard padding="md">
@@ -337,7 +337,7 @@ export default function BillingPage() {
                     style={{
                       background: "rgba(34,211,238,0.1)",
                       border: "1px solid rgba(34,211,238,0.22)",
-                      color: "#22d3ee",
+                      color: "#5B4BC9",
                     }}
                   >
                     See all plans
@@ -374,7 +374,7 @@ export default function BillingPage() {
                     href="/pricing"
                     className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold transition-all hover:scale-[1.02]"
                     style={{
-                      background: "linear-gradient(135deg, #22d3ee, #0ea5e9)",
+                      background: "linear-gradient(135deg, #5B4BC9, #0ea5e9)",
                       color: "#04060d",
                     }}
                   >
@@ -400,16 +400,16 @@ export default function BillingPage() {
                   <GlassCard key={plan.id} padding="md">
                     <h4 className="text-base font-semibold text-white mb-1">{plan.name}</h4>
                     <div className="flex items-baseline gap-1 mb-3">
-                      <span className="text-xl font-bold" style={{ color: "#22d3ee" }}>{plan.monthlyPrice}</span>
+                      <span className="text-xl font-bold" style={{ color: "#5B4BC9" }}>{plan.monthlyPrice}</span>
                       <span className="text-xs text-slate-500">τ/month</span>
                     </div>
-                    <div className="text-[11px] mb-4" style={{ color: "#64748b" }}>
+                    <div className="text-[11px] mb-4" style={{ color: "var(--aurora-sub)" }}>
                       or {plan.annualPrice} τ/year (save {Math.round((1 - plan.annualPrice / (plan.monthlyPrice * 12)) * 100)}%)
                     </div>
                     <Link
                       href={`/pricing?plan=${plan.id}`}
                       className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all"
-                      style={{ background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.22)", color: "#22d3ee" }}
+                      style={{ background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.22)", color: "#5B4BC9" }}
                     >
                       Select Plan <ArrowRight className="w-3 h-3" />
                     </Link>
@@ -430,9 +430,9 @@ export default function BillingPage() {
 
             {payments.length === 0 ? (
               <GlassCard padding="md" className="text-center py-10">
-                <Receipt className="w-8 h-8 mx-auto mb-3" style={{ color: "#334155" }} />
-                <p className="text-sm" style={{ color: "#94a3b8" }}>No payments yet</p>
-                <p className="text-xs mt-1" style={{ color: "#64748b" }}>
+                <Receipt className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--aurora-hair)" }} />
+                <p className="text-sm" style={{ color: "var(--aurora-sub)" }}>No payments yet</p>
+                <p className="text-xs mt-1" style={{ color: "var(--aurora-sub)" }}>
                   Your payment history will appear here after your first subscription payment.
                 </p>
               </GlassCard>
@@ -454,7 +454,7 @@ export default function BillingPage() {
                         <tr key={p.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                           <td className="py-3 text-slate-300">{formatDate(p.date)}</td>
                           <td className="py-3 text-white font-medium">{p.plan}</td>
-                          <td className="py-3 text-right tabular-nums" style={{ color: "#22d3ee" }}>
+                          <td className="py-3 text-right tabular-nums" style={{ color: "#5B4BC9" }}>
                             {p.amount.toFixed(2)} τ
                           </td>
                           <td className="py-3 text-center">
@@ -493,7 +493,7 @@ export default function BillingPage() {
                     </div>
                     <div>
                       <div className="text-sm font-semibold text-white">{title}</div>
-                      <p className="text-xs mt-1 leading-relaxed" style={{ color: "#94a3b8" }}>{detail}</p>
+                      <p className="text-xs mt-1 leading-relaxed" style={{ color: "var(--aurora-sub)" }}>{detail}</p>
                     </div>
                   </div>
                 </GlassCard>

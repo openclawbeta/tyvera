@@ -17,9 +17,9 @@ import type {
 } from "@/lib/types/recommendations";
 
 const BANDS = [
-  { dot: "#22d3ee", dotGlow: "rgba(34,211,238,0.6)", label: "Strong", range: "score ≥ 0.35" },
-  { dot: "#fbbf24", dotGlow: "rgba(251,191,36,0.5)", label: "Moderate", range: "score ≥ 0.22" },
-  { dot: "#64748b", dotGlow: "", label: "Mild", range: "score ≥ 0.15" },
+  { dot: "#5B4BC9", dotGlow: "rgba(34,211,238,0.6)", label: "Strong", range: "score ≥ 0.35" },
+  { dot: "var(--aurora-warn)", dotGlow: "rgba(251,191,36,0.5)", label: "Moderate", range: "score ≥ 0.22" },
+  { dot: "var(--aurora-sub)", dotGlow: "", label: "Mild", range: "score ≥ 0.15" },
 ];
 
 function WalletBanner() {
@@ -70,7 +70,7 @@ function WalletBanner() {
             style={{
               background: "rgba(251,191,36,0.1)",
               border: "1px solid rgba(251,191,36,0.25)",
-              color: "#fbbf24",
+              color: "var(--aurora-warn)",
             }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLElement).style.background = "rgba(251,191,36,0.18)";
@@ -103,7 +103,7 @@ function WalletBanner() {
             border: "1px solid rgba(34,211,238,0.2)",
           }}
         >
-          <Wallet className="h-4 w-4" style={{ color: "#22d3ee" }} />
+          <Wallet className="h-4 w-4" style={{ color: "#5B4BC9" }} />
         </div>
         <div className="flex-1">
           <p className="mb-0.5 text-[13px] font-semibold text-white" style={{ letterSpacing: "-0.01em" }}>
@@ -119,7 +119,7 @@ function WalletBanner() {
           style={{
             background: "linear-gradient(135deg, rgba(34,211,238,0.14) 0%, rgba(14,165,233,0.1) 100%)",
             border: "1px solid rgba(34,211,238,0.25)",
-            color: "#67e8f9",
+            color: "#5B4BC9",
           }}
           onMouseEnter={(e) => {
             (e.currentTarget as HTMLElement).style.background = "linear-gradient(135deg, rgba(34,211,238,0.22) 0%, rgba(14,165,233,0.16) 100%)";
@@ -163,7 +163,7 @@ function UpgradeGate() {
         style={{
           background: "linear-gradient(135deg, rgba(139,92,246,0.18) 0%, rgba(79,124,255,0.12) 100%)",
           border: "1px solid rgba(139,92,246,0.3)",
-          color: "#c4b5fd",
+          color: "#5B4BC9",
         }}
       >
         <Sparkles className="h-4 w-4" />
@@ -393,7 +393,7 @@ export default function RecommendationsPage() {
                 border: "1px solid rgba(255,255,255,0.06)",
               }}
             >
-              <Clock className="mx-auto mb-2.5 h-6 w-6" style={{ color: "#64748b" }} />
+              <Clock className="mx-auto mb-2.5 h-6 w-6" style={{ color: "var(--aurora-sub)" }} />
               <p className="text-[13px] font-medium text-slate-400">Scored from latest subnet snapshot</p>
               <p className="mt-1 text-[11px] text-slate-600">Recommendations refresh automatically when new on-chain data is ingested.</p>
             </div>

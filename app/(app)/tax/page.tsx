@@ -16,10 +16,10 @@ const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = [2025, 2026];
 
 const EVENT_TYPE_COLORS: Record<TaxEventType, { bg: string; text: string; border: string }> = {
-  STAKING_REWARD: { bg: "rgba(52,211,153,0.1)", text: "#34d399", border: "rgba(52,211,153,0.22)" },
-  STAKE: { bg: "rgba(34,211,238,0.1)", text: "#22d3ee", border: "rgba(34,211,238,0.22)" },
-  UNSTAKE: { bg: "rgba(251,191,36,0.1)", text: "#fbbf24", border: "rgba(251,191,36,0.22)" },
-  MOVE: { bg: "rgba(139,92,246,0.1)", text: "#a78bfa", border: "rgba(139,92,246,0.22)" },
+  STAKING_REWARD: { bg: "rgba(52,211,153,0.1)", text: "var(--aurora-up)", border: "rgba(52,211,153,0.22)" },
+  STAKE: { bg: "rgba(34,211,238,0.1)", text: "#5B4BC9", border: "rgba(34,211,238,0.22)" },
+  UNSTAKE: { bg: "rgba(251,191,36,0.1)", text: "var(--aurora-warn)", border: "rgba(251,191,36,0.22)" },
+  MOVE: { bg: "rgba(139,92,246,0.1)", text: "#5B4BC9", border: "rgba(139,92,246,0.22)" },
   SUBSCRIPTION: { bg: "rgba(244,63,94,0.1)", text: "#fb7185", border: "rgba(244,63,94,0.22)" },
 };
 

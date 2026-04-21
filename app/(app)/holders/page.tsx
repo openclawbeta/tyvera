@@ -199,8 +199,8 @@ export default function HoldersPage() {
           <div
             className="flex items-start gap-3 rounded-xl px-4 py-3.5"
             style={{
-              background: realAttribution.summary.available ? "rgba(34,211,238,0.04)" : "rgba(148,163,184,0.05)",
-              border: realAttribution.summary.available ? "1px solid rgba(34,211,238,0.12)" : "1px solid rgba(148,163,184,0.12)",
+              background: realAttribution.summary.available ? "rgba(34,211,238,0.04)" : "rgba(107,104,96,$1)",
+              border: realAttribution.summary.available ? "1px solid rgba(34,211,238,0.12)" : "1px solid rgba(107,104,96,$1)",
             }}
           >
             <Info className={`mt-0.5 h-4 w-4 shrink-0 ${realAttribution.summary.available ? "text-cyan-300" : "text-slate-400"}`} />

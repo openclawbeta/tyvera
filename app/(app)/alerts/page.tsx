@@ -247,10 +247,10 @@ export default function AlertsPage() {
               className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
               style={{ background: "rgba(34,211,238,0.1)", border: "1px solid rgba(34,211,238,0.2)" }}
             >
-              <WalletCards className="w-7 h-7" style={{ color: "#22d3ee" }} />
+              <WalletCards className="w-7 h-7" style={{ color: "#5B4BC9" }} />
             </div>
             <h2 className="text-lg font-semibold text-white mb-2">Connect your wallet</h2>
-            <p className="text-sm max-w-md" style={{ color: "#94a3b8" }}>
+            <p className="text-sm max-w-md" style={{ color: "var(--aurora-sub)" }}>
               Alerts are personalized to your staked subnets. Connect your Bittensor wallet to configure alert thresholds and receive notifications that matter to you.
             </p>
             <button
@@ -259,7 +259,7 @@ export default function AlertsPage() {
               style={{
                 background: "rgba(34,211,238,0.12)",
                 border: "1px solid rgba(34,211,238,0.22)",
-                color: "#22d3ee",
+                color: "#5B4BC9",
               }}
             >
               <WalletCards className="w-4 h-4" />
@@ -297,7 +297,7 @@ export default function AlertsPage() {
             className="px-4 py-2 rounded-lg text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
             style={{
               background: tab === "feed" ? "rgba(34,211,238,0.15)" : "transparent",
-              color: tab === "feed" ? "#22d3ee" : "#64748b",
+              color: tab === "feed" ? "#5B4BC9" : "var(--aurora-sub)",
             }}
             aria-label="View alert feed"
             aria-pressed={tab === "feed"}
@@ -310,7 +310,7 @@ export default function AlertsPage() {
             className="px-4 py-2 rounded-lg text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
             style={{
               background: tab === "settings" ? "rgba(34,211,238,0.15)" : "transparent",
-              color: tab === "settings" ? "#22d3ee" : "#64748b",
+              color: tab === "settings" ? "#5B4BC9" : "var(--aurora-sub)",
             }}
             aria-label="Configure alert rules"
             aria-pressed={tab === "settings"}
@@ -331,7 +331,7 @@ export default function AlertsPage() {
                   className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
                   style={{
                     background: feedFilter === "all" ? "rgba(34,211,238,0.15)" : "rgba(255,255,255,0.04)",
-                    color: feedFilter === "all" ? "#22d3ee" : "#64748b",
+                    color: feedFilter === "all" ? "#5B4BC9" : "var(--aurora-sub)",
                   }}
                 >
                   All
@@ -341,7 +341,7 @@ export default function AlertsPage() {
                   className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
                   style={{
                     background: feedFilter === "unread" ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.04)",
-                    color: feedFilter === "unread" ? "#f87171" : "#64748b",
+                    color: feedFilter === "unread" ? "var(--aurora-down)" : "var(--aurora-sub)",
                   }}
                 >
                   Unread{unreadCount > 0 ? ` (${unreadCount})` : ""}
@@ -352,7 +352,7 @@ export default function AlertsPage() {
                   <button
                     onClick={markAllRead}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                    style={{ background: "rgba(34,211,238,0.1)", color: "#22d3ee" }}
+                    style={{ background: "rgba(34,211,238,0.1)", color: "#5B4BC9" }}
                   >
                     <CheckCheck className="w-3.5 h-3.5" />
                     Mark all read
@@ -361,7 +361,7 @@ export default function AlertsPage() {
                 <button
                   onClick={fetchFeed}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                  style={{ background: "rgba(255,255,255,0.04)", color: "#64748b" }}
+                  style={{ background: "rgba(255,255,255,0.04)", color: "var(--aurora-sub)" }}
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${feedLoading ? "animate-spin" : ""}`} />
                 </button>
@@ -372,15 +372,15 @@ export default function AlertsPage() {
             <div className="space-y-2">
               {feedLoading && alerts.length === 0 ? (
                 <GlassCard padding="md" className="text-center py-12">
-                  <p className="text-sm" style={{ color: "#64748b" }}>Loading alerts…</p>
+                  <p className="text-sm" style={{ color: "var(--aurora-sub)" }}>Loading alerts…</p>
                 </GlassCard>
               ) : alerts.length === 0 ? (
                 <GlassCard padding="md" className="text-center py-12">
-                  <Bell className="w-8 h-8 mx-auto mb-3" style={{ color: "#334155" }} />
-                  <p className="text-sm mb-1" style={{ color: "#94a3b8" }}>
+                  <Bell className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--aurora-hair)" }} />
+                  <p className="text-sm mb-1" style={{ color: "var(--aurora-sub)" }}>
                     {feedFilter === "unread" ? "No unread alerts" : "No alerts yet"}
                   </p>
-                  <p className="text-xs" style={{ color: "#64748b" }}>
+                  <p className="text-xs" style={{ color: "var(--aurora-sub)" }}>
                     {rules.length === 0
                       ? "Set up your alert rules in the settings tab to get started"
                       : "Alerts will appear here when your thresholds are triggered"}
@@ -426,10 +426,10 @@ export default function AlertsPage() {
                               {alert.severity}
                             </span>
                           </div>
-                          <p className="text-xs mt-1 leading-relaxed" style={{ color: "#94a3b8" }}>
+                          <p className="text-xs mt-1 leading-relaxed" style={{ color: "var(--aurora-sub)" }}>
                             {alert.message}
                           </p>
-                          <p className="text-[11px] mt-2" style={{ color: "#475569" }}>
+                          <p className="text-[11px] mt-2" style={{ color: "var(--aurora-sub)" }}>
                             {timeAgo(alert.created_at)}
                           </p>
                         </div>
@@ -438,7 +438,7 @@ export default function AlertsPage() {
                         {!alert.read && (
                           <span
                             className="w-2 h-2 rounded-full mt-2 flex-shrink-0"
-                            style={{ background: "#22d3ee" }}
+                            style={{ background: "#5B4BC9" }}
                           />
                         )}
                       </div>
@@ -457,10 +457,10 @@ export default function AlertsPage() {
             {rules.length === 0 && (
               <GlassCard padding="md" glow="cyan" className="mb-6">
                 <div className="flex items-center gap-4">
-                  <Shield className="w-8 h-8 flex-shrink-0" style={{ color: "#22d3ee" }} />
+                  <Shield className="w-8 h-8 flex-shrink-0" style={{ color: "#5B4BC9" }} />
                   <div className="flex-1">
                     <h3 className="text-sm font-semibold text-white">Get started with smart defaults</h3>
-                    <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>
+                    <p className="text-xs mt-1" style={{ color: "var(--aurora-sub)" }}>
                       We'll set up 13 alert rules covering staking yields, risk events, whale flows, and price movements — all with sensible thresholds you can customize.
                     </p>
                   </div>
@@ -470,7 +470,7 @@ export default function AlertsPage() {
                     style={{
                       background: "rgba(34,211,238,0.15)",
                       border: "1px solid rgba(34,211,238,0.3)",
-                      color: "#22d3ee",
+                      color: "#5B4BC9",
                     }}
                     onMouseEnter={(e) => {
                       (e.currentTarget as HTMLElement).style.background = "rgba(34,211,238,0.22)";
@@ -488,10 +488,10 @@ export default function AlertsPage() {
             {/* ── Preset Picker ──────────────────────────────────────── */}
             <div className="mb-8">
               <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                <Sparkles className="w-4 h-4" style={{ color: "#a78bfa" }} />
+                <Sparkles className="w-4 h-4" style={{ color: "#5B4BC9" }} />
                 Alert Presets
                 {!canUsePresets && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ background: "rgba(251,191,36,0.12)", color: "#fbbf24" }}>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ background: "rgba(251,191,36,0.12)", color: "var(--aurora-warn)" }}>
                     Strategist+
                   </span>
                 )}
@@ -500,9 +500,9 @@ export default function AlertsPage() {
                 {ALERT_PRESETS.map((preset) => {
                   const isApplying = applyingPreset === preset.id;
                   const categoryColor =
-                    preset.category === "defensive" ? "#22d3ee" :
-                    preset.category === "opportunity" ? "#34d399" :
-                    preset.category === "whale" ? "#a78bfa" :
+                    preset.category === "defensive" ? "#5B4BC9" :
+                    preset.category === "opportunity" ? "var(--aurora-up)" :
+                    preset.category === "whale" ? "#5B4BC9" :
                     "#f59e0b";
 
                   return (
@@ -516,11 +516,11 @@ export default function AlertsPage() {
                           {preset.category}
                         </span>
                       </div>
-                      <p className="text-xs leading-relaxed mb-3" style={{ color: "#94a3b8" }}>
+                      <p className="text-xs leading-relaxed mb-3" style={{ color: "var(--aurora-sub)" }}>
                         {preset.description}
                       </p>
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px]" style={{ color: "#64748b" }}>
+                        <span className="text-[11px]" style={{ color: "var(--aurora-sub)" }}>
                           {preset.rules.length} rule{preset.rules.length !== 1 ? "s" : ""}
                         </span>
                         {canUsePresets ? (
@@ -531,7 +531,7 @@ export default function AlertsPage() {
                             style={{
                               background: "rgba(167,139,250,0.12)",
                               border: "1px solid rgba(167,139,250,0.22)",
-                              color: "#a78bfa",
+                              color: "#5B4BC9",
                             }}
                             aria-label={`Apply ${preset.name} preset`}
                           >
@@ -543,7 +543,7 @@ export default function AlertsPage() {
                             Apply
                           </button>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: "#64748b" }}>
+                          <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: "var(--aurora-sub)" }}>
                             <Lock className="w-3 h-3" />
                             Locked
                           </span>
@@ -557,7 +557,7 @@ export default function AlertsPage() {
 
             {rulesLoading && rules.length === 0 ? (
               <GlassCard padding="md" className="text-center py-12">
-                <p className="text-sm" style={{ color: "#64748b" }}>Loading rules…</p>
+                <p className="text-sm" style={{ color: "var(--aurora-sub)" }}>Loading rules…</p>
               </GlassCard>
             ) : (
               <div className="space-y-8">
@@ -566,14 +566,14 @@ export default function AlertsPage() {
                     <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
                       <span className="text-base">{icon}</span>
                       {label}
-                      <span className="text-[11px] font-normal" style={{ color: "#64748b" }}>
+                      <span className="text-[11px] font-normal" style={{ color: "var(--aurora-sub)" }}>
                         ({catRules.length} rule{catRules.length !== 1 ? "s" : ""})
                       </span>
                     </h3>
 
                     {catRules.length === 0 ? (
                       <GlassCard padding="sm" className="py-4 text-center">
-                        <p className="text-xs" style={{ color: "#64748b" }}>
+                        <p className="text-xs" style={{ color: "var(--aurora-sub)" }}>
                           No {label.toLowerCase()} rules configured
                         </p>
                       </GlassCard>
@@ -597,13 +597,13 @@ export default function AlertsPage() {
                                     <div className="text-sm font-semibold text-white">
                                       {meta.label}
                                     </div>
-                                    <p className="text-xs mt-1" style={{ color: "#64748b" }}>
+                                    <p className="text-xs mt-1" style={{ color: "var(--aurora-sub)" }}>
                                       {meta.description}
                                     </p>
 
                                     {/* Threshold slider */}
                                     <div className="flex items-center gap-3 mt-3">
-                                      <span className="text-[11px] font-medium" style={{ color: "#94a3b8" }}>
+                                      <span className="text-[11px] font-medium" style={{ color: "var(--aurora-sub)" }}>
                                         Threshold:
                                       </span>
                                       <input
@@ -632,12 +632,12 @@ export default function AlertsPage() {
                                         }}
                                         className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer"
                                         style={{
-                                          background: `linear-gradient(to right, #22d3ee ${((localThreshold - meta.minThreshold) / (meta.maxThreshold - meta.minThreshold)) * 100}%, rgba(255,255,255,0.08) ${((localThreshold - meta.minThreshold) / (meta.maxThreshold - meta.minThreshold)) * 100}%)`,
+                                          background: `linear-gradient(to right, #5B4BC9 ${((localThreshold - meta.minThreshold) / (meta.maxThreshold - meta.minThreshold)) * 100}%, rgba(255,255,255,0.08) ${((localThreshold - meta.minThreshold) / (meta.maxThreshold - meta.minThreshold)) * 100}%)`,
                                         }}
                                       />
                                       <span
                                         className="text-xs font-bold tabular-nums min-w-[3.5rem] text-right"
-                                        style={{ color: "#22d3ee" }}
+                                        style={{ color: "#5B4BC9" }}
                                       >
                                         {localThreshold}{meta.unit ? ` ${meta.unit}` : ""}
                                       </span>
@@ -674,13 +674,13 @@ export default function AlertsPage() {
                                     <button
                                       onClick={() => deleteRule(rule.id)}
                                       className="p-2 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
-                                      style={{ color: "#475569" }}
+                                      style={{ color: "var(--aurora-sub)" }}
                                       aria-label={`Delete ${meta.label} alert rule`}
                                       onMouseEnter={(e) => {
-                                        (e.currentTarget as HTMLElement).style.color = "#f87171";
+                                        (e.currentTarget as HTMLElement).style.color = "var(--aurora-down)";
                                       }}
                                       onMouseLeave={(e) => {
-                                        (e.currentTarget as HTMLElement).style.color = "#475569";
+                                        (e.currentTarget as HTMLElement).style.color = "var(--aurora-sub)";
                                       }}
                                     >
                                       <Trash2 className="w-4 h-4" />

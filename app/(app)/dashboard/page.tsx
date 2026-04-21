@@ -168,7 +168,7 @@ export default function DashboardPage() {
                         onClick={() => setDashPeriod(p)}
                         className="rounded-lg px-3 py-1.5 text-[11px] font-medium transition-all duration-150"
                         style={{
-                          color: p === dashPeriod ? "#a5f3fc" : "#64748b",
+                          color: p === dashPeriod ? "#a5f3fc" : "var(--aurora-sub)",
                           background: p === dashPeriod ? "rgba(34,211,238,0.1)" : "transparent",
                         }}
                       >
@@ -201,7 +201,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <SimpleLineChart data={portfolioChartData} color="#22d3ee" height={190} showGrid prefix="$" gradientId="portfolioGrad" />
+                <SimpleLineChart data={portfolioChartData} color="#5B4BC9" height={190} showGrid prefix="$" gradientId="portfolioGrad" />
               </div>
             </div>
 
@@ -239,7 +239,7 @@ export default function DashboardPage() {
                   border: "1px solid rgba(34,211,238,0.16)",
                 }}
               >
-                <Wallet className="h-6 w-6" style={{ color: "#22d3ee" }} />
+                <Wallet className="h-6 w-6" style={{ color: "#5B4BC9" }} />
               </div>
               <p className="mb-1.5 text-[15px] font-semibold tracking-tight text-slate-300">Connect a wallet to view your portfolio</p>
               <p className="mb-6 max-w-md text-sm leading-relaxed text-slate-500">
@@ -251,7 +251,7 @@ export default function DashboardPage() {
                 style={{
                   background: "rgba(34,211,238,0.08)",
                   border: "1px solid rgba(34,211,238,0.2)",
-                  color: "#67e8f9",
+                  color: "#5B4BC9",
                 }}
               >
                 <Wallet className="h-4 w-4" />
@@ -369,7 +369,7 @@ export default function DashboardPage() {
               <div className="space-y-2.5">
                 {recentChanges.map((change, i) => (
                   <div key={i} className="flex items-center gap-3 border-b border-white/[0.04] py-2 last:border-0">
-                    <div className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: change.status === "CONFIRMED" ? "#34d399" : "#475569" }} />
+                    <div className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: change.status === "CONFIRMED" ? "var(--aurora-up)" : "var(--aurora-sub)" }} />
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[11px] text-slate-300">
                         {change.type === "MOVE" && change.fromSubnet && change.toSubnet

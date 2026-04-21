@@ -50,8 +50,8 @@ const TIERS: PricingTier[] = [
     annualPrice: 0,
     icon: <Zap className="h-5 w-5" />,
     accent: "text-slate-300",
-    accentBorder: "rgba(148,163,184,0.2)",
-    accentBg: "rgba(148,163,184,0.05)",
+    accentBorder: "rgba(107,104,96,$1)",
+    accentBg: "rgba(107,104,96,$1)",
     accentGlow: "",
     cta: "Get Started",
     features: [
@@ -507,7 +507,7 @@ export default function PricingPage() {
                     style={{
                       background: "rgba(52,211,153,0.15)",
                       border: "1px solid rgba(52,211,153,0.35)",
-                      color: "#34d399",
+                      color: "var(--aurora-up)",
                     }}
                   >
                     Most Popular

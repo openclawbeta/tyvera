@@ -162,7 +162,7 @@ export default function YieldPage() {
                 onClick={handleCalculate}
                 className="px-6 py-2 rounded-lg font-semibold text-slate-900 transition-all duration-200 flex items-center gap-2"
                 style={{
-                  background: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
+                  background: "linear-gradient(135deg, #5B4BC9 0%, #06b6d4 100%)",
                   boxShadow: "0 0 0 1px rgba(34,211,238,0.3), 0 4px 12px rgba(34,211,238,0.2)",
                 }}
                 onMouseEnter={(e) => {
@@ -259,7 +259,7 @@ export default function YieldPage() {
               <div className="mt-6">
                 <SimpleLineChart
                   data={calculations.projectionData}
-                  color="#fbbf24"
+                  color="var(--aurora-warn)"
                   height={240}
                   showGrid={true}
                   suffix=" τ"
@@ -318,7 +318,7 @@ export default function YieldPage() {
                           style={{
                             background: "rgba(34,211,238,0.1)",
                             border: "1px solid rgba(34,211,238,0.2)",
-                            color: "#22d3ee",
+                            color: "#5B4BC9",
                           }}
                         >
                           {idx + 1}

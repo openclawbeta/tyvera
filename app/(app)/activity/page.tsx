@@ -55,7 +55,7 @@ const ACTIVITY_TYPE_COLORS: Record<ActivityType, { bg: string; border: string; t
   STAKE: {
     bg: "rgba(52,211,153,0.08)",
     border: "rgba(52,211,153,0.16)",
-    text: "#34d399",
+    text: "var(--aurora-up)",
   },
   UNSTAKE: {
     bg: "rgba(244,63,94,0.08)",
@@ -65,22 +65,22 @@ const ACTIVITY_TYPE_COLORS: Record<ActivityType, { bg: string; border: string; t
   MOVE_STAKE: {
     bg: "rgba(34,211,238,0.08)",
     border: "rgba(34,211,238,0.16)",
-    text: "#22d3ee",
+    text: "#5B4BC9",
   },
   REGISTER: {
     bg: "rgba(251,191,36,0.08)",
     border: "rgba(251,191,36,0.16)",
-    text: "#fbbf24",
+    text: "var(--aurora-warn)",
   },
   SET_WEIGHTS: {
     bg: "rgba(251,191,36,0.08)",
     border: "rgba(251,191,36,0.16)",
-    text: "#fbbf24",
+    text: "var(--aurora-warn)",
   },
   CLAIM: {
     bg: "rgba(251,191,36,0.08)",
     border: "rgba(251,191,36,0.16)",
-    text: "#fbbf24",
+    text: "var(--aurora-warn)",
   },
 };
 
@@ -189,7 +189,7 @@ export default function ActivityPage() {
               border: "1px solid rgba(34,211,238,0.18)",
             }}
           >
-            <Wallet className="w-5 h-5" style={{ color: "#22d3ee" }} />
+            <Wallet className="w-5 h-5" style={{ color: "#5B4BC9" }} />
           </div>
           <p className="text-[15px] font-semibold text-white mb-2" style={{ letterSpacing: "-0.01em" }}>
             No wallet connected
@@ -203,7 +203,7 @@ export default function ActivityPage() {
             style={{
               background: "rgba(34,211,238,0.12)",
               border: "1px solid rgba(34,211,238,0.22)",
-              color: "#22d3ee",
+              color: "#5B4BC9",
             }}
           >
             <Wallet className="w-4 h-4" />
