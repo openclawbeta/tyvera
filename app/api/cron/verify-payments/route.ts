@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     }).catch(() => {});
 
     return NextResponse.json(
-      { ok: false, error: String(err) },
+      { ok: false, error: "verification_cycle_failed" },
       { status: 500 },
     );
   }

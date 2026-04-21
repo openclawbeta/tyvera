@@ -48,7 +48,7 @@ interface WalletCtx {
   connect: (ext: WalletExtension) => void;
   disconnect: () => void;
   verify: () => void;
-  getAuthHeaders: () => Promise<Record<string, string>>;
+  getAuthHeaders: (binding?: { method?: string; pathname?: string }) => Promise<Record<string, string>>;
 
   requestApproval: (req: ApprovalRequest) => void;
   resolveApproval: (result: ApprovalResult) => void;
@@ -211,13 +211,16 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
   }, [address, extension]);
 
-  const getAuthHeaders = useCallback(async () => {
-    if (!address || !extension) {
-      throw new Error("Wallet must be connected to authenticate requests.");
-    }
+  const getAuthHeaders = useCallback(
+    async (binding?: { method?: string; pathname?: string }) => {
+      if (!address || !extension) {
+        throw new Error("Wallet must be connected to authenticate requests.");
+      }
 
-    return createWalletAuthHeaders(address, extension);
-  }, [address, extension]);
+      return createWalletAuthHeaders(address, extension, binding);
+    },
+    [address, extension],
+  );
 
   const requestApproval = useCallback((req: ApprovalRequest) => {
     prevStateRef.current = walletState;

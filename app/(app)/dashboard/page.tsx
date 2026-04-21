@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, RefreshCw, Wallet, TrendingUp, Activity, Shield } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
@@ -10,16 +10,16 @@ import { FadeIn } from "@/components/ui-custom/fade-in";
 import { MomentumBarChart } from "@/components/charts/momentum-bar-chart";
 import { SimpleLineChart } from "@/components/charts/simple-line-chart";
 import { AllocationBarList } from "@/components/charts/allocation-bar-list";
-import { getPortfolio, getPortfolioActivity, getPortfolioHistory } from "@/lib/api/portfolio";
+import { getPortfolio, getPortfolioActivity, getPortfolioHistory, fetchPortfolioHistory } from "@/lib/api/portfolio";
 import { getRecommendations } from "@/lib/api/recommendations";
 import { cn, subnetGradient, formatDate } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet-context";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { walletState, openModal } = useWallet();
+  const { walletState, address, openModal } = useWallet();
   const [refreshing, setRefreshing] = useState(false);
-  const [dashPeriod, setDashPeriod] = useState("14d");
+  const [dashPeriod, setDashPeriod] = useState<"7d" | "14d" | "30d" | "90d">("14d");
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -29,7 +29,26 @@ export default function DashboardPage() {
   const isConnected = walletState !== "disconnected";
 
   const portfolio = isConnected ? getPortfolio() : null;
-  const history = isConnected ? getPortfolioHistory() : null;
+  const placeholderHistory = isConnected ? getPortfolioHistory() : null;
+  const [history, setHistory] = useState(placeholderHistory);
+
+  // Replace the placeholder with real snapshots from /api/portfolio/history
+  // once the wallet address is known. Any transient failure keeps the
+  // placeholder so the dashboard never goes blank.
+  useEffect(() => {
+    if (!address) {
+      setHistory(null);
+      return;
+    }
+    let cancelled = false;
+    fetchPortfolioHistory(address, dashPeriod).then((real) => {
+      if (cancelled) return;
+      if (real && real.value.length > 0) setHistory(real);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [address, dashPeriod]);
   const recentChanges = isConnected ? getPortfolioActivity() : [];
   const recommendations = isConnected ? getRecommendations() : [];
 
@@ -143,7 +162,7 @@ export default function DashboardPage() {
                     <div className="mt-1 text-sm tracking-tight text-slate-300">Value trend across the selected horizon</div>
                   </div>
                   <div className="flex items-center gap-0.5 rounded-xl border border-white/8 bg-white/[0.03] p-1">
-                    {["7d", "14d", "30d"].map((p) => (
+                    {(["7d", "14d", "30d"] as const).map((p) => (
                       <button
                         key={p}
                         onClick={() => setDashPeriod(p)}

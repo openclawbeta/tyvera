@@ -153,6 +153,23 @@ export const SCHEMA_SQL = `
 
   CREATE INDEX IF NOT EXISTS idx_cron_runs_job ON cron_runs(job_name, started_at DESC);
 
+  -- Admin audit log: records every successful admin action for accountability.
+  -- Only successful (authenticated + executed) admin requests are logged.
+  CREATE TABLE IF NOT EXISTS admin_audit_log (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    occurred_at     TEXT    NOT NULL DEFAULT (datetime('now')),
+    actor_ip        TEXT,
+    action          TEXT    NOT NULL,          -- e.g. 'grant_subscription', 'check_entitlement', 'data_health_read'
+    target          TEXT,                      -- e.g. wallet address or resource id
+    method          TEXT    NOT NULL,          -- HTTP method
+    path            TEXT    NOT NULL,
+    status          INTEGER NOT NULL,          -- response status code
+    metadata_json   TEXT                       -- arbitrary structured payload (reason, plan, etc.)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_admin_audit_time ON admin_audit_log(occurred_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_admin_audit_action ON admin_audit_log(action, occurred_at DESC);
+
   -- Daily usage counters: tracks per-wallet daily usage for rate limiting.
   -- Keyed on (wallet_address, counter_type, date_bucket) for O(1) lookups.
   -- Counter resets happen naturally via the date_bucket (no cron needed).
@@ -239,6 +256,44 @@ export const SCHEMA_SQL = `
   );
 
   CREATE INDEX IF NOT EXISTS idx_np_wallet ON notification_preferences(wallet_address);
+
+  -- Portfolio snapshots: daily per-wallet portfolio rollups.
+  -- Populated opportunistically when /api/portfolio resolves for a wallet,
+  -- deduped on (wallet_address, snapshot_date). Powers the history chart.
+  CREATE TABLE IF NOT EXISTS portfolio_snapshots (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    wallet_address      TEXT    NOT NULL,
+    snapshot_date       TEXT    NOT NULL,             -- YYYY-MM-DD (UTC)
+    total_staked_tao    REAL    NOT NULL DEFAULT 0,
+    total_value_usd     REAL    NOT NULL DEFAULT 0,
+    weighted_yield      REAL    NOT NULL DEFAULT 0,
+    position_count      INTEGER NOT NULL DEFAULT 0,
+    tao_price_usd       REAL    NOT NULL DEFAULT 0,
+    captured_at         TEXT    NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(wallet_address, snapshot_date)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_ps_wallet_date
+    ON portfolio_snapshots(wallet_address, snapshot_date DESC);
+
+  -- Subnet history: per-netuid daily rollup for the detail-view chart.
+  -- Populated by the sync-chain cron once per calendar day, deduped on
+  -- (netuid, snapshot_date).
+  CREATE TABLE IF NOT EXISTS subnet_history (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    netuid              INTEGER NOT NULL,
+    snapshot_date       TEXT    NOT NULL,             -- YYYY-MM-DD (UTC)
+    yield_pct           REAL    NOT NULL DEFAULT 0,
+    tao_in              REAL    NOT NULL DEFAULT 0,
+    emission_per_day    REAL    NOT NULL DEFAULT 0,
+    stakers             INTEGER NOT NULL DEFAULT 0,
+    alpha_price         REAL,
+    captured_at         TEXT    NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(netuid, snapshot_date)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_sh_netuid_date
+    ON subnet_history(netuid, snapshot_date DESC);
 
   -- Payment history: completed payment records for billing page
   CREATE TABLE IF NOT EXISTS payment_history (

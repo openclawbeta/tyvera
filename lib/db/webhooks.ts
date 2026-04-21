@@ -130,8 +130,26 @@ export async function logDelivery(
   }
 }
 
+/** Soft cap on webhook payload size to prevent runaway JSON blobs. */
+const MAX_WEBHOOK_PAYLOAD_BYTES = 64 * 1024;
+
+function eventTypeMatches(eventTypes: string, eventType: string): boolean {
+  if (eventTypes === "*") return true;
+  // Trim each comma-separated entry so "a, b, c" matches "b".
+  return eventTypes
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .includes(eventType);
+}
+
 /**
  * Fire webhooks for a specific event. Non-blocking — errors are logged, not thrown.
+ *
+ * Deliveries run in parallel with an individual timeout so one slow endpoint
+ * cannot hold up others. Signed with HMAC-SHA256 over `timestamp.payload`
+ * and `X-Tyvera-Timestamp` is emitted alongside for receiver-side replay
+ * defence.
  */
 export async function fireWebhooks(
   walletAddress: string,
@@ -139,55 +157,96 @@ export async function fireWebhooks(
   data: Record<string, unknown>,
 ): Promise<number> {
   const webhooks = await listWebhooks(walletAddress);
-  let fired = 0;
 
-  for (const wh of webhooks) {
-    if (wh.status !== "active") continue;
-    if (wh.event_types !== "*" && !wh.event_types.split(",").includes(eventType)) continue;
+  const timestamp = new Date().toISOString();
+  const timestampEpoch = String(Math.floor(Date.parse(timestamp) / 1000));
 
-    const payload = JSON.stringify({
-      event: eventType,
-      timestamp: new Date().toISOString(),
-      data,
-    });
-
-    const signature = crypto
-      .createHmac("sha256", wh.secret)
-      .update(payload)
-      .digest("hex");
-
-    try {
-      const res = await fetch(wh.url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Tyvera-Signature": signature,
-          "X-Tyvera-Event": eventType,
-        },
-        body: payload,
-        signal: AbortSignal.timeout(10000),
+  const deliveries = webhooks
+    .filter((wh) => wh.status === "active" && eventTypeMatches(wh.event_types, eventType))
+    .map(async (wh) => {
+      const payload = JSON.stringify({
+        event: eventType,
+        timestamp,
+        data,
       });
 
-      await logDelivery(
-        wh.id,
-        eventType,
-        payload,
-        res.status,
-        null,
-        res.ok,
-      );
-      if (res.ok) fired++;
-    } catch (err) {
-      await logDelivery(
-        wh.id,
-        eventType,
-        payload,
-        null,
-        String(err),
-        false,
-      );
-    }
-  }
+      if (Buffer.byteLength(payload, "utf8") > MAX_WEBHOOK_PAYLOAD_BYTES) {
+        await logDelivery(wh.id, eventType, payload.slice(0, 512), null, "payload too large", false);
+        return false;
+      }
 
-  return fired;
+      // Sign `timestamp.payload` so receivers can reject replays whose
+      // outer timestamp has been swapped, and parse-and-forget clients
+      // still get signature validity on the body alone if they choose.
+      const signedBody = `${timestampEpoch}.${payload}`;
+      const signature = crypto
+        .createHmac("sha256", wh.secret)
+        .update(signedBody)
+        .digest("hex");
+
+      try {
+        const res = await fetch(wh.url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Tyvera-Signature": signature,
+            "X-Tyvera-Timestamp": timestampEpoch,
+            "X-Tyvera-Event": eventType,
+          },
+          body: payload,
+          signal: AbortSignal.timeout(10000),
+          redirect: "error",
+        });
+
+        await logDelivery(wh.id, eventType, payload, res.status, null, res.ok);
+        return res.ok;
+      } catch (err) {
+        await logDelivery(wh.id, eventType, payload, null, String(err).slice(0, 500), false);
+        return false;
+      }
+    });
+
+  const results = await Promise.allSettled(deliveries);
+  return results.filter((r) => r.status === "fulfilled" && r.value === true).length;
+}
+
+/**
+ * Prune old delivery log rows. Keeps the last `keepCount` rows per webhook.
+ * Safe to run periodically to cap the unbounded growth of webhook_deliveries.
+ */
+export async function pruneDeliveryLog(keepPerWebhook: number = 500): Promise<number> {
+  const db = await getDb();
+  // Per-webhook keep window via a correlated subquery.
+  await db.execute(
+    `DELETE FROM webhook_deliveries
+     WHERE id NOT IN (
+       SELECT id FROM (
+         SELECT id,
+                ROW_NUMBER() OVER (PARTITION BY webhook_id ORDER BY attempted_at DESC) AS rn
+         FROM webhook_deliveries
+       ) WHERE rn <= ?
+     )`,
+    [keepPerWebhook],
+  );
+  const changes = await db.query("SELECT changes()");
+  return Number(changes[0]?.rows?.[0]?.[0] ?? 0);
+}
+
+/**
+ * Reactivate an auto-paused webhook (status='failed'). Resets failure_count
+ * so the delivery path stops immediately tripping the auto-pause guard again.
+ */
+export async function reactivateWebhook(
+  walletAddress: string,
+  webhookId: number,
+): Promise<boolean> {
+  const db = await getDb();
+  await db.execute(
+    `UPDATE webhooks
+       SET status = 'active', failure_count = 0, updated_at = datetime('now')
+     WHERE id = ? AND wallet_address = ? AND status IN ('failed', 'paused')`,
+    [webhookId, walletAddress],
+  );
+  const result = await db.query("SELECT changes() as count");
+  return Number(result[0]?.rows?.[0]?.[0] ?? 0) > 0;
 }

@@ -236,13 +236,31 @@ export async function fetchSubnetByNetuid(netuid: number): Promise<SingleSubnetF
 }
 
 /**
- * Fetch 14-day yield history.
- * Phase 3: replace with /api/subnets/history?netuid=N when the TaoStats
- * history endpoint is wired. For now delegates to the sync helper.
+ * Fetch yield history for a subnet.
+ *
+ * Primary source: /api/subnets/history backed by the subnet_history DB
+ * table (populated by the sync-chain cron). Falls back to the sync
+ * helper's 14-point momentum array when the server hasn't built up
+ * enough history yet (fresh deploys).
  */
 export async function fetchSubnetHistory(
   netuid: number,
-  _range: "7d" | "14d" | "30d" = "14d",
+  range: "7d" | "14d" | "30d" = "14d",
 ): Promise<Array<{ label: string; value: number }>> {
-  return getSubnetHistory(netuid, _range);
+  try {
+    const resp = await fetchWithTimeout(
+      `/api/subnets/history?netuid=${netuid}&range=${range}`,
+      { cache: "no-store", timeoutMs: 8_000 },
+    );
+    if (resp.ok) {
+      const body = (await resp.json()) as {
+        series?: { yield?: Array<{ label: string; value: number }> };
+      };
+      const series = body?.series?.yield ?? [];
+      if (series.length > 0) return series;
+    }
+  } catch {
+    // Swallow — fall through to local momentum fallback.
+  }
+  return getSubnetHistory(netuid, range);
 }

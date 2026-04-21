@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Download, FileText, TrendingUp, Zap, DollarSign, WalletCards } from "lucide-react";
 import { useWallet } from "@/lib/wallet-context";
 import { PageHeader } from "@/components/layout/page-header";
@@ -8,9 +8,9 @@ import { GlassCard } from "@/components/ui-custom/glass-card";
 import { StatCard } from "@/components/ui-custom/stat-card";
 import { SectionTitle } from "@/components/ui-custom/section-title";
 import { FadeIn } from "@/components/ui-custom/fade-in";
-import { generateTaxReport, exportTaxCsv, getTaxSummary } from "@/lib/api/tax-report";
-import type { TaxEvent, TaxEventType } from "@/lib/types/tax";
-import { cn } from "@/lib/utils";
+import { exportTaxCsv, getTaxSummary } from "@/lib/api/tax-format";
+import type { TaxEvent, TaxEventType, TaxSummary } from "@/lib/types/tax";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = [2025, 2026];
@@ -42,8 +42,67 @@ export default function TaxReportPage() {
   const [filterType, setFilterType] = useState<TaxEventType | "ALL">("ALL");
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
 
-  // Generate tax events for the selected year
-  const allEvents = useMemo(() => generateTaxReport(selectedYear), [selectedYear]);
+  const [allEvents, setAllEvents] = useState<TaxEvent[]>([]);
+  const [summary, setSummary] = useState<TaxSummary>(() => getTaxSummary([]));
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [serverNote, setServerNote] = useState<string>("");
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Fetch real tax events from /api/tax-report whenever wallet or year changes.
+  useEffect(() => {
+    if (!walletAddress) {
+      setAllEvents([]);
+      setSummary(getTaxSummary([]));
+      setIsLoading(false);
+      setLoadError(null);
+      setServerNote("Connect your wallet to generate a tax report from your on-chain activity.");
+      return;
+    }
+    let cancelled = false;
+    setIsLoading(true);
+    setLoadError(null);
+    fetchWithTimeout(`/api/tax-report?year=${selectedYear}`, {
+      cache: "no-store",
+      timeoutMs: 15_000,
+    })
+      .then(async (resp) => {
+        const body = await resp.json().catch(() => ({}));
+        if (cancelled) return;
+        if (!resp.ok) {
+          setLoadError(
+            (body as { error?: string }).error ??
+              `Failed to load tax report (${resp.status})`,
+          );
+          setAllEvents([]);
+          setSummary(getTaxSummary([]));
+          setServerNote("");
+          return;
+        }
+        const events = Array.isArray(body.events) ? (body.events as TaxEvent[]) : [];
+        const summaryFromServer =
+          body.summary && typeof body.summary === "object"
+            ? (body.summary as TaxSummary)
+            : getTaxSummary(events);
+        setAllEvents(events);
+        setSummary(summaryFromServer);
+        setServerNote(
+          typeof body._meta?.note === "string" ? (body._meta.note as string) : "",
+        );
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setLoadError(err instanceof Error ? err.message : "Failed to load tax report");
+        setAllEvents([]);
+        setSummary(getTaxSummary([]));
+        setServerNote("");
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [walletAddress, selectedYear]);
 
   // Filter by type
   const filteredEvents = useMemo(() => {
@@ -59,8 +118,6 @@ export default function TaxReportPage() {
     });
     return sorted;
   }, [filteredEvents, sortOrder]);
-
-  const summary = useMemo(() => getTaxSummary(allEvents), [allEvents]);
 
   const handleExportCsv = () => {
     const csv = exportTaxCsv(filteredEvents);
@@ -106,19 +163,25 @@ export default function TaxReportPage() {
         </div>
       </PageHeader>
 
-      {/* Data source disclosure — always shown prominently since data is simulated */}
+      {/* Data source disclosure */}
       <div
         className="flex items-start gap-3 rounded-xl px-4 py-3 text-sm"
         style={{
-          background: "rgba(251, 191, 36, 0.06)",
-          border: "1px solid rgba(251, 191, 36, 0.18)",
+          background: "rgba(34, 211, 238, 0.06)",
+          border: "1px solid rgba(34, 211, 238, 0.18)",
         }}
       >
-        <WalletCards className="w-4 h-4 mt-0.5 shrink-0 text-amber-400" />
-        <p className="text-amber-200/90 leading-relaxed">
-          <span className="font-semibold text-amber-300">Simulated Data — Not Tax Advice.</span>{" "}
-          All figures below are illustrative examples generated for demonstration purposes only. They do not reflect your actual staking activity or tax obligations. On-chain transaction indexing is coming in a future update.{" "}
-          <span className="text-amber-300/80 font-medium">Always consult a qualified tax professional for your filing.</span>
+        <WalletCards className="w-4 h-4 mt-0.5 shrink-0 text-cyan-400" />
+        <p className="text-cyan-100/90 leading-relaxed">
+          <span className="font-semibold text-cyan-300">On-chain data — Not tax advice.</span>{" "}
+          Events are indexed directly from the Bittensor chain for your connected wallet. USD prices use the price-engine rolling buffer; historical depth grows as the chain scanner runs.{" "}
+          <span className="text-cyan-200/80 font-medium">Always consult a qualified tax professional for your filing.</span>
+          {serverNote && (
+            <span className="block mt-1 text-cyan-200/70 text-[12px]">{serverNote}</span>
+          )}
+          {loadError && (
+            <span className="block mt-1 text-rose-300 text-[12px]">{loadError}</span>
+          )}
         </p>
       </div>
 
@@ -193,7 +256,11 @@ export default function TaxReportPage() {
           </div>
 
           {/* Table */}
-          {displayedEvents.length > 0 ? (
+          {isLoading ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-slate-500">Loading on-chain events…</p>
+            </div>
+          ) : displayedEvents.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>

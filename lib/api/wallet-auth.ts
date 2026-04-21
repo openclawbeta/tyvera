@@ -32,18 +32,24 @@ export type AuthFailureReason =
   | "bad_message_format"
   | "expired"
   | "bad_address"
-  | "bad_signature";
+  | "bad_signature"
+  | "request_mismatch";
 
 export interface AuthPayload {
   address: string | null | undefined;
   signature: string | null | undefined;
   message: string | null | undefined;
+  /** Optional — when provided we enforce v2 method+path binding. */
+  method?: string | null;
+  pathname?: string | null;
 }
 
 export interface AuthPayloadResult {
   ok: boolean;
   reason?: AuthFailureReason;
   address?: string;
+  /** True when legacy v1 message format was used (deprecated). */
+  legacy?: boolean;
 }
 
 /**
@@ -52,12 +58,24 @@ export interface AuthPayloadResult {
  *
  * This is the one function that tests should exercise directly.
  */
+/**
+ * Message formats accepted by the server:
+ *   v1 (legacy): `tyvera-auth:{timestamp}`
+ *   v2 (bound):  `tyvera-auth-v2:{timestamp}:{METHOD}:{pathname}`
+ *
+ * v2 cryptographically binds the signature to the HTTP method and URL
+ * path, preventing cross-endpoint replay. Clients sign v2; v1 is still
+ * accepted for a deprecation window so in-flight requests don't break.
+ */
+const V1_PATTERN = /^tyvera-auth:(\d+)$/;
+const V2_PATTERN = /^tyvera-auth-v2:(\d+):([A-Z]+):(\/[^\s]*)$/;
+
 export function verifyAuthPayload(
   payload: AuthPayload,
   now: number = Date.now(),
   windowMs: number = AUTH_WINDOW_MS,
 ): AuthPayloadResult {
-  const { address, signature, message } = payload;
+  const { address, signature, message, method, pathname } = payload;
 
   if (!address && !signature && !message) {
     return { ok: false, reason: "missing" };
@@ -69,12 +87,31 @@ export function verifyAuthPayload(
     return { ok: false, reason: "missing_signature_or_message" };
   }
 
-  const match = message.match(/^tyvera-auth:(\d+)$/);
-  if (!match) {
-    return { ok: false, reason: "bad_message_format" };
+  // Try v2 first (preferred). Fall through to v1 as legacy.
+  let timestamp: number;
+  let isLegacy = false;
+  const v2 = message.match(V2_PATTERN);
+  if (v2) {
+    timestamp = parseInt(v2[1], 10);
+    const sigMethod = v2[2];
+    const sigPath = v2[3];
+
+    // Enforce binding only when caller provides request context.
+    if (method != null && sigMethod !== method.toUpperCase()) {
+      return { ok: false, reason: "request_mismatch" };
+    }
+    if (pathname != null && sigPath !== pathname) {
+      return { ok: false, reason: "request_mismatch" };
+    }
+  } else {
+    const v1 = message.match(V1_PATTERN);
+    if (!v1) {
+      return { ok: false, reason: "bad_message_format" };
+    }
+    timestamp = parseInt(v1[1], 10);
+    isLegacy = true;
   }
 
-  const timestamp = parseInt(match[1], 10);
   if (Math.abs(now - timestamp) > windowMs) {
     return { ok: false, reason: "expired" };
   }
@@ -96,7 +133,7 @@ export function verifyAuthPayload(
     return { ok: false, reason: "bad_signature" };
   }
 
-  return { ok: true, address };
+  return { ok: true, address, legacy: isLegacy };
 }
 
 function reasonToResponse(reason: AuthFailureReason): NextResponse {
@@ -131,6 +168,14 @@ function reasonToResponse(reason: AuthFailureReason): NextResponse {
         { error: "Invalid wallet signature" },
         { status: 401 },
       );
+    case "request_mismatch":
+      return NextResponse.json(
+        {
+          error:
+            "Signature does not match this request. Re-sign with the current method and path.",
+        },
+        { status: 401 },
+      );
     case "missing":
       // Caller decides whether no-headers should be an error.
       return NextResponse.json(
@@ -153,9 +198,21 @@ export async function verifyWalletAuth(request: NextRequest): Promise<WalletAuth
     address: request.headers.get("X-Wallet-Address"),
     signature: request.headers.get("X-Wallet-Signature"),
     message: request.headers.get("X-Wallet-Message"),
+    method: request.method,
+    pathname: request.nextUrl.pathname,
   });
 
   if (result.ok) {
+    if (result.legacy) {
+      // Sampled deprecation log — unbinding permits cross-endpoint replay
+      // within the 5-min window. Clients should switch to v2 format.
+      // Only 1% sampling to avoid log spam.
+      if (Math.random() < 0.01) {
+        console.warn(
+          "[auth] legacy v1 signature accepted — client should upgrade to v2",
+        );
+      }
+    }
     return { verified: true, address: result.address };
   }
 

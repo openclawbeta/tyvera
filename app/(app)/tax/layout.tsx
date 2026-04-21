@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Tax Report — Tyvera",
+  title: "Tax Report",
   description:
     "Generate tax reports for your Bittensor staking activity. Export transaction history for tax compliance.",
-  openGraph: {
-    title: "Tax Report — Tyvera",
-    description: "Generate Bittensor staking tax reports and export transaction history.",
-  },
+  robots: { index: false, follow: false },
 };
 
 export default function TaxLayout({ children }: { children: React.ReactNode }) {

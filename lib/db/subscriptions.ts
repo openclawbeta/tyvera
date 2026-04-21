@@ -117,6 +117,10 @@ export async function getEntitlement(walletAddress: string): Promise<ActiveEntit
 
 /**
  * Activate a subscription after payment is confirmed.
+ *
+ * Renewal-aware: if the wallet already has an active/grace subscription for
+ * the same plan, the new duration is stacked on top of the existing expiry
+ * so the user doesn't lose unused days when renewing early.
  */
 export async function activateSubscription(params: {
   walletAddress: string;
@@ -131,7 +135,29 @@ export async function activateSubscription(params: {
 
   const tier = getTierForPlan(planId);
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + durationDays * 86_400_000);
+
+  // ── Renewal stacking ────────────────────────────────────────────────
+  // Find any still-valid subscription for this wallet + plan (active or
+  // grace, not yet past expires_at). If one exists, extend from its
+  // existing expiry; otherwise start the new period from `now`.
+  const existing = await db.query(
+    `SELECT expires_at FROM subscriptions
+     WHERE wallet_address = ? AND plan_id = ?
+       AND status IN ('active', 'grace')
+       AND expires_at > datetime('now')
+     ORDER BY expires_at DESC LIMIT 1`,
+    [walletAddress, planId],
+  );
+
+  let baseTime = now.getTime();
+  if (existing.length > 0 && existing[0].rows.length > 0) {
+    const existingExpiry = new Date(
+      existing[0].rows[0][0] as string,
+    ).getTime();
+    if (existingExpiry > baseTime) baseTime = existingExpiry;
+  }
+
+  const expiresAt = new Date(baseTime + durationDays * 86_400_000);
 
   await db.execute(
     `INSERT INTO subscriptions (wallet_address, plan_id, tier, status, amount_tao, tx_hash, memo, activated_at, expires_at)
@@ -255,7 +281,11 @@ export async function findPaymentIntentByMemo(memo: string): Promise<{
   const db = await getDb();
 
   const rows = await db.query(
-    `SELECT * FROM payment_intents WHERE memo = ? AND status = 'awaiting_payment' LIMIT 1`,
+    `SELECT * FROM payment_intents
+     WHERE memo = ?
+       AND status = 'awaiting_payment'
+       AND expires_at > datetime('now')
+     LIMIT 1`,
     [memo],
   );
 
@@ -371,6 +401,12 @@ export async function findAllPaymentIntentsByAmount(
 
 /**
  * Mark a payment intent as confirmed and activate the subscription.
+ *
+ * Uses a conditional UPDATE on `status = 'awaiting_payment'` followed by a
+ * `changes()` check as the atomic claim. If two overlapping verifier cycles
+ * race on the same intent, only the first UPDATE will flip the row and win
+ * the right to insert the subscription — the loser returns `false` without
+ * duplicating the activation.
  */
 export async function confirmPaymentIntent(memo: string, txHash: string): Promise<boolean> {
   const intent = await findPaymentIntentByMemo(memo);
@@ -379,10 +415,22 @@ export async function confirmPaymentIntent(memo: string, txHash: string): Promis
   const db = await getDb();
 
   await db.execute(
-    `UPDATE payment_intents SET status = 'confirmed', tx_hash = ?, confirmed_at = datetime('now')
-     WHERE memo = ?`,
+    `UPDATE payment_intents
+       SET status = 'confirmed', tx_hash = ?, confirmed_at = datetime('now')
+     WHERE memo = ? AND status = 'awaiting_payment'`,
     [txHash, memo],
   );
+
+  const changeRes = await db.query("SELECT changes() as count");
+  const changed =
+    changeRes.length > 0 && changeRes[0].rows.length > 0
+      ? (changeRes[0].rows[0][0] as number)
+      : 0;
+
+  if (changed === 0) {
+    // Another verifier cycle already claimed this intent; do not double-activate.
+    return false;
+  }
 
   await activateSubscription({
     walletAddress: intent.wallet_address,

@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Dashboard — Tyvera",
+  title: "Dashboard",
   description:
-    "Your personalized Bittensor dashboard — portfolio value, staking yields, subnet performance, and market overview at a glance.",
-  openGraph: {
-    title: "Dashboard — Tyvera",
-    description: "Personalized Bittensor portfolio dashboard with live staking yields and subnet performance.",
-  },
+    "Your personalized Bittensor dashboard — portfolio value, staking yields, subnet performance, and market overview.",
+  robots: { index: false, follow: false },
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

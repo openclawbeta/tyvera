@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     console.error("[VerifyPayments] Error:", err);
     return NextResponse.json(
-      { error: "Verification cycle failed", message: String(err) },
+      { error: "Verification cycle failed" },
       { status: 500 },
     );
   }

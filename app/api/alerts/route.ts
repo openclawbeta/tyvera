@@ -54,10 +54,37 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  let body: { address?: string; alertIds?: unknown };
   try {
-    const body = await req.json();
-    const { address: bodyAddress, alertIds } = body;
+    body = await req.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid JSON body" },
+      { status: 400 },
+    );
+  }
 
+  const { address: bodyAddress, alertIds } = body;
+
+  // Validate alertIds (optional, but if present must be a numeric array).
+  let normalizedIds: number[] | undefined;
+  if (alertIds !== undefined && alertIds !== null) {
+    if (!Array.isArray(alertIds)) {
+      return NextResponse.json(
+        { error: "alertIds must be an array" },
+        { status: 400 },
+      );
+    }
+    normalizedIds = alertIds.map((id) => Number(id));
+    if (normalizedIds.some((id) => !Number.isFinite(id))) {
+      return NextResponse.json(
+        { error: "alertIds must contain numeric ids" },
+        { status: 400 },
+      );
+    }
+  }
+
+  try {
     const auth = await requireWalletAuth(req);
     if (auth.errorResponse) return auth.errorResponse;
 
@@ -71,7 +98,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Address mismatch" }, { status: 403 });
     }
 
-    await markAlertsRead(address, alertIds);
+    await markAlertsRead(address, normalizedIds);
     const unread = await getUnreadCount(address);
 
     return NextResponse.json({ ok: true, unread });

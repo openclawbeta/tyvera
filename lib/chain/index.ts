@@ -53,3 +53,13 @@ export {
   getEventBufferSize,
   getLastScannedBlock,
 } from "./transfer-scanner";
+
+// Root metrics — live economics for netuid 0 (TAO root staking)
+export {
+  fetchRootMetricsFromChain,
+  setRootMetricsCache,
+  getRootMetricsCache,
+  isRootMetricsCacheFresh,
+  getRootMetricsCacheAgeMs,
+} from "./root-metrics";
+export type { RootMetrics } from "./root-metrics";

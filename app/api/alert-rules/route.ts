@@ -48,16 +48,19 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { address: bodyAddress, type, threshold, enabled, subnetFilter } = body;
+    const body = await req.json().catch(() => null);
+    if (typeof body !== "object" || body === null) {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+    const { address: bodyAddress, type, threshold, enabled, subnetFilter } = body as Record<string, unknown>;
 
     // Verify wallet ownership
     const auth = await requireWalletAuth(req);
     if (auth.errorResponse) return auth.errorResponse;
 
-    const address = getAuthenticatedAddress(req, auth, bodyAddress);
+    const address = getAuthenticatedAddress(req, auth, typeof bodyAddress === "string" ? bodyAddress : null);
 
-    if (!address || !type) {
+    if (!address || typeof type !== "string") {
       return NextResponse.json({ error: "address and type required" }, { status: 400 });
     }
 
@@ -68,6 +71,18 @@ export async function POST(req: NextRequest) {
     if (!(type in ALERT_TYPE_META)) {
       return NextResponse.json({ error: `Invalid alert type: ${type}` }, { status: 400 });
     }
+
+    const thresholdNum = typeof threshold === "number" ? threshold : Number(threshold);
+    if (threshold !== undefined && !Number.isFinite(thresholdNum)) {
+      return NextResponse.json({ error: "threshold must be a number" }, { status: 400 });
+    }
+    const enabledBool = enabled === undefined ? true : enabled !== false;
+    const subnetFilterStr =
+      subnetFilter === undefined || subnetFilter === null
+        ? null
+        : typeof subnetFilter === "string" && subnetFilter.length <= 200
+          ? subnetFilter
+          : null;
 
     // ── Entitlement: enforce alert rule quota ──────────────────────
     const tier = await resolveWalletTier(address);
@@ -100,15 +115,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const meta = ALERT_TYPE_META[type as AlertType];
-    const safeThreshold = Math.max(meta.minThreshold, Math.min(meta.maxThreshold, Number(threshold ?? meta.defaultThreshold)));
+    const meta = ALERT_TYPE_META[type as keyof typeof ALERT_TYPE_META];
+    const safeThreshold = Math.max(
+      meta.minThreshold,
+      Math.min(meta.maxThreshold, Number.isFinite(thresholdNum) ? thresholdNum : meta.defaultThreshold),
+    );
 
     const rule = await upsertAlertRule(
       address,
       type as AlertType,
       safeThreshold,
-      enabled !== false,
-      subnetFilter ?? null,
+      enabledBool,
+      subnetFilterStr,
     );
 
     return NextResponse.json(rule, { status: 201 });
@@ -120,15 +138,19 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { address: bodyAddress, ruleId } = body;
+    const body = await req.json().catch(() => null);
+    if (typeof body !== "object" || body === null) {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+    const { address: bodyAddress, ruleId } = body as Record<string, unknown>;
 
     const auth = await requireWalletAuth(req);
     if (auth.errorResponse) return auth.errorResponse;
 
-    const address = getAuthenticatedAddress(req, auth, bodyAddress);
+    const address = getAuthenticatedAddress(req, auth, typeof bodyAddress === "string" ? bodyAddress : null);
+    const ruleIdNum = typeof ruleId === "number" ? ruleId : Number(ruleId);
 
-    if (!address || !ruleId) {
+    if (!address || !Number.isFinite(ruleIdNum) || ruleIdNum <= 0) {
       return NextResponse.json({ error: "address and ruleId required" }, { status: 400 });
     }
 
@@ -136,7 +158,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Address mismatch" }, { status: 403 });
     }
 
-    await deleteAlertRule(address, Number(ruleId));
+    await deleteAlertRule(address, ruleIdNum);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[alert-rules] DELETE error:", err);
@@ -146,13 +168,16 @@ export async function DELETE(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { address: bodyAddress, action } = body;
+    const body = await req.json().catch(() => null);
+    if (typeof body !== "object" || body === null) {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+    const { address: bodyAddress, action } = body as Record<string, unknown>;
 
     const auth = await requireWalletAuth(req);
     if (auth.errorResponse) return auth.errorResponse;
 
-    const address = getAuthenticatedAddress(req, auth, bodyAddress);
+    const address = getAuthenticatedAddress(req, auth, typeof bodyAddress === "string" ? bodyAddress : null);
 
     if (!address) {
       return NextResponse.json({ error: "address required" }, { status: 400 });

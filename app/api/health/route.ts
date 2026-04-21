@@ -33,7 +33,9 @@ interface CronStatus {
   status: "ok" | "error" | "never_run";
   overdue: boolean;
   durationMs: number | null;
-  lastError: string | null;
+  /** True if the last run errored. Raw error text is deliberately NOT exposed
+   *  on this public endpoint — consult server logs for details. */
+  hasError: boolean;
 }
 
 export async function GET() {
@@ -56,7 +58,7 @@ export async function GET() {
           status: "never_run",
           overdue: true,
           durationMs: null,
-          lastError: null,
+          hasError: false,
         });
         issues.push(`${jobName}: never run`);
         continue;
@@ -73,7 +75,7 @@ export async function GET() {
         status,
         overdue,
         durationMs: run.duration_ms,
-        lastError: run.error_message,
+        hasError: status === "error",
       });
 
       if (overdue) issues.push(`${jobName}: overdue (${Math.round(ageMs / 60_000)}min ago)`);
@@ -85,9 +87,15 @@ export async function GET() {
   }
 
   // ── Data freshness ──────────────────────────────────────────────
+  //
+  // We read _meta.fetched_at from the JSON payload itself, NOT the filesystem
+  // mtime. On Vercel, file mtimes are reset to a deterministic build epoch
+  // (typically 2018-10-20), which would make every deploy look ~7 years stale.
+  // The GitHub Actions refresher writes a fresh _meta.fetched_at into the file
+  // on every commit, so that is the authoritative timestamp.
   let dataFreshness: {
-    subnetsJsonAge: string;
-    subnetsJsonAgeMs: number;
+    subnetsJsonAge: string | null;
+    subnetsJsonAgeMs: number | null;
     level: "fresh" | "warn" | "critical";
   } | null = null;
 
@@ -95,25 +103,37 @@ export async function GET() {
     const fs = await import("fs");
     const path = await import("path");
     const snapshotPath = path.join(process.cwd(), "public", "data", "subnets.json");
-    const stat = fs.statSync(snapshotPath);
-    const ageMs = now - stat.mtimeMs;
+    const raw = fs.readFileSync(snapshotPath, "utf-8");
+    const parsed = JSON.parse(raw) as { _meta?: { fetched_at?: string; generated_at?: string } };
+    const fetchedAt = parsed?._meta?.fetched_at ?? parsed?._meta?.generated_at ?? null;
 
-    let level: "fresh" | "warn" | "critical" = "fresh";
-    if (ageMs > DATA_STALE_CRIT_MS) {
-      level = "critical";
-      issues.push(`subnets.json: ${Math.round(ageMs / 3_600_000)}h stale`);
-    } else if (ageMs > DATA_STALE_WARN_MS) {
-      level = "warn";
-      issues.push(`subnets.json: ${Math.round(ageMs / 60_000)}min stale`);
+    if (!fetchedAt) {
+      issues.push("subnets.json: no _meta.fetched_at");
+      dataFreshness = { subnetsJsonAge: null, subnetsJsonAgeMs: null, level: "critical" };
+    } else {
+      const fetchedMs = Date.parse(fetchedAt);
+      if (!Number.isFinite(fetchedMs)) {
+        issues.push("subnets.json: _meta.fetched_at unparsable");
+        dataFreshness = { subnetsJsonAge: fetchedAt, subnetsJsonAgeMs: null, level: "critical" };
+      } else {
+        const ageMs = now - fetchedMs;
+        let level: "fresh" | "warn" | "critical" = "fresh";
+        if (ageMs > DATA_STALE_CRIT_MS) {
+          level = "critical";
+          issues.push(`subnets.json: ${Math.round(ageMs / 3_600_000)}h stale`);
+        } else if (ageMs > DATA_STALE_WARN_MS) {
+          level = "warn";
+          issues.push(`subnets.json: ${Math.round(ageMs / 60_000)}min stale`);
+        }
+        dataFreshness = {
+          subnetsJsonAge: new Date(fetchedMs).toISOString(),
+          subnetsJsonAgeMs: Math.round(ageMs),
+          level,
+        };
+      }
     }
-
-    dataFreshness = {
-      subnetsJsonAge: new Date(stat.mtimeMs).toISOString(),
-      subnetsJsonAgeMs: Math.round(ageMs),
-      level,
-    };
   } catch {
-    issues.push("subnets.json: file not found");
+    issues.push("subnets.json: file not found or unreadable");
   }
 
   // ── Transfer scanner status ─────────────────────────────────────

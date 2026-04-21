@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, Mic } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
 import { fetchSubnetsFromApi } from "@/lib/api/subnets";
@@ -12,6 +12,7 @@ import {
 } from "@/lib/ai/subnet-intelligence";
 import type { SubnetDetailModel } from "@/lib/types/subnets";
 import { cn } from "@/lib/utils";
+import { useWallet } from "@/lib/wallet-context";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -21,6 +22,7 @@ interface ChatMessage {
 }
 
 export default function ChatPage() {
+  const { walletState, getAuthHeaders } = useWallet();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [subnets, setSubnets] = useState<SubnetDetailModel[]>([]);
@@ -77,9 +79,22 @@ export default function ChatPage() {
         .slice(-10)
         .map((m) => ({ role: m.role, content: m.content }));
 
+      // Chat requires a verified wallet — surface a friendly prompt if not
+      if (walletState !== "verified") {
+        const assistantMsg: ChatMessage = {
+          role: "assistant",
+          content: "Connect and verify your wallet to use the AI assistant. Quotas are tracked per wallet.",
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, assistantMsg]);
+        setIsProcessing(false);
+        return;
+      }
+
+      const authHeaders = await getAuthHeaders({ method: "POST", pathname: "/api/chat" });
       const resp = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({
           message: query,
           subnets,
@@ -253,13 +268,6 @@ export default function ChatPage() {
                 aria-label="Send message"
               >
                 <ArrowUp className="w-4 h-4" />
-              </button>
-              <button
-                disabled
-                className="w-10 h-10 rounded-lg bg-slate-800/50 border border-slate-700 flex items-center justify-center text-slate-600 cursor-not-allowed opacity-50"
-                aria-label="Voice (coming soon)"
-              >
-                <Mic className="w-4 h-4" />
               </button>
             </div>
           </div>

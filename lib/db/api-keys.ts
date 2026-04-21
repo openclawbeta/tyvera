@@ -10,6 +10,7 @@ import { createHash, randomBytes } from "crypto";
 import type { Tier } from "@/lib/types/tiers";
 import { getApiRateLimit, normalizeTier } from "@/lib/types/tiers";
 import { MAX_API_KEYS_PER_WALLET } from "@/lib/config";
+import { getEntitlement } from "./subscriptions";
 
 /* ── Types ────────────────────────────────────────────────────────── */
 
@@ -108,49 +109,71 @@ export async function validateApiKey(key: string): Promise<ApiKeyValidation> {
   }
 
   const record = rowToObject(rows[0].columns, rows[0].rows[0]) as unknown as ApiKeyRecord;
-  const tier = normalizeTier(record.tier);
-  const rateLimit = getApiRateLimit(tier);
+
+  // Derive the *current* tier from the wallet's live subscription so that
+  // downgrades/expirations can't be bypassed by a key minted at a higher tier.
+  let effectiveTier = normalizeTier(record.tier);
+  try {
+    const entitlement = await getEntitlement(record.wallet_address);
+    if (entitlement?.tier) {
+      effectiveTier = normalizeTier(entitlement.tier);
+    } else {
+      // No active subscription → no API access, even if the key row says otherwise.
+      effectiveTier = normalizeTier("FREE");
+    }
+  } catch {
+    // If the subscription lookup fails, fail closed on the stored tier — the
+    // caller still gets rate-limited, they just don't get an unexpected bump.
+  }
+
+  const rateLimit = getApiRateLimit(effectiveTier);
 
   if (rateLimit === 0) {
-    return { valid: false, error: "API access not included in your tier" };
+    return { valid: false, error: "API access not included in your tier", tier: effectiveTier };
   }
 
-  // Use date bucket: auto-reset if last_reset_date isn't today
+  // Atomic daily counter update. The WHERE guard only matches when we're
+  // either rolling over to a new day or still below the current limit; if
+  // `changes()` comes back zero the caller has hit the ceiling.
   const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  const lastReset = (record as any).last_reset_date as string | null;
-  let requestsToday = record.requests_today;
+  await db.execute(
+    `UPDATE api_keys
+       SET requests_today = CASE
+             WHEN last_reset_date != ? THEN 1
+             ELSE requests_today + 1
+           END,
+           last_reset_date = ?,
+           last_used_at = datetime('now')
+     WHERE key_hash = ?
+       AND (last_reset_date != ? OR requests_today < ?)`,
+    [todayStr, todayStr, keyHash, todayStr, rateLimit],
+  );
 
-  if (lastReset !== todayStr) {
-    // New day — reset counter
-    requestsToday = 0;
-    await db.execute(
-      `UPDATE api_keys SET requests_today = 0, last_reset_date = ? WHERE key_hash = ?`,
-      [todayStr, keyHash],
-    );
-  }
+  const changed = await db.query("SELECT changes()");
+  const didIncrement = Number(changed[0]?.rows?.[0]?.[0] ?? 0) > 0;
 
-  if (rateLimit > 0 && requestsToday >= rateLimit) {
+  if (!didIncrement) {
     return {
       valid: false,
       error: `Rate limit exceeded (${rateLimit}/day). Upgrade for higher limits.`,
-      tier,
+      tier: effectiveTier,
       rate_limit: rateLimit,
-      requests_today: requestsToday,
+      requests_today: rateLimit,
     };
   }
 
-  await db.execute(
-    `UPDATE api_keys SET requests_today = requests_today + 1, last_used_at = datetime('now'), last_reset_date = ?
-     WHERE key_hash = ?`,
-    [todayStr, keyHash],
+  const after = await db.query(
+    "SELECT requests_today FROM api_keys WHERE key_hash = ?",
+    [keyHash],
   );
+  const requestsToday = Number(after[0]?.rows?.[0]?.[0] ?? 0);
 
   return {
     valid: true,
     wallet_address: record.wallet_address,
-    tier,
+    tier: effectiveTier,
     rate_limit: rateLimit,
-    requests_today: requestsToday + 1,
+    requests_today: requestsToday,
   };
 }
 

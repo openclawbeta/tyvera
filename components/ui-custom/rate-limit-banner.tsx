@@ -37,7 +37,7 @@ export function RateLimitBanner() {
   const fetchUsage = useCallback(async () => {
     if (!address || walletState !== "verified") return;
     try {
-      const authHeaders = await getAuthHeaders();
+      const authHeaders = await getAuthHeaders({ method: "GET", pathname: "/api/usage" });
       const res = await fetchWithTimeout("/api/usage", {
         timeoutMs: 6000,
         headers: authHeaders,

@@ -26,7 +26,7 @@ export function ExportButton({ exportType, label }: ExportButtonProps) {
 
     setLoading(true);
     try {
-      const authHeaders = await getAuthHeaders();
+      const authHeaders = await getAuthHeaders({ method: "GET", pathname: "/api/export" });
       const res = await fetch(
         `/api/export?type=${exportType}&format=${format}`,
         { headers: authHeaders },
