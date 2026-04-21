@@ -166,4 +166,63 @@ export const SCHEMA_SQL = `
   );
 
   CREATE INDEX IF NOT EXISTS idx_du_lookup ON daily_usage(wallet_address, counter_type, date_bucket);
+
+  -- Webhooks: user-registered webhook endpoints (Institutional tier)
+  CREATE TABLE IF NOT EXISTS webhooks (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    wallet_address  TEXT    NOT NULL,
+    url             TEXT    NOT NULL,
+    label           TEXT    NOT NULL DEFAULT 'default',
+    event_types     TEXT    NOT NULL DEFAULT '*',    -- comma-separated: alert,payment,subscription,* (all)
+    secret          TEXT    NOT NULL,                -- HMAC signing secret
+    status          TEXT    NOT NULL DEFAULT 'active', -- active, paused, failed
+    failure_count   INTEGER NOT NULL DEFAULT 0,
+    last_triggered  TEXT,
+    created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_wh_wallet ON webhooks(wallet_address);
+  CREATE INDEX IF NOT EXISTS idx_wh_status ON webhooks(status);
+
+  -- Webhook delivery log: tracks each delivery attempt
+  CREATE TABLE IF NOT EXISTS webhook_deliveries (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    webhook_id      INTEGER NOT NULL,
+    event_type      TEXT    NOT NULL,
+    payload         TEXT    NOT NULL,                -- JSON payload
+    status_code     INTEGER,
+    response_body   TEXT,
+    success         INTEGER NOT NULL DEFAULT 0,
+    attempted_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_whd_webhook ON webhook_deliveries(webhook_id, attempted_at DESC);
+
+  -- Teams: org member management (Institutional tier)
+  CREATE TABLE IF NOT EXISTS team_members (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_address   TEXT    NOT NULL,                -- the Institutional subscriber
+    member_address  TEXT    NOT NULL,
+    role            TEXT    NOT NULL DEFAULT 'member', -- owner, admin, member
+    label           TEXT,                            -- display name
+    added_at        TEXT    NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(owner_address, member_address)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_tm_owner ON team_members(owner_address);
+  CREATE INDEX IF NOT EXISTS idx_tm_member ON team_members(member_address);
+
+  -- Whitelabel: branding overrides (Institutional tier)
+  CREATE TABLE IF NOT EXISTS whitelabel_config (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    wallet_address  TEXT    NOT NULL UNIQUE,
+    logo_url        TEXT,
+    accent_color    TEXT,                            -- hex color e.g. #00d4aa
+    app_name        TEXT,
+    custom_domain   TEXT,
+    updated_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_wl_wallet ON whitelabel_config(wallet_address);
 `;

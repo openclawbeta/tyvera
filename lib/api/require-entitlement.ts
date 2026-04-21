@@ -14,6 +14,7 @@
 
 import { NextResponse } from "next/server";
 import { getEntitlement } from "@/lib/db/subscriptions";
+import { resolveTeamOwner } from "@/lib/db/teams";
 import {
   normalizeTier,
   tierHasFeature,
@@ -40,12 +41,22 @@ export type EntitlementCheckResult = EntitlementGateResult | EntitlementDeniedRe
 
 /**
  * Resolve the wallet's current tier from the DB.
+ * Checks the wallet's own subscription first, then falls back to
+ * team membership (inheriting the team owner's tier).
  * Returns "explorer" on DB failure (fail-open for free features).
  */
 export async function resolveWalletTier(address: string): Promise<Tier> {
   try {
+    // Direct subscription
     const ent = await getEntitlement(address);
     if (ent) return normalizeTier(ent.tier);
+
+    // Team inheritance: if this address is a team member, inherit owner's tier
+    const ownerAddress = await resolveTeamOwner(address);
+    if (ownerAddress) {
+      const ownerEnt = await getEntitlement(ownerAddress);
+      if (ownerEnt) return normalizeTier(ownerEnt.tier);
+    }
   } catch (err) {
     console.error("[entitlement-gate] DB error resolving tier:", err);
   }
