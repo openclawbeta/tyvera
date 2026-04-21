@@ -253,6 +253,22 @@ export default function LoginPage() {
                       ))}
                     </div>
 
+                    <div
+                      className="text-[11px]"
+                      style={{ color: "var(--aurora-sub)" }}
+                    >
+                      Don&rsquo;t have a wallet yet?{" "}
+                      <a
+                        href="https://polkadot.js.org/extension/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium underline decoration-dotted underline-offset-2"
+                        style={{ color: "#5B3FBF" }}
+                      >
+                        Install Polkadot.js
+                      </a>
+                    </div>
+
                     <div className="flex items-start gap-2 pt-2">
                       <Shield
                         className="mt-0.5 h-3 w-3 shrink-0"

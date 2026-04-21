@@ -387,6 +387,32 @@ export default function SignupPage() {
                 <ArrowRight className="h-4 w-4" />
               </button>
 
+              <div
+                className="mt-3 text-center text-[12px]"
+                style={{ color: "var(--aurora-sub)" }}
+              >
+                Don&rsquo;t have a wallet yet?{" "}
+                <a
+                  href="https://polkadot.js.org/extension/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline decoration-dotted underline-offset-2"
+                  style={{ color: "#5B3FBF" }}
+                >
+                  Install Polkadot.js
+                </a>
+                {" · "}
+                <a
+                  href="https://talisman.xyz/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline decoration-dotted underline-offset-2"
+                  style={{ color: "#5B3FBF" }}
+                >
+                  Install Talisman
+                </a>
+              </div>
+
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <div
                   className="rounded-xl px-4 py-3"
