@@ -4,10 +4,12 @@ import { GlobalTicker } from "@/components/layout/global-ticker";
 import { DataFreshnessIndicator } from "@/components/layout/data-freshness";
 import { MobileNavToggle } from "@/components/layout/mobile-nav";
 import { RateLimitBanner } from "@/components/ui-custom/rate-limit-banner";
+import { PageTracker } from "@/components/layout/page-tracker";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.08),transparent_24%),radial-gradient(circle_at_80%_12%,rgba(59,130,246,0.08),transparent_22%),linear-gradient(180deg,#05070b_0%,#070913_48%,#05070b_100%)] text-white">
+      <PageTracker />
       <GlobalTicker />
 
       <div className="flex min-h-screen overflow-x-clip pt-8">

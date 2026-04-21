@@ -225,4 +225,32 @@ export const SCHEMA_SQL = `
   );
 
   CREATE INDEX IF NOT EXISTS idx_wl_wallet ON whitelabel_config(wallet_address);
+
+  -- Notification preferences: per-wallet channel config
+  CREATE TABLE IF NOT EXISTS notification_preferences (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    wallet_address  TEXT    NOT NULL UNIQUE,
+    email           TEXT,                            -- email address for alerts
+    telegram_chat_id TEXT,                           -- Telegram chat ID
+    email_enabled   INTEGER NOT NULL DEFAULT 0,
+    telegram_enabled INTEGER NOT NULL DEFAULT 0,
+    min_severity    TEXT    NOT NULL DEFAULT 'warning', -- info, warning, critical
+    updated_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_np_wallet ON notification_preferences(wallet_address);
+
+  -- Payment history: completed payment records for billing page
+  CREATE TABLE IF NOT EXISTS payment_history (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    wallet_address  TEXT    NOT NULL,
+    plan_id         TEXT    NOT NULL,
+    amount_tao      REAL    NOT NULL,
+    tx_hash         TEXT,
+    billing_cycle   TEXT    NOT NULL DEFAULT 'monthly',
+    status          TEXT    NOT NULL DEFAULT 'confirmed',
+    paid_at         TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_ph_wallet ON payment_history(wallet_address, paid_at DESC);
 `;
