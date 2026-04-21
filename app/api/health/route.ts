@@ -23,6 +23,16 @@ const CRON_OVERDUE_THRESHOLDS: Record<string, number> = {
   "reset-counters": 26 * 60 * 60 * 1000, // 26h (runs daily, generous buffer)
 };
 
+/**
+ * Jobs whose "never_run" state is a hard health issue. Jobs not listed here
+ * are allowed to be pending-but-not-yet-run (e.g. a daily job that hasn't
+ * fired since last deploy). This prevents spurious 503s on fresh deploys.
+ */
+const HARD_FAIL_ON_NEVER_RUN: ReadonlySet<string> = new Set([
+  "sync-chain",
+  "verify-payments",
+]);
+
 // Thresholds for the committed subnets.json snapshot. This file is refreshed
 // by the GitHub Actions workflow which is subject to free-tier cron throttling
 // (actual cadence 1–5h), so we're generous here. The file is only a cold-start
@@ -61,16 +71,19 @@ export async function GET() {
     for (const [jobName, threshold] of Object.entries(CRON_OVERDUE_THRESHOLDS)) {
       const run = runsByJob.get(jobName);
       if (!run) {
+        const isHardFail = HARD_FAIL_ON_NEVER_RUN.has(jobName);
         cronStatuses.push({
           jobName,
           lastRun: null,
           ageMs: null,
           status: "never_run",
-          overdue: true,
+          overdue: isHardFail,
           durationMs: null,
           hasError: false,
         });
-        issues.push(`${jobName}: never run`);
+        // Only escalate to a health issue for frequent jobs. Daily/low-cadence
+        // jobs are allowed to be pending between deploys without tripping 503.
+        if (isHardFail) issues.push(`${jobName}: never run`);
         continue;
       }
 
