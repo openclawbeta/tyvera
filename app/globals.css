@@ -174,8 +174,8 @@
   /* ─────────── SURFACES (rebranded for Aurora) ─────────── */
   .glass {
     @apply rounded-2xl;
-    background: #FFFFFF;
-    border: 1px solid #ECEBE7;
+    background: var(--surface-1);
+    border: 1px solid var(--aurora-hair);
     box-shadow:
       0 1px 0 rgba(16,16,20,0.02),
       0 8px 28px -18px rgba(16,16,20,0.10);
@@ -189,8 +189,8 @@
 
   .glass-lg {
     @apply rounded-3xl;
-    background: #FFFFFF;
-    border: 1px solid #ECEBE7;
+    background: var(--surface-1);
+    border: 1px solid var(--aurora-hair);
     box-shadow:
       0 1px 0 rgba(16,16,20,0.02),
       0 20px 60px -30px rgba(16,16,20,0.15);
@@ -198,8 +198,8 @@
 
   .panel {
     @apply rounded-2xl;
-    background: #FFFFFF;
-    border: 1px solid #ECEBE7;
+    background: var(--surface-1);
+    border: 1px solid var(--aurora-hair);
     box-shadow: 0 1px 0 rgba(16,16,20,0.02);
   }
 
@@ -761,6 +761,23 @@
   background: var(--surface-1) !important;
   border-color: var(--aurora-hair) !important;
   color: var(--aurora-ink);
+}
+
+/* Dark-mode hover + elevated shadows for .glass / .glass-lg / .panel
+   (scoped globally — works on landing + app shell) */
+.dark .glass:hover,
+.dark .glass-lg:hover {
+  border-color: #3A3646;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.03) inset,
+    0 14px 40px -18px rgba(0,0,0,0.5);
+}
+.dark .glass,
+.dark .glass-lg,
+.dark .panel {
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.025) inset,
+    0 10px 32px -20px rgba(0,0,0,0.45);
 }
 
 .dark .aurora-shell .backdrop-blur-2xl[class*="bg-["] {
