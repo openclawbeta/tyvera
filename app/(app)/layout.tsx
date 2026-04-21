@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { GlobalTicker } from "@/components/layout/global-ticker";
 import { DataFreshnessIndicator } from "@/components/layout/data-freshness";
+import { MobileNavToggle } from "@/components/layout/mobile-nav";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
@@ -16,9 +17,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <div className="min-w-0 flex-1 overflow-x-hidden">
           <div className="sticky top-8 z-20 border-b border-white/8 bg-[linear-gradient(180deg,rgba(10,12,18,0.88),rgba(8,10,16,0.72))] backdrop-blur-2xl shadow-[0_18px_40px_rgba(0,0,0,0.28)]">
             <div className="mx-auto flex h-[72px] max-w-[1600px] items-center justify-between px-4 sm:px-6 lg:px-8">
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">Tyvera Terminal</div>
-                <div className="mt-1 text-sm tracking-tight text-slate-300">Bittensor intelligence workspace</div>
+              <div className="flex items-center gap-3">
+                <MobileNavToggle />
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500">Tyvera Terminal</div>
+                  <div className="mt-1 text-sm tracking-tight text-slate-300">Bittensor intelligence workspace</div>
+                </div>
               </div>
 
               <div className="hidden items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 md:flex">

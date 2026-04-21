@@ -25,7 +25,12 @@ import {
   SlidersHorizontal,
   Sparkles,
   Clock3,
+  Users,
+  Webhook,
+  Plus,
+  Trash2,
 } from "lucide-react";
+import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import { PageHeader } from "@/components/layout/page-header";
 import { FadeIn } from "@/components/ui-custom/fade-in";
 import { useWallet } from "@/lib/wallet-context";
@@ -119,6 +124,8 @@ const SECTIONS = [
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "guardrails", label: "Guardrails", icon: SlidersHorizontal },
   { id: "security", label: "Security", icon: Shield },
+  { id: "team", label: "Team", icon: Users },
+  { id: "webhooks", label: "Webhooks", icon: Webhook },
 ] as const;
 
 function WalletSection() {
@@ -654,6 +661,309 @@ function SecuritySection() {
   );
 }
 
+function TeamSection() {
+  const { address, walletState, getAuthHeaders } = useWallet();
+  const entitlement = useEntitlement(address ?? null);
+  const [members, setMembers] = useState<Array<{ id: number; member_address: string; role: string; label: string | null; added_at: string }>>([]);
+  const [newAddress, setNewAddress] = useState("");
+  const [newLabel, setNewLabel] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const canManageTeam = entitlement.hasFeature("team_access");
+
+  async function fetchTeam() {
+    if (!canManageTeam || walletState !== "verified") return;
+    try {
+      const authHeaders = await getAuthHeaders();
+      const res = await fetchWithTimeout("/api/team", { timeoutMs: 8000, headers: authHeaders });
+      if (res.ok) {
+        const data = await res.json();
+        setMembers(data.members ?? []);
+      }
+    } catch { /* silent */ }
+  }
+
+  useEffect(() => { fetchTeam(); }, [canManageTeam, walletState]);
+
+  async function addMember() {
+    if (!newAddress.trim()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const authHeaders = await getAuthHeaders();
+      const res = await fetchWithTimeout("/api/team", {
+        timeoutMs: 8000,
+        method: "POST",
+        headers: { ...authHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({ memberAddress: newAddress.trim(), label: newLabel.trim() || undefined }),
+      });
+      if (res.ok) {
+        setNewAddress("");
+        setNewLabel("");
+        await fetchTeam();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? "Failed to add member");
+      }
+    } catch {
+      setError("Network error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function removeMember(memberAddress: string) {
+    try {
+      const authHeaders = await getAuthHeaders();
+      await fetchWithTimeout("/api/team", {
+        timeoutMs: 8000,
+        method: "DELETE",
+        headers: { ...authHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({ memberAddress }),
+      });
+      await fetchTeam();
+    } catch { /* silent */ }
+  }
+
+  if (!canManageTeam) {
+    return (
+      <Panel>
+        <PanelHeader eyebrow="Team" title="Team Management" subtitle="Manage team members who share your subscription." />
+        <div className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.02] p-6">
+          <Lock className="h-5 w-5 text-slate-500" />
+          <div>
+            <p className="text-sm font-semibold text-slate-300">Institutional tier required</p>
+            <p className="mt-1 text-xs text-slate-500">Upgrade to Institutional to add team members who inherit your subscription tier.</p>
+          </div>
+        </div>
+      </Panel>
+    );
+  }
+
+  return (
+    <Panel>
+      <PanelHeader eyebrow="Team" title="Team Management" subtitle="Add wallet addresses that will inherit your subscription tier." />
+
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end">
+        <div className="flex-1">
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Wallet address</label>
+          <input
+            type="text"
+            value={newAddress}
+            onChange={(e) => setNewAddress(e.target.value)}
+            placeholder="5Grwva..."
+            className="w-full rounded-lg border border-white/8 bg-white/[0.04] px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-400/30"
+          />
+        </div>
+        <div className="w-32">
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Label</label>
+          <input
+            type="text"
+            value={newLabel}
+            onChange={(e) => setNewLabel(e.target.value)}
+            placeholder="Name"
+            className="w-full rounded-lg border border-white/8 bg-white/[0.04] px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-400/30"
+          />
+        </div>
+        <button
+          onClick={addMember}
+          disabled={loading || !newAddress.trim()}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/25 bg-cyan-400/10 px-4 py-2 text-xs font-semibold text-cyan-300 transition-colors hover:bg-cyan-400/15 disabled:opacity-50"
+          aria-label="Add team member"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Add
+        </button>
+      </div>
+      {error && <p className="mb-3 text-xs text-rose-400">{error}</p>}
+
+      {members.length === 0 ? (
+        <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-6 text-center text-sm text-slate-500">
+          No team members yet. Add wallet addresses above.
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-white/8 bg-white/[0.018] divide-y divide-white/[0.04]">
+          {members.map((m) => (
+            <div key={m.id} className="flex items-center justify-between gap-4 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <code className="text-xs font-mono text-slate-300">{m.member_address.slice(0, 10)}...{m.member_address.slice(-4)}</code>
+                {m.label && <span className="ml-2 text-xs text-slate-500">{m.label}</span>}
+                <span className="ml-2 rounded-md border border-white/8 bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-slate-500">{m.role}</span>
+              </div>
+              <button
+                onClick={() => removeMember(m.member_address)}
+                className="text-slate-600 transition-colors hover:text-rose-400"
+                aria-label={`Remove team member ${m.member_address.slice(0, 8)}`}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+function WebhooksSection() {
+  const { address, walletState, getAuthHeaders } = useWallet();
+  const entitlement = useEntitlement(address ?? null);
+  const [webhooks, setWebhooks] = useState<Array<{ id: number; url: string; label: string; event_types: string; status: string }>>([]);
+  const [newUrl, setNewUrl] = useState("");
+  const [newLabel, setNewLabel] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [newSecret, setNewSecret] = useState<string | null>(null);
+
+  const canUseWebhooks = entitlement.hasFeature("webhooks");
+
+  async function fetchWebhooks() {
+    if (!canUseWebhooks || walletState !== "verified") return;
+    try {
+      const authHeaders = await getAuthHeaders();
+      const res = await fetchWithTimeout("/api/webhooks", { timeoutMs: 8000, headers: authHeaders });
+      if (res.ok) {
+        const data = await res.json();
+        setWebhooks(data.webhooks ?? []);
+      }
+    } catch { /* silent */ }
+  }
+
+  useEffect(() => { fetchWebhooks(); }, [canUseWebhooks, walletState]);
+
+  async function addWebhook() {
+    if (!newUrl.trim()) return;
+    setLoading(true);
+    setError(null);
+    setNewSecret(null);
+    try {
+      const authHeaders = await getAuthHeaders();
+      const res = await fetchWithTimeout("/api/webhooks", {
+        timeoutMs: 8000,
+        method: "POST",
+        headers: { ...authHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({ url: newUrl.trim(), label: newLabel.trim() || "default" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setNewUrl("");
+        setNewLabel("");
+        setNewSecret(data.signingSecret ?? null);
+        await fetchWebhooks();
+      } else {
+        setError(data.error ?? "Failed to add webhook");
+      }
+    } catch {
+      setError("Network error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function removeWebhook(id: number) {
+    try {
+      const authHeaders = await getAuthHeaders();
+      await fetchWithTimeout("/api/webhooks", {
+        timeoutMs: 8000,
+        method: "DELETE",
+        headers: { ...authHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      await fetchWebhooks();
+    } catch { /* silent */ }
+  }
+
+  if (!canUseWebhooks) {
+    return (
+      <Panel>
+        <PanelHeader eyebrow="Integrations" title="Webhooks" subtitle="Receive real-time event notifications via HTTP." />
+        <div className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.02] p-6">
+          <Lock className="h-5 w-5 text-slate-500" />
+          <div>
+            <p className="text-sm font-semibold text-slate-300">Institutional tier required</p>
+            <p className="mt-1 text-xs text-slate-500">Upgrade to Institutional to register webhook endpoints for alert and subscription events.</p>
+          </div>
+        </div>
+      </Panel>
+    );
+  }
+
+  return (
+    <Panel>
+      <PanelHeader eyebrow="Integrations" title="Webhooks" subtitle="Register endpoints to receive HMAC-signed event notifications." />
+
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end">
+        <div className="flex-1">
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Endpoint URL</label>
+          <input
+            type="url"
+            value={newUrl}
+            onChange={(e) => setNewUrl(e.target.value)}
+            placeholder="https://your-app.com/webhook"
+            className="w-full rounded-lg border border-white/8 bg-white/[0.04] px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-400/30"
+          />
+        </div>
+        <div className="w-32">
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Label</label>
+          <input
+            type="text"
+            value={newLabel}
+            onChange={(e) => setNewLabel(e.target.value)}
+            placeholder="Slack"
+            className="w-full rounded-lg border border-white/8 bg-white/[0.04] px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-400/30"
+          />
+        </div>
+        <button
+          onClick={addWebhook}
+          disabled={loading || !newUrl.trim()}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/25 bg-cyan-400/10 px-4 py-2 text-xs font-semibold text-cyan-300 transition-colors hover:bg-cyan-400/15 disabled:opacity-50"
+          aria-label="Add webhook"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Add
+        </button>
+      </div>
+      {error && <p className="mb-3 text-xs text-rose-400">{error}</p>}
+      {newSecret && (
+        <div className="mb-4 rounded-2xl border border-amber-400/20 bg-amber-400/[0.04] p-4">
+          <p className="text-xs font-semibold text-amber-300">Signing secret (save now — shown only once):</p>
+          <code className="mt-1 block break-all rounded-lg bg-black/30 px-3 py-2 font-mono text-xs text-slate-300">{newSecret}</code>
+        </div>
+      )}
+
+      {webhooks.length === 0 ? (
+        <div className="rounded-2xl border border-white/8 bg-white/[0.02] p-6 text-center text-sm text-slate-500">
+          No webhooks registered. Add an endpoint URL above.
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-white/8 bg-white/[0.018] divide-y divide-white/[0.04]">
+          {webhooks.map((wh) => (
+            <div key={wh.id} className="flex items-center justify-between gap-4 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-slate-300">{wh.label}</span>
+                  <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${wh.status === "active" ? "border border-emerald-400/20 bg-emerald-400/10 text-emerald-300" : "border border-rose-400/20 bg-rose-400/10 text-rose-300"}`}>
+                    {wh.status}
+                  </span>
+                </div>
+                <code className="mt-0.5 block truncate text-[11px] font-mono text-slate-500">{wh.url}</code>
+              </div>
+              <button
+                onClick={() => removeWebhook(wh.id)}
+                className="text-slate-600 transition-colors hover:text-rose-400"
+                aria-label={`Remove webhook ${wh.label}`}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<(typeof SECTIONS)[number]["id"]>("account");
 
@@ -697,7 +1007,9 @@ export default function SettingsPage() {
                 <button
                   key={s.id}
                   onClick={() => setActiveSection(s.id)}
-                  className="flex shrink-0 items-center gap-2.5 rounded-xl border px-3 py-3 text-left text-sm transition-all lg:w-full"
+                  className="flex shrink-0 items-center gap-2.5 rounded-xl border px-3 py-3 text-left text-sm transition-all lg:w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+                  aria-label={`${s.label} settings`}
+                  aria-pressed={isActive}
                   style={{
                     background: isActive
                       ? "linear-gradient(135deg, rgba(34,211,238,0.1) 0%, rgba(34,211,238,0.05) 100%)"
@@ -722,6 +1034,8 @@ export default function SettingsPage() {
             {activeSection === "notifications" && <NotificationsSection />}
             {activeSection === "guardrails" && <GuardrailsSection />}
             {activeSection === "security" && <SecuritySection />}
+            {activeSection === "team" && <TeamSection />}
+            {activeSection === "webhooks" && <WebhooksSection />}
           </FadeIn>
         </div>
       </div>

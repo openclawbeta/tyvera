@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
 import { FadeIn } from "@/components/ui-custom/fade-in";
 import { DataSourceBadge } from "@/components/ui-custom/data-source-badge";
+import { ExportButton } from "@/components/ui-custom/export-button";
 import type { HolderIntelSnapshot } from "@/lib/types/holders";
 import { formatCurrencyValue } from "@/lib/currency";
 import { useTaoRate } from "@/lib/hooks/use-tao-rate";
@@ -84,6 +85,7 @@ export default function HoldersPage() {
               {holderMeta?.source === "tao-app" ? "TAO.app" : data.source === "chain-partial" ? "Chain Partial" : "Modeled"}
             </span>
           )}
+          <ExportButton exportType="holders" />
         </div>
       </PageHeader>
 

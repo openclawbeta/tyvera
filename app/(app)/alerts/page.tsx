@@ -10,11 +10,15 @@ import {
   RefreshCw,
   Shield,
   WalletCards,
+  Sparkles,
+  Lock,
+  Loader2,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
 import { StatCard } from "@/components/ui-custom/stat-card";
 import { useWallet } from "@/lib/wallet-context";
+import { useEntitlement } from "@/lib/hooks/use-entitlement";
 import { fetchWithTimeout } from "@/lib/fetch-with-timeout";
 import {
   ALERT_TYPE_META,
@@ -28,6 +32,8 @@ import type {
   AlertType,
   AlertCategory as AlertCat,
 } from "@/lib/alerts/types";
+import { ALERT_PRESETS } from "@/lib/alerts/presets";
+import type { AlertPreset } from "@/lib/alerts/presets";
 
 const CATEGORY_LABELS: Record<AlertCat, string> = {
   staking: "Staking",
@@ -48,7 +54,10 @@ function timeAgo(dateStr: string): string {
 
 export default function AlertsPage() {
   const { address: walletAddress, walletState, getAuthHeaders, openModal } = useWallet();
+  const entitlement = useEntitlement(walletAddress ?? null);
+  const canUsePresets = entitlement.hasFeature("alert_presets");
   const [tab, setTab] = useState<"feed" | "settings">("feed");
+  const [applyingPreset, setApplyingPreset] = useState<string | null>(null);
 
   // Feed state
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -187,6 +196,27 @@ export default function AlertsPage() {
     }
   };
 
+  const applyPreset = async (preset: AlertPreset) => {
+    if (!walletAddress || (walletState !== "verified" && walletState !== "pending_approval")) return;
+    setApplyingPreset(preset.id);
+    try {
+      const authHeaders = await getAuthHeaders();
+      const res = await fetchWithTimeout("/api/alert-presets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({ address: walletAddress, presetId: preset.id }),
+        timeoutMs: 10000,
+      });
+      if (res.ok) {
+        fetchRules();
+      }
+    } catch {
+      // silent
+    } finally {
+      setApplyingPreset(null);
+    }
+  };
+
   // Group rules by category
   const rulesByCategory = CATEGORY_ORDER.map((cat) => ({
     category: cat,
@@ -264,22 +294,26 @@ export default function AlertsPage() {
         <div className="flex gap-1 mt-8 p-1 rounded-xl w-fit" style={{ background: "rgba(255,255,255,0.04)" }}>
           <button
             onClick={() => setTab("feed")}
-            className="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+            className="px-4 py-2 rounded-lg text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
             style={{
               background: tab === "feed" ? "rgba(34,211,238,0.15)" : "transparent",
               color: tab === "feed" ? "#22d3ee" : "#64748b",
             }}
+            aria-label="View alert feed"
+            aria-pressed={tab === "feed"}
           >
             <Bell className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
             Alert Feed
           </button>
           <button
             onClick={() => setTab("settings")}
-            className="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+            className="px-4 py-2 rounded-lg text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
             style={{
               background: tab === "settings" ? "rgba(34,211,238,0.15)" : "transparent",
               color: tab === "settings" ? "#22d3ee" : "#64748b",
             }}
+            aria-label="Configure alert rules"
+            aria-pressed={tab === "settings"}
           >
             <Settings2 className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
             Alert Rules
@@ -294,7 +328,7 @@ export default function AlertsPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setFeedFilter("all")}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
                   style={{
                     background: feedFilter === "all" ? "rgba(34,211,238,0.15)" : "rgba(255,255,255,0.04)",
                     color: feedFilter === "all" ? "#22d3ee" : "#64748b",
@@ -304,7 +338,7 @@ export default function AlertsPage() {
                 </button>
                 <button
                   onClick={() => setFeedFilter("unread")}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
                   style={{
                     background: feedFilter === "unread" ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.04)",
                     color: feedFilter === "unread" ? "#f87171" : "#64748b",
@@ -451,6 +485,76 @@ export default function AlertsPage() {
               </GlassCard>
             )}
 
+            {/* ── Preset Picker ──────────────────────────────────────── */}
+            <div className="mb-8">
+              <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                <Sparkles className="w-4 h-4" style={{ color: "#a78bfa" }} />
+                Alert Presets
+                {!canUsePresets && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{ background: "rgba(251,191,36,0.12)", color: "#fbbf24" }}>
+                    Strategist+
+                  </span>
+                )}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {ALERT_PRESETS.map((preset) => {
+                  const isApplying = applyingPreset === preset.id;
+                  const categoryColor =
+                    preset.category === "defensive" ? "#22d3ee" :
+                    preset.category === "opportunity" ? "#34d399" :
+                    preset.category === "whale" ? "#a78bfa" :
+                    "#f59e0b";
+
+                  return (
+                    <GlassCard key={preset.id} padding="md" className={!canUsePresets ? "opacity-50" : ""}>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <h4 className="text-sm font-semibold text-white">{preset.name}</h4>
+                        <span
+                          className="text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0"
+                          style={{ background: `${categoryColor}20`, color: categoryColor }}
+                        >
+                          {preset.category}
+                        </span>
+                      </div>
+                      <p className="text-xs leading-relaxed mb-3" style={{ color: "#94a3b8" }}>
+                        {preset.description}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px]" style={{ color: "#64748b" }}>
+                          {preset.rules.length} rule{preset.rules.length !== 1 ? "s" : ""}
+                        </span>
+                        {canUsePresets ? (
+                          <button
+                            onClick={() => applyPreset(preset)}
+                            disabled={isApplying}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                            style={{
+                              background: "rgba(167,139,250,0.12)",
+                              border: "1px solid rgba(167,139,250,0.22)",
+                              color: "#a78bfa",
+                            }}
+                            aria-label={`Apply ${preset.name} preset`}
+                          >
+                            {isApplying ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Sparkles className="w-3 h-3" />
+                            )}
+                            Apply
+                          </button>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: "#64748b" }}>
+                            <Lock className="w-3 h-3" />
+                            Locked
+                          </span>
+                        )}
+                      </div>
+                    </GlassCard>
+                  );
+                })}
+              </div>
+            </div>
+
             {rulesLoading && rules.length === 0 ? (
               <GlassCard padding="md" className="text-center py-12">
                 <p className="text-sm" style={{ color: "#64748b" }}>Loading rules…</p>
@@ -547,7 +651,10 @@ export default function AlertsPage() {
                                       onClick={() =>
                                         updateRule(rule.id, rule.alert_type as AlertType, rule.threshold, !rule.enabled)
                                       }
-                                      className="relative w-10 h-6 rounded-full transition-all duration-200"
+                                      className="relative w-10 h-6 rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+                                      aria-label={`${rule.enabled ? "Disable" : "Enable"} ${meta.label} alert`}
+                                      role="switch"
+                                      aria-checked={rule.enabled}
                                       style={{
                                         background: rule.enabled
                                           ? "rgba(34,211,238,0.3)"
@@ -566,8 +673,9 @@ export default function AlertsPage() {
                                     {/* Delete */}
                                     <button
                                       onClick={() => deleteRule(rule.id)}
-                                      className="p-2 rounded-lg transition-colors"
+                                      className="p-2 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/50"
                                       style={{ color: "#475569" }}
+                                      aria-label={`Delete ${meta.label} alert rule`}
                                       onMouseEnter={(e) => {
                                         (e.currentTarget as HTMLElement).style.color = "#f87171";
                                       }}

@@ -13,6 +13,7 @@ import { SubnetSummaryCards } from "@/components/subnets/subnet-summary-cards";
 import { SubnetHeatmap } from "@/components/subnets/subnet-heatmap";
 import { SubnetNetworkAlerts } from "@/components/subnets/subnet-network-alerts";
 import { DataSourceBadge } from "@/components/ui-custom/data-source-badge";
+import { ExportButton } from "@/components/ui-custom/export-button";
 import { getSubnets, fetchSubnetsFromApi } from "@/lib/api/subnets";
 import type { SubnetDetailModel, RiskLevel } from "@/lib/types/subnets";
 import { useTaoRate } from "@/lib/hooks/use-tao-rate";
@@ -126,6 +127,7 @@ export default function SubnetsPage() {
           <div className="text-xs text-slate-500">
             Showing <span className="font-semibold text-white">{filtered.length}</span> of {totalSubnets}
           </div>
+          <ExportButton exportType="subnets" />
         </div>
       </PageHeader>
 

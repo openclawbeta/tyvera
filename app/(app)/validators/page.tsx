@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { ChevronDown, ChevronUp, Shield, Search, Copy, Star, Users, Radar, Layers3 } from "lucide-react";
+import { ExportButton } from "@/components/ui-custom/export-button";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
@@ -185,6 +186,7 @@ export default function ValidatorsPage() {
               ⊞
             </button>
           </div>
+          <ExportButton exportType="validators" />
         </div>
       </PageHeader>
 
