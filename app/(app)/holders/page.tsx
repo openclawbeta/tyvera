@@ -232,8 +232,16 @@ export default function HoldersPage() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
               {[
                 { label: "Tracked TAO", value: formatCurrencyValue(data.summary.totalTrackedTao, "tau", taoUsdRate) },
-                { label: "Root Staked", value: `${formatCurrencyValue(data.summary.rootStakedTao, "tau", taoUsdRate)} · ${data.summary.rootSharePct}%` },
-                { label: "Subnet Staked", value: `${formatCurrencyValue(data.summary.subnetStakedTao, "tau", taoUsdRate)} · ${data.summary.subnetSharePct}%` },
+                {
+                  label: "Root Staked",
+                  value: data.summary.rootStakedTao > 0
+                    ? `${formatCurrencyValue(data.summary.rootStakedTao, "tau", taoUsdRate)} · ${data.summary.rootSharePct}%`
+                    : data.source === "modeled-demo" ? "Modeled" : "Not available from provider",
+                },
+                {
+                  label: "Subnet Staked",
+                  value: `${formatCurrencyValue(data.summary.subnetStakedTao, "tau", taoUsdRate)} · ${data.summary.subnetSharePct}%`,
+                },
                 { label: "Top Rotation", value: data.summary.topRotations[0] ?? "—" },
               ].map((stat) => (
                 <GlassCard key={stat.label} padding="md">
@@ -277,7 +285,11 @@ export default function HoldersPage() {
                           <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
                             <div className="rounded-lg border border-white/[0.05] bg-white/[0.03] p-2">
                               <div className="mb-1 text-slate-500">Root stake</div>
-                              <div className="font-semibold text-slate-200">{formatCurrencyValue(holder.rootStakedTao, "tau", taoUsdRate)}</div>
+                              <div className="font-semibold text-slate-200">
+                                {holder.rootStakedTao > 0
+                                  ? formatCurrencyValue(holder.rootStakedTao, "tau", taoUsdRate)
+                                  : <span className="text-slate-500">N/A</span>}
+                              </div>
                             </div>
                             <div className="rounded-lg border border-white/[0.05] bg-white/[0.03] p-2 text-right">
                               <div className="mb-1 text-slate-500">Subnet stake</div>
@@ -364,7 +376,7 @@ export default function HoldersPage() {
                   <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
                     <div className="mb-1 font-semibold text-white">Included now</div>
                     <ul className="space-y-1 text-[12px] text-slate-400">
-                      <li>• Top 100 tracked wallet cohort</li>
+                      <li>• Tracked wallet cohort (up to 100)</li>
                       <li>• Root staking vs subnet staking posture</li>
                       <li>• Dominant subnet allocations per wallet</li>
                       <li>• Cohort inflow / outflow by subnet</li>
