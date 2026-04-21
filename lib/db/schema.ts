@@ -152,4 +152,18 @@ export const SCHEMA_SQL = `
   );
 
   CREATE INDEX IF NOT EXISTS idx_cron_runs_job ON cron_runs(job_name, started_at DESC);
+
+  -- Daily usage counters: tracks per-wallet daily usage for rate limiting.
+  -- Keyed on (wallet_address, counter_type, date_bucket) for O(1) lookups.
+  -- Counter resets happen naturally via the date_bucket (no cron needed).
+  CREATE TABLE IF NOT EXISTS daily_usage (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    wallet_address  TEXT    NOT NULL,
+    counter_type    TEXT    NOT NULL,           -- 'chat_query', etc.
+    date_bucket     TEXT    NOT NULL,           -- YYYY-MM-DD
+    count           INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(wallet_address, counter_type, date_bucket)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_du_lookup ON daily_usage(wallet_address, counter_type, date_bucket);
 `;

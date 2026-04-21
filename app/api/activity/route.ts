@@ -27,6 +27,8 @@ import {
   type ChainEvent,
 } from "@/lib/chain/transfer-scanner";
 import { queryChainEvents } from "@/lib/db/chain-events";
+import { verifyWalletAuth } from "@/lib/api/wallet-auth";
+import { resolveWalletTier, getHistoryCutoffDays } from "@/lib/api/require-entitlement";
 
 function mapChainEvent(e: ChainEvent): ActivityEvent {
   return {
@@ -54,9 +56,32 @@ export async function GET(request: NextRequest) {
     return apiErrorResponse("Valid SS58 address required", 400);
   }
 
+  // ── Entitlement: enforce history cutoff by tier ─────────────────
+  const auth = await verifyWalletAuth(request);
+  const walletAddress = auth.verified ? auth.address! : null;
+  const tier = walletAddress ? await resolveWalletTier(walletAddress) : "explorer";
+  const cutoffDays = getHistoryCutoffDays(tier);
+
+  if (cutoffDays === 0) {
+    // No history access — return empty with upgrade prompt
+    return apiResponse(
+      { events: [] as ActivityEvent[], total: 0, page, limit },
+      {
+        source: DATA_SOURCES.CHAIN_LIVE,
+        fetchedAt: new Date().toISOString(),
+        note: "Activity history requires Analyst tier or above. Upgrade to view transaction history.",
+      },
+    );
+  }
+
+  // Build a date cutoff string for SQL filtering (null = all time)
+  const cutoffDate = cutoffDays > 0
+    ? new Date(Date.now() - cutoffDays * 86_400_000).toISOString()
+    : null;
+
   // ── Strategy 1: Read from DB (durable, survives cold starts) ────
   try {
-    const { events: dbEvents, total } = await queryChainEvents(address, page, limit);
+    const { events: dbEvents, total } = await queryChainEvents(address, page, limit, cutoffDate);
 
     if (total > 0) {
       const events: ActivityEvent[] = dbEvents.map(mapChainEvent);

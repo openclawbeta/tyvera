@@ -263,7 +263,10 @@ interface PaymentInstructions {
   memo: string;
   billing: string;
   expires_at: string;
+  intent_id?: string;
 }
+
+type PaymentStatus = "awaiting_payment" | "confirming" | "confirmed" | "expired" | "error";
 
 export default function PricingPage() {
   const router = useRouter();
@@ -271,8 +274,49 @@ export default function PricingPage() {
   const [billing, setBilling] = useState<BillingCycle>("monthly");
   const [subscribing, setSubscribing] = useState<string | null>(null);
   const [paymentInfo, setPaymentInfo] = useState<PaymentInstructions | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("awaiting_payment");
   const [taoUsd, setTaoUsd] = useState<number | null>(null);
   const [subscribeError, setSubscribeError] = useState<string | null>(null);
+
+  // Poll payment status when payment info is shown
+  useEffect(() => {
+    if (!paymentInfo?.memo) return;
+
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const res = await fetch(
+          `/api/payment-status?memo=${encodeURIComponent(paymentInfo.memo)}`,
+        );
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (cancelled) return;
+
+        if (data.status === "confirmed") {
+          setPaymentStatus("confirmed");
+        } else if (data.status === "confirming") {
+          setPaymentStatus("confirming");
+        } else if (data.status === "expired") {
+          setPaymentStatus("expired");
+        } else {
+          // Check if expiry has passed client-side
+          if (new Date(paymentInfo.expires_at).getTime() < Date.now()) {
+            setPaymentStatus("expired");
+          }
+        }
+      } catch {
+        // Silently continue polling
+      }
+    };
+
+    // Poll every 15 seconds
+    poll();
+    const timer = setInterval(poll, 15_000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [paymentInfo?.memo, paymentInfo?.expires_at]);
 
   useEffect(() => {
     const fetchRate = async () => {
@@ -327,6 +371,7 @@ export default function PricingPage() {
       const data = await res.json();
       if (res.ok) {
         setPaymentInfo(data);
+        setPaymentStatus("awaiting_payment");
       } else {
         setSubscribeError(data.error || "Failed to create subscription");
       }
@@ -690,9 +735,9 @@ export default function PricingPage() {
       )}
 
       {paymentInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/60 backdrop-blur-sm">
           <div
-            className="mx-4 w-full max-w-md space-y-4 rounded-2xl p-6"
+            className="mx-0 sm:mx-4 w-full max-w-md space-y-4 rounded-t-2xl sm:rounded-2xl p-5 sm:p-6 max-h-[90vh] overflow-y-auto"
             style={{
               background: "linear-gradient(170deg, rgba(52,211,153,0.04) 0%, rgba(15,23,42,0.98) 30%)",
               border: "1px solid rgba(52,211,153,0.2)",
@@ -719,15 +764,71 @@ export default function PricingPage() {
               </div>
             </div>
 
-            <p className="text-center text-xs text-slate-500">
-              Payment auto-verifies within 10 minutes. Expires {new Date(paymentInfo.expires_at).toLocaleString()}.
-            </p>
+            {/* Payment status indicator */}
+            <div
+              className="flex items-center gap-3 rounded-xl px-4 py-3"
+              style={{
+                background:
+                  paymentStatus === "confirmed"
+                    ? "rgba(52,211,153,0.08)"
+                    : paymentStatus === "confirming"
+                      ? "rgba(34,211,238,0.06)"
+                      : paymentStatus === "expired"
+                        ? "rgba(248,113,113,0.06)"
+                        : "rgba(251,191,36,0.04)",
+                border: `1px solid ${
+                  paymentStatus === "confirmed"
+                    ? "rgba(52,211,153,0.2)"
+                    : paymentStatus === "confirming"
+                      ? "rgba(34,211,238,0.18)"
+                      : paymentStatus === "expired"
+                        ? "rgba(248,113,113,0.18)"
+                        : "rgba(251,191,36,0.14)"
+                }`,
+              }}
+            >
+              {paymentStatus === "awaiting_payment" && (
+                <>
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
+                  <span className="text-xs text-amber-300">Waiting for payment — send TAO to the address above</span>
+                </>
+              )}
+              {paymentStatus === "confirming" && (
+                <>
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-400" />
+                  <span className="text-xs text-cyan-300">Payment detected — awaiting block confirmations...</span>
+                </>
+              )}
+              {paymentStatus === "confirmed" && (
+                <>
+                  <Check className="h-4 w-4 shrink-0 text-emerald-400" />
+                  <span className="text-xs font-semibold text-emerald-300">Payment confirmed! Your subscription is now active.</span>
+                </>
+              )}
+              {paymentStatus === "expired" && (
+                <>
+                  <X className="h-4 w-4 shrink-0 text-red-400" />
+                  <span className="text-xs text-red-300">Payment window expired. Please start a new subscription.</span>
+                </>
+              )}
+            </div>
+
+            {paymentStatus !== "confirmed" && paymentStatus !== "expired" && (
+              <p className="text-center text-xs text-slate-500">
+                Auto-checking every 15s. Expires {new Date(paymentInfo.expires_at).toLocaleString()}.
+              </p>
+            )}
 
             <button
-              onClick={() => setPaymentInfo(null)}
+              onClick={() => {
+                setPaymentInfo(null);
+                if (paymentStatus === "confirmed") {
+                  router.push("/settings");
+                }
+              }}
               className="w-full rounded-xl border border-white/[0.08] bg-white/[0.06] py-2 text-sm font-medium text-slate-300 transition-all hover:bg-white/[0.1]"
             >
-              Close
+              {paymentStatus === "confirmed" ? "Go to Settings" : "Close"}
             </button>
           </div>
         </div>

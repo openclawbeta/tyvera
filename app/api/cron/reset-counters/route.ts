@@ -12,6 +12,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { resetDailyCounters } from "@/lib/db/api-keys";
+import { pruneDailyUsage } from "@/lib/db/daily-usage";
 import { logCronRun } from "@/lib/db/cron-log";
 import { timingSafeEqual } from "crypto";
 
@@ -43,13 +44,14 @@ export async function GET(request: NextRequest) {
 
   try {
     await resetDailyCounters();
+    await pruneDailyUsage().catch(() => {});
 
     await logCronRun({
       jobName: "reset-counters",
       startedAt,
       durationMs: Date.now() - cronStart,
       status: "ok",
-      result: { message: "Daily API key counters reset" },
+      result: { message: "Daily API key counters reset, stale usage rows pruned" },
     }).catch(() => {});
 
     return NextResponse.json({

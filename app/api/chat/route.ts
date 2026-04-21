@@ -10,6 +10,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import type { SubnetDetailModel } from "@/lib/types/subnets";
+import { verifyWalletAuth } from "@/lib/api/wallet-auth";
+import { resolveWalletTier, getChatQueryLimit } from "@/lib/api/require-entitlement";
+import { incrementDailyUsage, getDailyUsage } from "@/lib/db/daily-usage";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_MODEL = "gpt-4o-mini";
@@ -59,6 +62,40 @@ ${subnetRows}
 
 export async function POST(request: NextRequest) {
   try {
+    // ── Entitlement gate: check tier-based chat limits ───────────
+    const auth = await verifyWalletAuth(request);
+    const walletAddress = auth.verified ? auth.address! : null;
+    const tier = walletAddress ? await resolveWalletTier(walletAddress) : "explorer";
+    const chatLimit = getChatQueryLimit(tier);
+
+    if (chatLimit === 0) {
+      return NextResponse.json(
+        {
+          error: "AI chat is not available on your current plan",
+          currentTier: tier,
+          upgrade: "Connect your wallet and subscribe to access AI Intelligence",
+        },
+        { status: 403 },
+      );
+    }
+
+    // Enforce daily query limit per tier
+    if (walletAddress && chatLimit > 0) {
+      const used = await getDailyUsage(walletAddress, "chat_query");
+      if (used >= chatLimit) {
+        return NextResponse.json(
+          {
+            error: `Daily AI chat limit reached (${chatLimit} queries/day on ${tier} tier)`,
+            currentTier: tier,
+            used,
+            limit: chatLimit,
+            resetsAt: "midnight UTC",
+          },
+          { status: 429 },
+        );
+      }
+    }
+
     const body: ChatRequestBody = await request.json();
     const { message, subnets = [], history = [] } = body;
 
@@ -74,6 +111,10 @@ export async function POST(request: NextRequest) {
     if (!OPENAI_API_KEY) {
       const { analyzeQuery } = await import("@/lib/ai/subnet-intelligence");
       const response = analyzeQuery(message, subnets);
+      // Count toward daily limit
+      if (walletAddress && chatLimit > 0) {
+        await incrementDailyUsage(walletAddress, "chat_query").catch(() => {});
+      }
       return NextResponse.json({
         content: response.summary,
         structured: response,
@@ -123,6 +164,11 @@ export async function POST(request: NextRequest) {
 
     const data = await resp.json();
     const content = data.choices?.[0]?.message?.content ?? "I wasn't able to generate a response. Please try again.";
+
+    // Count toward daily limit
+    if (walletAddress && chatLimit > 0) {
+      await incrementDailyUsage(walletAddress, "chat_query").catch(() => {});
+    }
 
     return NextResponse.json({
       content,

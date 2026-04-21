@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Filter, Clock, CheckCircle, Wallet, Shield, AlertCircle, Radar, Sparkles } from "lucide-react";
+import { Filter, Clock, CheckCircle, Wallet, Shield, AlertCircle, Radar, Sparkles, Lock } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { FadeIn } from "@/components/ui-custom/fade-in";
 import { RecommendationCard } from "@/components/recommendations/recommendation-card";
 import { ReviewPanel } from "@/components/recommendations/review-panel";
 import { getRecommendations } from "@/lib/api/recommendations";
 import { useWallet } from "@/lib/wallet-context";
+import { useEntitlement } from "@/lib/hooks/use-entitlement";
 import type {
   RecommendationUiModel as Recommendation,
   WalletHoldingsMap,
@@ -135,8 +136,44 @@ function WalletBanner() {
   );
 }
 
+function UpgradeGate() {
+  return (
+    <div className="mx-auto max-w-2xl py-20 text-center">
+      <div
+        className="inline-flex h-16 w-16 items-center justify-center rounded-2xl"
+        style={{
+          background: "rgba(139,92,246,0.1)",
+          border: "1px solid rgba(139,92,246,0.2)",
+        }}
+      >
+        <Lock className="h-7 w-7 text-violet-400" />
+      </div>
+      <h2 className="mt-6 text-2xl font-bold tracking-tight text-white">
+        Recommendations require Strategist
+      </h2>
+      <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-slate-400">
+        AI-powered reallocation recommendations are available on the Strategist plan ($49.99/mo).
+        Upgrade to access wallet-aware scoring, personalized edge detection, and review-first execution.
+      </p>
+      <a
+        href="/pricing"
+        className="mt-6 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition-all"
+        style={{
+          background: "linear-gradient(135deg, rgba(139,92,246,0.18) 0%, rgba(79,124,255,0.12) 100%)",
+          border: "1px solid rgba(139,92,246,0.3)",
+          color: "#c4b5fd",
+        }}
+      >
+        <Sparkles className="h-4 w-4" />
+        View plans
+      </a>
+    </div>
+  );
+}
+
 export default function RecommendationsPage() {
   const { address, walletState } = useWallet();
+  const entitlement = useEntitlement(address);
   const [holdings, setHoldings] = useState<WalletHoldingsMap | null>(null);
   const [filterBand, setFilterBand] = useState<string>("all");
 
@@ -193,6 +230,16 @@ export default function RecommendationsPage() {
   }, [recommendations]);
 
   const filteredRecs = filterBand === "all" ? recommendations : recommendations.filter((r) => r.band.toLowerCase() === filterBand);
+
+  // ── Entitlement gate: Strategist+ required ──────────────────────
+  if (!entitlement.loading && !entitlement.hasFeature("recommendations")) {
+    return (
+      <div className="mx-auto max-w-[1440px]">
+        <PageHeader title="Recommendations" subtitle="Risk-adjusted reallocation opportunities — you approve every move" />
+        <UpgradeGate />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-[1440px] space-y-8">

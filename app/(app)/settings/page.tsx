@@ -312,9 +312,17 @@ function WalletSection() {
 
 function AccountSection() {
   const { address } = useWallet();
-  const { tier } = useEntitlement(address);
+  const { tier, status, expiresAt, daysRemaining } = useEntitlement(address);
   const displayTier = tier ? tier.toUpperCase() : "EXPLORER";
   const truncated = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Not connected";
+
+  const expiryNote = (() => {
+    if (tier === "explorer" || !expiresAt) return "Free tier — no expiry";
+    if (status === "grace") return `Grace period — renew soon`;
+    if (daysRemaining !== null && daysRemaining <= 7) return `Expires in ${daysRemaining}d`;
+    if (daysRemaining !== null) return `${daysRemaining}d remaining`;
+    return "Active subscription";
+  })();
 
   const tierStyles: Record<string, { bg: string; border: string; color: string }> = {
     EXPLORER: { bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.25)", color: "#94a3b8" },
@@ -337,7 +345,7 @@ function AccountSection() {
 
         <div className="grid gap-3 md:grid-cols-4">
           {[
-            { label: "Plan", value: displayTier, note: "Current access layer", tone: style.color },
+            { label: "Plan", value: displayTier, note: expiryNote, tone: style.color },
             { label: "Wallet", value: address ? "Connected" : "Not connected", note: "Execution identity", tone: address ? "#67e8f9" : "#fbbf24" },
             { label: "Mode", value: "Source-aware", note: "Trust-first product state", tone: "#34d399" },
             { label: "Profile", value: "Operator", note: "Individual workflow", tone: "#c4b5fd" },

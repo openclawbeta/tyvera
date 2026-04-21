@@ -18,6 +18,7 @@ import {
 } from "@/lib/db/alerts";
 import { ALERT_TYPE_META, type AlertType } from "@/lib/alerts/types";
 import { requireWalletAuth, getAuthenticatedAddress } from "@/lib/api/wallet-auth";
+import { resolveWalletTier, getAlertRuleQuota } from "@/lib/api/require-entitlement";
 
 export async function GET(req: NextRequest) {
   const queryAddress = req.nextUrl.searchParams.get("address");
@@ -66,6 +67,37 @@ export async function POST(req: NextRequest) {
 
     if (!(type in ALERT_TYPE_META)) {
       return NextResponse.json({ error: `Invalid alert type: ${type}` }, { status: 400 });
+    }
+
+    // ── Entitlement: enforce alert rule quota ──────────────────────
+    const tier = await resolveWalletTier(address);
+    const quota = getAlertRuleQuota(tier);
+
+    if (quota === 0) {
+      return NextResponse.json(
+        {
+          error: "Alert rules require Analyst tier or above",
+          currentTier: tier,
+          requiredTier: "analyst",
+        },
+        { status: 403 },
+      );
+    }
+
+    if (quota > 0) {
+      // Check existing rule count (unlimited tiers skip this)
+      const existing = await getAlertRules(address);
+      if (existing.length >= quota) {
+        return NextResponse.json(
+          {
+            error: `Alert rule limit reached (${quota} rules). Upgrade to Strategist for unlimited alerts.`,
+            currentCount: existing.length,
+            limit: quota,
+            currentTier: tier,
+          },
+          { status: 403 },
+        );
+      }
     }
 
     const meta = ALERT_TYPE_META[type as AlertType];

@@ -60,20 +60,31 @@ export async function persistChainEvents(events: ChainEvent[]): Promise<number> 
 /**
  * Query chain events for a given address (as sender or receiver).
  * Returns paginated results sorted by block number descending.
+ *
+ * @param cutoffDate  Optional ISO 8601 date string. When provided, only events
+ *                    with timestamp >= cutoffDate are returned. Used for
+ *                    tier-based history limits (e.g. 30-day cutoff for Analyst).
  */
 export async function queryChainEvents(
   address: string,
   page = 1,
   limit = 50,
+  cutoffDate?: string | null,
 ): Promise<{ events: ChainEvent[]; total: number }> {
   const db = await getDb();
   const offset = (page - 1) * limit;
 
+  const whereClause = cutoffDate
+    ? `(from_address = ? OR to_address = ?) AND timestamp >= ?`
+    : `from_address = ? OR to_address = ?`;
+  const whereParams = cutoffDate
+    ? [address, address, cutoffDate]
+    : [address, address];
+
   // Count total matching events
   const countRows = await db.query(
-    `SELECT COUNT(*) as cnt FROM chain_events
-     WHERE from_address = ? OR to_address = ?`,
-    [address, address],
+    `SELECT COUNT(*) as cnt FROM chain_events WHERE ${whereClause}`,
+    whereParams,
   );
   const total = Number(countRows[0]?.rows?.[0]?.[0] ?? 0);
 
@@ -84,10 +95,10 @@ export async function queryChainEvents(
     `SELECT id, block_number, timestamp, type, from_address, to_address,
             amount_tao, fee, subnet, memo, tx_hash, status
      FROM chain_events
-     WHERE from_address = ? OR to_address = ?
+     WHERE ${whereClause}
      ORDER BY block_number DESC
      LIMIT ? OFFSET ?`,
-    [address, address, limit, offset],
+    [...whereParams, limit, offset],
   );
 
   const events: ChainEvent[] = (rows[0]?.rows ?? []).map((row: any[]) => ({
