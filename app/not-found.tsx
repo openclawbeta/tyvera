@@ -1,49 +1,96 @@
 import Link from "next/link";
-import { Home, ArrowLeft } from "lucide-react";
+import { Home, ArrowLeft, Zap } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.08),transparent_24%),linear-gradient(180deg,#05070b_0%,#070913_48%,#05070b_100%)] text-white flex flex-col items-center justify-center px-6 text-center">
+    <div
+      className="tyvera-landing relative flex min-h-screen flex-col items-center justify-center px-6 text-center aurora-bg noise"
+      style={{ background: "var(--aurora-cream)", color: "var(--aurora-ink)" }}
+    >
+      {/* Brand mark */}
+      <Link
+        href="/"
+        className="absolute left-6 top-6 flex items-center gap-2.5 md:left-8 md:top-8"
+      >
+        <div
+          className="flex h-8 w-8 items-center justify-center rounded-xl"
+          style={{
+            background:
+              "linear-gradient(135deg, #C9B8FF 0%, #FFD7BA 50%, #A7F0D2 100%)",
+          }}
+        >
+          <Zap
+            className="h-4 w-4"
+            style={{ color: "var(--aurora-ink)" }}
+            strokeWidth={2.5}
+          />
+        </div>
+        <span
+          className="font-semibold"
+          style={{ color: "var(--aurora-ink)", letterSpacing: "-0.02em" }}
+        >
+          Tyvera
+        </span>
+      </Link>
+
+      {/* 404 display */}
       <div className="relative mb-8">
-        <div className="text-[120px] font-black leading-none tracking-tighter bg-gradient-to-b from-white/20 to-white/[0.03] bg-clip-text text-transparent select-none">
+        <div
+          className="select-none font-semibold leading-none tracking-tighter"
+          style={{
+            fontSize: "clamp(96px, 18vw, 160px)",
+            color: "var(--aurora-sub)",
+            opacity: 0.28,
+            letterSpacing: "-0.05em",
+          }}
+        >
           404
         </div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-4xl font-bold text-cyan-400/60">τ</span>
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <span
+            className="serif"
+            style={{
+              fontSize: "clamp(40px, 6vw, 64px)",
+              color: "#5B3FBF",
+              opacity: 0.45,
+            }}
+          >
+            τ
+          </span>
         </div>
       </div>
 
-      <h1 className="text-xl font-semibold text-white mb-2">Page not found</h1>
-      <p className="text-sm text-slate-400 max-w-md mb-8">
-        The page you&apos;re looking for doesn&apos;t exist or may have been moved.
-        Check the URL or head back to the dashboard.
+      <h1
+        className="mb-3 font-semibold"
+        style={{
+          fontSize: "clamp(22px, 3vw, 28px)",
+          letterSpacing: "-0.02em",
+          color: "var(--aurora-ink)",
+        }}
+      >
+        Page not found
+      </h1>
+      <p
+        className="mb-10 max-w-md text-[14px] leading-relaxed"
+        style={{ color: "var(--aurora-sub)" }}
+      >
+        The page you&rsquo;re looking for doesn&rsquo;t exist or may have been
+        moved. Check the URL, or head back to the subnet rankings.
       </p>
 
-      <div className="flex items-center gap-3">
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
-          style={{
-            background: "rgba(34,211,238,0.12)",
-            border: "1px solid rgba(34,211,238,0.22)",
-            color: "#22d3ee",
-          }}
-        >
-          <Home className="w-4 h-4" />
-          Dashboard
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <Link href="/">
+          <button className="btn-primary text-[14px]" style={{ padding: "12px 24px" }}>
+            <Home className="h-4 w-4" />
+            Home
+          </button>
         </Link>
 
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
-          style={{
-            background: "rgba(255,255,255,0.05)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            color: "#94a3b8",
-          }}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Home
+        <Link href="/subnets">
+          <button className="btn-secondary text-[14px]" style={{ padding: "12px 24px" }}>
+            <ArrowLeft className="h-4 w-4" />
+            Subnet rankings
+          </button>
         </Link>
       </div>
     </div>
