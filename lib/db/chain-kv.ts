@@ -17,7 +17,36 @@
  * Values are serialized as JSON; callers are responsible for shape.
  */
 
-import { getDb } from "./index";
+import { getDb, type DbClient } from "./index";
+
+const CREATE_CHAIN_KV_SQL = `
+  CREATE TABLE IF NOT EXISTS chain_kv (
+    key             TEXT    PRIMARY KEY,
+    value_json      TEXT    NOT NULL,
+    updated_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+  )
+`;
+
+/**
+ * Self-heal guard: warm lambdas that were initialized against an older
+ * schema (before chain_kv existed) will have a cached DbClient that
+ * skipped the new CREATE TABLE in getDb's migration step. Running the
+ * idempotent create here ensures the table always exists before we
+ * touch it — cheap insurance against a cross-deploy race condition.
+ *
+ * Scoped to this module so the extra statement only runs on the KV
+ * path, not every DB call.
+ */
+let ensuredTable = false;
+async function ensureTable(db: DbClient): Promise<void> {
+  if (ensuredTable) return;
+  try {
+    await db.execute(CREATE_CHAIN_KV_SQL);
+    ensuredTable = true;
+  } catch (err) {
+    console.warn("[chain-kv] ensureTable failed:", err);
+  }
+}
 
 /** Persist a value under `key`. Overwrites existing rows. */
 export async function setChainKv(
@@ -25,6 +54,7 @@ export async function setChainKv(
   value: unknown,
 ): Promise<void> {
   const db = await getDb();
+  await ensureTable(db);
   const payload = JSON.stringify(value);
   const now = new Date().toISOString();
 
@@ -51,6 +81,7 @@ export async function getChainKv<T>(
   key: string,
 ): Promise<ChainKvRow<T> | null> {
   const db = await getDb();
+  await ensureTable(db);
   try {
     const res = await db.query(
       `SELECT value_json, updated_at FROM chain_kv WHERE key = ? LIMIT 1`,
