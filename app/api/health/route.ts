@@ -23,8 +23,18 @@ const CRON_OVERDUE_THRESHOLDS: Record<string, number> = {
   "reset-counters": 26 * 60 * 60 * 1000, // 26h (runs daily, generous buffer)
 };
 
-const DATA_STALE_WARN_MS = 60 * 60 * 1000;   // 1 hour → amber
-const DATA_STALE_CRIT_MS = 6 * 60 * 60 * 1000; // 6 hours → red
+// Thresholds for the committed subnets.json snapshot. This file is refreshed
+// by the GitHub Actions workflow which is subject to free-tier cron throttling
+// (actual cadence 1–5h), so we're generous here. The file is only a cold-start
+// fallback — the in-memory chain cache (populated every 5min by sync-chain) is
+// the primary serving path, and we downgrade these thresholds further below
+// when sync-chain itself is healthy.
+const DATA_STALE_WARN_MS = 6 * 60 * 60 * 1000;   // 6 hours → amber
+const DATA_STALE_CRIT_MS = 24 * 60 * 60 * 1000;  // 24 hours → red
+
+// If sync-chain ran successfully within this window, the in-memory cache is
+// fresh and subnets.json staleness is cosmetic — don't flag it as an issue.
+const SYNC_CHAIN_FRESH_MS = 15 * 60 * 1000; // 15 min (sync-chain runs every 5 min)
 
 interface CronStatus {
   jobName: string;
@@ -93,10 +103,23 @@ export async function GET() {
   // (typically 2018-10-20), which would make every deploy look ~7 years stale.
   // The GitHub Actions refresher writes a fresh _meta.fetched_at into the file
   // on every commit, so that is the authoritative timestamp.
+  //
+  // The committed file is only a cold-start fallback. The primary serving
+  // path is the in-memory chain cache, populated every 5 min by the
+  // sync-chain cron. If sync-chain is healthy, data is fresh regardless of
+  // the file's age — we suppress warn/critical in that case.
+  const syncChainRun = cronStatuses.find((c) => c.jobName === "sync-chain");
+  const syncChainFresh =
+    !!syncChainRun &&
+    syncChainRun.status === "ok" &&
+    syncChainRun.ageMs != null &&
+    syncChainRun.ageMs < SYNC_CHAIN_FRESH_MS;
+
   let dataFreshness: {
     subnetsJsonAge: string | null;
     subnetsJsonAgeMs: number | null;
     level: "fresh" | "warn" | "critical";
+    liveSource: "chain-cache" | "subnets-json" | "none";
   } | null = null;
 
   try {
@@ -108,32 +131,55 @@ export async function GET() {
     const fetchedAt = parsed?._meta?.fetched_at ?? parsed?._meta?.generated_at ?? null;
 
     if (!fetchedAt) {
-      issues.push("subnets.json: no _meta.fetched_at");
-      dataFreshness = { subnetsJsonAge: null, subnetsJsonAgeMs: null, level: "critical" };
+      if (!syncChainFresh) issues.push("subnets.json: no _meta.fetched_at");
+      dataFreshness = {
+        subnetsJsonAge: null,
+        subnetsJsonAgeMs: null,
+        level: syncChainFresh ? "fresh" : "critical",
+        liveSource: syncChainFresh ? "chain-cache" : "none",
+      };
     } else {
       const fetchedMs = Date.parse(fetchedAt);
       if (!Number.isFinite(fetchedMs)) {
-        issues.push("subnets.json: _meta.fetched_at unparsable");
-        dataFreshness = { subnetsJsonAge: fetchedAt, subnetsJsonAgeMs: null, level: "critical" };
+        if (!syncChainFresh) issues.push("subnets.json: _meta.fetched_at unparsable");
+        dataFreshness = {
+          subnetsJsonAge: fetchedAt,
+          subnetsJsonAgeMs: null,
+          level: syncChainFresh ? "fresh" : "critical",
+          liveSource: syncChainFresh ? "chain-cache" : "none",
+        };
       } else {
         const ageMs = now - fetchedMs;
-        let level: "fresh" | "warn" | "critical" = "fresh";
-        if (ageMs > DATA_STALE_CRIT_MS) {
-          level = "critical";
-          issues.push(`subnets.json: ${Math.round(ageMs / 3_600_000)}h stale`);
-        } else if (ageMs > DATA_STALE_WARN_MS) {
-          level = "warn";
-          issues.push(`subnets.json: ${Math.round(ageMs / 60_000)}min stale`);
+        const fileLevel: "fresh" | "warn" | "critical" =
+          ageMs > DATA_STALE_CRIT_MS ? "critical" :
+          ageMs > DATA_STALE_WARN_MS ? "warn" : "fresh";
+
+        // When sync-chain is fresh we consider the live chain-cache authoritative
+        // and suppress file-based warn/critical. Only promote issues when BOTH
+        // signals are degraded.
+        const level: "fresh" | "warn" | "critical" =
+          syncChainFresh ? "fresh" : fileLevel;
+
+        if (!syncChainFresh) {
+          if (fileLevel === "critical") {
+            issues.push(`subnets.json: ${Math.round(ageMs / 3_600_000)}h stale`);
+          } else if (fileLevel === "warn") {
+            issues.push(`subnets.json: ${Math.round(ageMs / 60_000)}min stale`);
+          }
         }
+
         dataFreshness = {
           subnetsJsonAge: new Date(fetchedMs).toISOString(),
           subnetsJsonAgeMs: Math.round(ageMs),
           level,
+          liveSource: syncChainFresh
+            ? "chain-cache"
+            : fileLevel === "critical" ? "none" : "subnets-json",
         };
       }
     }
   } catch {
-    issues.push("subnets.json: file not found or unreadable");
+    if (!syncChainFresh) issues.push("subnets.json: file not found or unreadable");
   }
 
   // ── Transfer scanner status ─────────────────────────────────────
