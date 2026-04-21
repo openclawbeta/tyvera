@@ -15,8 +15,6 @@ import {
   Lightbulb,
   Wallet,
   BarChart2,
-  Sparkles,
-  Layers3,
 } from "lucide-react";
 import { FadeIn } from "@/components/ui-custom/fade-in";
 import { cn } from "@/lib/utils";
@@ -42,6 +40,16 @@ interface LiveSubnet {
   risk: string;
   liquidity: number;
   yieldDelta7d: number;
+  thesis?: string[];
+  stakers?: number;
+  score?: number;
+}
+
+interface FeaturedPick extends LiveSubnet {
+  dailyYield: number;
+  annualYield: number;
+  vsRootPp: number | null; // annual pp delta vs root; null when no root data
+  thesisLine: string | null;
 }
 
 const FEATURES = [
@@ -106,7 +114,9 @@ function formatLiquidity(val: number): string {
 
 export default function HomePage() {
   const [ticker, setTicker] = useState(TICKER_FALLBACK);
-  const [featured, setFeatured] = useState<LiveSubnet[]>([]);
+  const [featured, setFeatured] = useState<FeaturedPick[]>([]);
+  const [rootAnnual, setRootAnnual] = useState<number | null>(null);
+  const [topDailyPct, setTopDailyPct] = useState<number | null>(null);
 
   useEffect(() => {
     fetchWithTimeout("/api/subnets", { timeoutMs: 10_000 })
@@ -115,19 +125,42 @@ export default function HomePage() {
         const data = Array.isArray(raw) ? raw : raw?.subnets ?? [];
         if (!Array.isArray(data) || data.length === 0) return;
 
-        const withDaily = [...data]
-          .filter((s: LiveSubnet) => s.netuid > 0 && s.emissions > 0 && s.liquidity > 0)
-          .map((s: LiveSubnet) => ({ ...s, dailyYield: (s.emissions / s.liquidity) * 100 }))
+        // Isolate root (netuid 0) — it's the zero-risk TAO staking baseline.
+        const root = (data as LiveSubnet[]).find((s) => s.netuid === 0);
+        const rootDaily =
+          root && root.liquidity > 0 && root.emissions > 0
+            ? (root.emissions / root.liquidity) * 100
+            : null;
+        const rootAnn = rootDaily != null ? rootDaily * 365 : null;
+        setRootAnnual(rootAnn);
+
+        const alpha = (data as LiveSubnet[])
+          .filter((s) => s.netuid > 0 && s.emissions > 0 && s.liquidity > 0)
+          .map((s) => {
+            const dailyYield = (s.emissions / s.liquidity) * 100;
+            const annualYield = dailyYield * 365;
+            const vsRootPp = rootAnn != null ? annualYield - rootAnn : null;
+            const thesisLine =
+              Array.isArray(s.thesis) && s.thesis.length > 0 ? s.thesis[0] : null;
+            return {
+              ...s,
+              dailyYield,
+              annualYield,
+              vsRootPp,
+              thesisLine,
+            } as FeaturedPick;
+          })
           .sort((a, b) => b.dailyYield - a.dailyYield);
 
-        const tickerItems = withDaily.slice(0, 12).map((s) => ({
+        const tickerItems = alpha.slice(0, 12).map((s) => ({
           name: /^SN\d+$/.test(s.name) ? `SN${s.netuid}` : `SN${s.netuid} ${s.name}`,
           yield: `+${s.dailyYield.toFixed(2)}%/day`,
           up: s.dailyYield > 0,
         }));
         if (tickerItems.length > 0) setTicker(tickerItems);
 
-        setFeatured(withDaily.slice(0, 3));
+        setFeatured(alpha.slice(0, 3));
+        if (alpha.length > 0) setTopDailyPct(alpha[0].dailyYield);
       })
       .catch(() => {});
   }, []);
@@ -207,9 +240,9 @@ export default function HomePage() {
                 className="mb-7 max-w-4xl font-semibold leading-[0.98]"
                 style={{ fontSize: "clamp(46px, 7vw, 88px)", letterSpacing: "-0.035em", color: "var(--aurora-ink)" }}
               >
-                <span className="block">Operate Bittensor</span>
+                <span className="block">Find the best</span>
                 <span className="block serif" style={{ color: "var(--aurora-sub)" }}>
-                  like a market terminal.
+                  Bittensor subnet to stake.
                 </span>
               </motion.h1>
 
@@ -220,24 +253,26 @@ export default function HomePage() {
                 className="mb-10 max-w-2xl text-[18px] leading-relaxed md:text-[20px]"
                 style={{ color: "var(--aurora-sub)", letterSpacing: "-0.01em" }}
               >
-                Tyvera brings subnet discovery, holder flows, validator coverage, portfolio intelligence, and review-based execution into one premium operating surface — sharp, source-aware, and built for real allocation decisions.
+                Live yields for every Bittensor subnet, benchmarked against root staking. Composite scores, risk bands, and a transparent methodology — so you know where your TAO earns the most, and what it costs in risk.
               </motion.p>
 
               <motion.div
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                className="mb-10 flex flex-wrap items-center gap-3"
+                className="mb-10 flex flex-wrap items-center gap-5"
               >
                 <Link href="/signup">
-                  <button className="btn-primary text-[14px]" style={{ padding: "12px 24px" }}>
-                    Start Free <ArrowRight className="h-4 w-4" />
+                  <button className="btn-primary text-[14px]" style={{ padding: "14px 28px" }}>
+                    Start free — see today&rsquo;s top picks <ArrowRight className="h-4 w-4" />
                   </button>
                 </Link>
-                <Link href="/pricing">
-                  <button className="btn-secondary text-[14px]" style={{ padding: "12px 24px" }}>
-                    View Pricing
-                  </button>
+                <Link
+                  href="/pricing"
+                  className="text-[14px] font-medium underline decoration-dotted underline-offset-4 transition-colors"
+                  style={{ color: "var(--aurora-sub)" }}
+                >
+                  View pricing
                 </Link>
               </motion.div>
 
@@ -248,9 +283,19 @@ export default function HomePage() {
                 className="grid max-w-3xl gap-3 sm:grid-cols-3"
               >
                 {[
-                  ["Source-aware", "Fallback state stays visible"],
-                  ["Non-custodial", "You approve every move"],
-                  ["Allocator-grade", "Built for decision speed"],
+                  [
+                    "Top yield today",
+                    topDailyPct != null
+                      ? `${topDailyPct.toFixed(2)}% / day`
+                      : "Loading…",
+                  ],
+                  [
+                    "Root baseline",
+                    rootAnnual != null
+                      ? `~${rootAnnual.toFixed(1)}% APR`
+                      : "Loading…",
+                  ],
+                  ["Non-custodial", "You sign every move"],
                 ].map(([title, sub]) => (
                   <div key={title} className="glass px-4 py-4">
                     <div className="text-sm font-semibold" style={{ color: "var(--aurora-ink)" }}>{title}</div>
@@ -267,38 +312,127 @@ export default function HomePage() {
               className="relative"
             >
               <div className="glass-lg p-6 aurora-soft">
-                <div className="mb-6 flex items-center justify-between border-b pb-5" style={{ borderColor: "var(--aurora-hair)" }}>
+                <div className="mb-5 flex items-start justify-between border-b pb-5" style={{ borderColor: "var(--aurora-hair)" }}>
                   <div>
                     <div className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--aurora-sub)", fontFamily: "'JetBrains Mono', monospace" }}>
-                      Platform snapshot
+                      Top picks right now
                     </div>
-                    <h2 className="mt-2 text-[24px] font-semibold tracking-[-0.03em]" style={{ color: "var(--aurora-ink)" }}>
-                      Why Tyvera feels different
+                    <h2 className="mt-2 text-[22px] font-semibold tracking-[-0.03em]" style={{ color: "var(--aurora-ink)" }}>
+                      Where TAO is earning the most today
                     </h2>
-                    <p className="mt-2 max-w-sm text-sm leading-relaxed" style={{ color: "var(--aurora-sub)" }}>
-                      A calmer, institutional Bittensor terminal built around honest execution boundaries and high-signal operating views.
+                    <p className="mt-2 max-w-sm text-[13px] leading-relaxed" style={{ color: "var(--aurora-sub)" }}>
+                      Ranked by realized daily yield, with the delta over root staking shown in pp.
                     </p>
                   </div>
-                  <div className="tag-violet">
-                    Trust-first
-                  </div>
+                  <div className="tag-violet shrink-0">Live</div>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {[
-                    { icon: Layers3, title: "Unified surfaces", text: "Subnets, holders, validators, recommendations, and billing read like one product system." },
-                    { icon: Sparkles, title: "Premium posture", text: "Sharper hierarchy, quieter confidence, and less dashboard-template noise." },
-                    { icon: Shield, title: "Approval boundaries", text: "Tyvera prepares workflows, but users still approve every execution-like action." },
-                    { icon: Wallet, title: "Operator flow", text: "From discovery to review to wallet approval, the path stays clear and accountable." },
-                  ].map(({ icon: Icon, title, text }) => (
-                    <div key={title} className="glass p-4">
-                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "var(--surface-3)", border: "1px solid var(--aurora-hair)" }}>
-                        <Icon className="h-4 w-4" style={{ color: "#5B3FBF" }} />
-                      </div>
-                      <div className="text-sm font-semibold tracking-tight" style={{ color: "var(--aurora-ink)" }}>{title}</div>
-                      <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--aurora-sub)" }}>{text}</p>
-                    </div>
-                  ))}
+                <div className="flex flex-col gap-3">
+                  {(featured.length > 0 ? featured : [null, null, null]).map((s, i) => {
+                    if (!s) {
+                      return (
+                        <div
+                          key={`placeholder-${i}`}
+                          className="glass p-4"
+                          style={{ opacity: 0.4 }}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-xl" style={{ background: "var(--surface-3)" }} />
+                            <div className="flex-1">
+                              <div className="h-3 w-24 rounded" style={{ background: "var(--surface-3)" }} />
+                              <div className="mt-2 h-2 w-40 rounded" style={{ background: "var(--surface-3)" }} />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    const grad = GRADIENT_CLASSES[i % 3];
+                    const accent = ACCENT_COLORS[i % 3];
+                    const rank = i + 1;
+                    return (
+                      <Link
+                        key={s.netuid}
+                        href={`/subnets/${s.netuid}`}
+                        className="glass relative overflow-hidden p-4 transition-transform hover:-translate-y-0.5"
+                      >
+                        <div
+                          className="absolute right-0 top-0 h-24 w-32 pointer-events-none"
+                          style={{ background: `radial-gradient(ellipse at top right, ${accent}55, transparent 70%)` }}
+                        />
+                        <div className="relative flex items-center gap-3">
+                          <div className="flex flex-col items-center gap-1">
+                            <span
+                              className="text-[10px] font-bold uppercase tracking-[0.14em]"
+                              style={{ color: "var(--aurora-sub)", fontFamily: "'JetBrains Mono', monospace" }}
+                            >
+                              #{rank}
+                            </span>
+                            <div
+                              className={cn("flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br text-sm font-bold", grad)}
+                              style={{ color: "var(--aurora-ink)" }}
+                            >
+                              {s.netuid}
+                            </div>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="truncate text-[13px] font-semibold"
+                                style={{ color: "var(--aurora-ink)", letterSpacing: "-0.01em" }}
+                              >
+                                {/^SN\d+$/.test(s.name) ? `SN${s.netuid}` : s.name}
+                              </span>
+                              <span className="tag-emerald shrink-0">{s.risk}</span>
+                            </div>
+                            <div
+                              className="mt-1 text-[11px]"
+                              style={{ color: "var(--aurora-sub)" }}
+                            >
+                              {s.thesisLine ?? `SN${s.netuid} · ${formatLiquidity(s.liquidity)} staked`}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div
+                              className="text-[18px] font-semibold tabular-nums"
+                              style={{ color: "var(--aurora-ink)", fontFamily: "'JetBrains Mono', monospace", letterSpacing: "-0.02em" }}
+                            >
+                              {s.dailyYield.toFixed(2)}%
+                            </div>
+                            <div className="text-[10px]" style={{ color: "var(--aurora-sub)" }}>
+                              /day
+                            </div>
+                            {s.vsRootPp != null && (
+                              <div
+                                className="mt-1 text-[10px] font-bold tabular-nums"
+                                style={{
+                                  color: s.vsRootPp >= 0 ? "#0B8F5A" : "#C0392B",
+                                  fontFamily: "'JetBrains Mono', monospace",
+                                }}
+                              >
+                                {s.vsRootPp >= 0 ? "+" : ""}
+                                {s.vsRootPp.toFixed(1)}pp vs root
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-4 flex items-center justify-between border-t pt-4" style={{ borderColor: "var(--aurora-hair)" }}>
+                  <span className="text-[11px]" style={{ color: "var(--aurora-sub)" }}>
+                    {rootAnnual != null
+                      ? `Root staking baseline: ~${rootAnnual.toFixed(1)}% APR`
+                      : "Fetching root baseline…"}
+                  </span>
+                  <Link
+                    href="/subnets"
+                    className="text-[11px] font-semibold transition-colors"
+                    style={{ color: "#5B3FBF" }}
+                  >
+                    View all 128+ →
+                  </Link>
                 </div>
               </div>
             </motion.div>
@@ -332,9 +466,9 @@ export default function HomePage() {
         <div className="mx-auto grid max-w-5xl grid-cols-2 gap-8 sm:grid-cols-4">
           {[
             { label: "Subnets Tracked", value: "128+", sub: "live on mainnet" },
-            { label: "Data Freshness", value: "20 min", sub: "chain-synced" },
-            { label: "Risk Metrics", value: "12", sub: "per subnet" },
-            { label: "Wallet Extensions", value: "3", sub: "supported" },
+            { label: "Chain Sync", value: "5 min", sub: "direct from Subtensor" },
+            { label: "Scoring Factors", value: "5", sub: "per subnet" },
+            { label: "Risk Bands", value: "4", sub: "LOW → SPECULATIVE" },
           ].map((m) => (
             <div key={m.label} className="text-center">
               <div className="mb-1 text-[36px] font-semibold" style={{ letterSpacing: "-0.03em", color: "var(--aurora-ink)" }}>
@@ -364,66 +498,273 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {(featured.length > 0
-              ? featured.map((s: any, i: number) => ({
+              ? featured.map((s, i) => ({
                   netuid: s.netuid,
-                  name: s.name,
-                  yield: `${s.dailyYield?.toFixed(2) ?? (s.emissions / s.liquidity * 100).toFixed(2)}%`,
+                  name: /^SN\d+$/.test(s.name) ? `SN${s.netuid}` : s.name,
+                  dailyPct: s.dailyYield,
+                  annualPct: s.annualYield,
+                  vsRootPp: s.vsRootPp,
                   risk: s.risk,
-                  delta: `${formatLiquidity(s.emissions)}/day`,
+                  emissionsStr: `${formatLiquidity(s.emissions)}/day`,
                   liquidity: formatLiquidity(s.liquidity),
                   grad: GRADIENT_CLASSES[i % 3],
                   accent: ACCENT_COLORS[i % 3],
                 }))
               : [
-                  { netuid: 15, name: "Blockchain Insights", yield: "0.23%", risk: "LOW", delta: "194.5 τ/day", liquidity: "86,148 τ", grad: GRADIENT_CLASSES[0], accent: ACCENT_COLORS[0] },
-                  { netuid: 107, name: "SN107", yield: "0.18%", risk: "LOW", delta: "155.4 τ/day", liquidity: "86,956 τ", grad: GRADIENT_CLASSES[1], accent: ACCENT_COLORS[1] },
-                  { netuid: 114, name: "SN114", yield: "0.11%", risk: "LOW", delta: "125.6 τ/day", liquidity: "114,317 τ", grad: GRADIENT_CLASSES[2], accent: ACCENT_COLORS[2] },
+                  { netuid: 15, name: "Blockchain Insights", dailyPct: 0.23, annualPct: 83.95, vsRootPp: null, risk: "LOW", emissionsStr: "194.5 τ/day", liquidity: "86,148 τ", grad: GRADIENT_CLASSES[0], accent: ACCENT_COLORS[0] },
+                  { netuid: 107, name: "SN107", dailyPct: 0.18, annualPct: 65.7, vsRootPp: null, risk: "LOW", emissionsStr: "155.4 τ/day", liquidity: "86,956 τ", grad: GRADIENT_CLASSES[1], accent: ACCENT_COLORS[1] },
+                  { netuid: 114, name: "SN114", dailyPct: 0.11, annualPct: 40.15, vsRootPp: null, risk: "LOW", emissionsStr: "125.6 τ/day", liquidity: "114,317 τ", grad: GRADIENT_CLASSES[2], accent: ACCENT_COLORS[2] },
                 ]
             ).map((s, i) => (
               <FadeIn key={s.netuid} delay={i * 0.1}>
-                <div className="glass relative overflow-hidden p-6">
-                  <div
-                    className="absolute right-0 top-0 h-32 w-40 pointer-events-none"
-                    style={{ background: `radial-gradient(ellipse at top right, ${s.accent}55, transparent 70%)` }}
-                  />
-
-                  <div className="relative mb-5 flex items-center gap-3">
+                <Link href={`/subnets/${s.netuid}`} className="block">
+                  <div className="glass relative overflow-hidden p-6 transition-transform hover:-translate-y-1">
                     <div
-                      className={cn("flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br text-sm font-bold", s.grad)}
-                      style={{ color: "var(--aurora-ink)" }}
-                    >
-                      {s.netuid}
-                    </div>
-                    <div>
-                      <div className="text-[14px] font-semibold" style={{ letterSpacing: "-0.015em", color: "var(--aurora-ink)" }}>
-                        {s.name}
+                      className="absolute right-0 top-0 h-32 w-40 pointer-events-none"
+                      style={{ background: `radial-gradient(ellipse at top right, ${s.accent}55, transparent 70%)` }}
+                    />
+
+                    <div className="relative mb-5 flex items-center gap-3">
+                      <div
+                        className={cn("flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br text-sm font-bold", s.grad)}
+                        style={{ color: "var(--aurora-ink)" }}
+                      >
+                        {s.netuid}
                       </div>
-                      <div className="text-[10px]" style={{ color: "var(--aurora-sub)", fontFamily: "'JetBrains Mono', monospace" }}>
-                        SN{s.netuid}
+                      <div>
+                        <div className="text-[14px] font-semibold" style={{ letterSpacing: "-0.015em", color: "var(--aurora-ink)" }}>
+                          {s.name}
+                        </div>
+                        <div className="text-[10px]" style={{ color: "var(--aurora-sub)", fontFamily: "'JetBrains Mono', monospace" }}>
+                          SN{s.netuid}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="mb-0.5 text-[32px] font-semibold tabular-nums" style={{ letterSpacing: "-0.03em", color: "var(--aurora-ink)", fontFamily: "'JetBrains Mono', monospace" }}>
-                    {s.yield}
-                  </div>
-                  <div className="mb-4 text-[11px]" style={{ color: "var(--aurora-sub)" }}>daily yield vs τ staked</div>
+                    <div className="mb-0.5 text-[32px] font-semibold tabular-nums" style={{ letterSpacing: "-0.03em", color: "var(--aurora-ink)", fontFamily: "'JetBrains Mono', monospace" }}>
+                      {s.dailyPct.toFixed(2)}%
+                    </div>
+                    <div className="mb-3 text-[11px]" style={{ color: "var(--aurora-sub)" }}>
+                      daily yield · <span className="font-semibold" style={{ color: "var(--aurora-ink)" }}>~{s.annualPct.toFixed(0)}% APR</span>
+                    </div>
 
-                  <div className="mb-4 divider" />
+                    {s.vsRootPp != null && (
+                      <div
+                        className="mb-3 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold tabular-nums"
+                        style={{
+                          background: s.vsRootPp >= 0 ? "#E5F7EE" : "#FDECEA",
+                          color: s.vsRootPp >= 0 ? "#0B8F5A" : "#C0392B",
+                          border: `1px solid ${s.vsRootPp >= 0 ? "#A7F0D2" : "#F5B7B1"}`,
+                          fontFamily: "'JetBrains Mono', monospace",
+                        }}
+                      >
+                        {s.vsRootPp >= 0 ? "▲" : "▼"} {s.vsRootPp >= 0 ? "+" : ""}{s.vsRootPp.toFixed(1)}pp vs root
+                      </div>
+                    )}
 
-                  <div className="flex items-center gap-2">
-                    <span className="tag-emerald">{s.risk} RISK</span>
-                    <span className="text-[11px] font-semibold tabular-nums" style={{ color: "#5B3FBF", fontFamily: "'JetBrains Mono', monospace" }}>
-                      {s.delta}
-                    </span>
-                    <span className="ml-auto text-[11px] tabular-nums" style={{ color: "var(--aurora-sub)" }}>
-                      {s.liquidity} staked
-                    </span>
+                    <div className="mb-4 divider" />
+
+                    <div className="flex items-center gap-2">
+                      <span className="tag-emerald">{s.risk} RISK</span>
+                      <span className="text-[11px] font-semibold tabular-nums" style={{ color: "#5B3FBF", fontFamily: "'JetBrains Mono', monospace" }}>
+                        {s.emissionsStr}
+                      </span>
+                      <span className="ml-auto text-[11px] tabular-nums" style={{ color: "var(--aurora-sub)" }}>
+                        {s.liquidity} staked
+                      </span>
+                    </div>
                   </div>
-                </div>
+                </Link>
               </FadeIn>
             ))}
           </div>
+
+          <div className="mt-10 text-center">
+            <Link
+              href="/subnets"
+              className="inline-flex items-center gap-2 text-[13px] font-semibold transition-colors"
+              style={{ color: "#5B3FBF" }}
+            >
+              See all 128+ subnets, ranked <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── METHODOLOGY ── */}
+      <section className="border-t px-8 py-24" style={{ borderColor: "var(--aurora-hair)", background: "var(--surface-1)" }}>
+        <div className="mx-auto max-w-6xl">
+          <FadeIn>
+            <div className="mb-14 text-center">
+              <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--aurora-sub)", fontFamily: "'JetBrains Mono', monospace" }}>
+                Methodology
+              </div>
+              <h2 className="text-[40px] font-semibold" style={{ letterSpacing: "-0.03em", color: "var(--aurora-ink)" }}>
+                How we score <span className="serif" style={{ color: "var(--aurora-sub)" }}>every subnet.</span>
+              </h2>
+              <p className="mx-auto mt-3 max-w-2xl text-[14px] leading-relaxed" style={{ color: "var(--aurora-sub)" }}>
+                One composite score. Five weighted factors. Nothing hidden. Risk bands are derived from the same on-chain numbers — no gut feel, no vibes.
+              </p>
+            </div>
+          </FadeIn>
+
+          <div className="grid gap-5 lg:grid-cols-2">
+            <FadeIn>
+              <div className="glass p-7">
+                <div className="mb-5 flex items-center gap-3">
+                  <div
+                    className="flex h-10 w-10 items-center justify-center rounded-xl"
+                    style={{ background: "#E4DBFF", border: "1px solid #C9B8FF" }}
+                  >
+                    <BarChart2 className="h-5 w-5" style={{ color: "#5B3FBF" }} />
+                  </div>
+                  <h3 className="text-[18px] font-semibold" style={{ letterSpacing: "-0.02em", color: "var(--aurora-ink)" }}>
+                    Composite score weights
+                  </h3>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  {[
+                    { label: "Liquidity", weight: 34, note: "τ staked into the subnet pool — exit cost & slippage floor" },
+                    { label: "Yield", weight: 22, note: "Annualized emissions vs τ staked (benchmarked against root)" },
+                    { label: "Participation", weight: 20, note: "Unique stakers — concentration & holder quality" },
+                    { label: "Stability", weight: 14, note: "7-day yield volatility and emission consistency" },
+                    { label: "Maturity", weight: 10, note: "Age and continuity since registration" },
+                  ].map((row) => (
+                    <div key={row.label} className="flex items-center gap-3">
+                      <span
+                        className="w-28 shrink-0 text-[13px] font-semibold"
+                        style={{ color: "var(--aurora-ink)" }}
+                      >
+                        {row.label}
+                      </span>
+                      <div
+                        className="relative h-2 flex-1 overflow-hidden rounded-full"
+                        style={{ background: "var(--surface-3)" }}
+                      >
+                        <div
+                          className="absolute inset-y-0 left-0 rounded-full"
+                          style={{
+                            width: `${row.weight}%`,
+                            background: "linear-gradient(90deg, #8B5CF6 0%, #C9B8FF 100%)",
+                          }}
+                        />
+                      </div>
+                      <span
+                        className="w-12 shrink-0 text-right text-[13px] font-bold tabular-nums"
+                        style={{ color: "var(--aurora-ink)", fontFamily: "'JetBrains Mono', monospace" }}
+                      >
+                        {row.weight}%
+                      </span>
+                      <span
+                        className="hidden flex-1 text-[11px] lg:block"
+                        style={{ color: "var(--aurora-sub)" }}
+                      >
+                        {row.note}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <p className="mt-5 text-[12px] leading-relaxed" style={{ color: "var(--aurora-sub)" }}>
+                  Weights sum to 100%. Each factor is min-max normalized across all 128+ subnets, then combined into a single 0–100 composite. Recomputed every chain sync.
+                </p>
+              </div>
+            </FadeIn>
+
+            <FadeIn delay={0.1}>
+              <div className="glass p-7">
+                <div className="mb-5 flex items-center gap-3">
+                  <div
+                    className="flex h-10 w-10 items-center justify-center rounded-xl"
+                    style={{ background: "#E5F7EE", border: "1px solid #A7F0D2" }}
+                  >
+                    <Shield className="h-5 w-5" style={{ color: "#0B8F5A" }} />
+                  </div>
+                  <h3 className="text-[18px] font-semibold" style={{ letterSpacing: "-0.02em", color: "var(--aurora-ink)" }}>
+                    Risk bands
+                  </h3>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  {[
+                    {
+                      band: "LOW",
+                      dot: "#0B8F5A",
+                      bg: "#E5F7EE",
+                      bdr: "#A7F0D2",
+                      threshold: "≥ 1.5M τ staked · ≥ 180 stakers",
+                      note: "Deep liquidity, broad participation, mature history.",
+                    },
+                    {
+                      band: "MODERATE",
+                      dot: "#B88A00",
+                      bg: "#FFF6DC",
+                      bdr: "#F0D890",
+                      threshold: "≥ 400k τ staked · ≥ 96 stakers",
+                      note: "Established subnet with meaningful activity.",
+                    },
+                    {
+                      band: "HIGH",
+                      dot: "#B65A17",
+                      bg: "#FFE5D0",
+                      bdr: "#FFD7BA",
+                      threshold: "≥ 25k τ staked · ≥ 24 stakers",
+                      note: "Growing but concentration / volatility risk.",
+                    },
+                    {
+                      band: "SPECULATIVE",
+                      dot: "#C0392B",
+                      bg: "#FDECEA",
+                      bdr: "#F5B7B1",
+                      threshold: "Below the above thresholds",
+                      note: "Early, thin, or volatile — treat as venture exposure.",
+                    },
+                  ].map((r) => (
+                    <div
+                      key={r.band}
+                      className="rounded-2xl p-4"
+                      style={{ background: r.bg, border: `1px solid ${r.bdr}` }}
+                    >
+                      <div className="mb-1 flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full" style={{ background: r.dot }} />
+                        <span className="text-[12px] font-bold tracking-[0.08em]" style={{ color: r.dot, fontFamily: "'JetBrains Mono', monospace" }}>
+                          {r.band}
+                        </span>
+                        <span className="ml-auto text-[11px] tabular-nums" style={{ color: "var(--aurora-sub)", fontFamily: "'JetBrains Mono', monospace" }}>
+                          {r.threshold}
+                        </span>
+                      </div>
+                      <p className="text-[12px] leading-relaxed" style={{ color: "var(--aurora-ink)" }}>
+                        {r.note}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </FadeIn>
+          </div>
+
+          <FadeIn delay={0.2}>
+            <div className="mt-6 glass p-6">
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                  style={{ background: "#FFF6DC", border: "1px solid #F0D890" }}
+                >
+                  <Lightbulb className="h-5 w-5" style={{ color: "#B88A00" }} />
+                </div>
+                <div>
+                  <div className="text-[14px] font-semibold" style={{ color: "var(--aurora-ink)" }}>
+                    Benchmarked against root staking
+                  </div>
+                  <p className="mt-1 text-[12px] leading-relaxed" style={{ color: "var(--aurora-sub)" }}>
+                    Every subnet yield shows a <span className="font-semibold" style={{ color: "var(--aurora-ink)" }}>±pp vs root</span> delta — the pure-TAO staking yield on netuid 0 is the zero-risk baseline you&rsquo;re giving up to take alpha exposure.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </FadeIn>
         </div>
       </section>
 
@@ -565,26 +906,27 @@ export default function HomePage() {
             </div>
 
             <h2 className="mb-5 text-[56px] font-semibold" style={{ letterSpacing: "-0.035em", lineHeight: 1.03, color: "var(--aurora-ink)" }}>
-              Start free. <span className="serif" style={{ color: "var(--aurora-sub)" }}>Upgrade when the</span>
-              <span className="block">edge is worth paying for.</span>
+              See where your TAO <span className="serif" style={{ color: "var(--aurora-sub)" }}>should be staked.</span>
             </h2>
             <p className="mb-10 text-[16px] leading-relaxed" style={{ color: "var(--aurora-sub)" }}>
-              Explorer gets you into the product. Paid plans unlock deeper analytics, recommendations, and portfolio workflows. TAO-native settlement, no fake urgency, and no hidden custody.
+              Free forever to explore the rankings. Paid plans unlock portfolio intelligence and reallocation recommendations. You approve every move in your own wallet.
             </p>
-            <div className="flex flex-wrap justify-center gap-3">
-              <Link href="/pricing">
-                <button className="btn-primary text-[14px]" style={{ padding: "14px 28px" }}>
-                  View Plans <ArrowRight className="h-4 w-4" />
+            <div className="flex flex-wrap items-center justify-center gap-5">
+              <Link href="/signup">
+                <button className="btn-primary text-[14px]" style={{ padding: "16px 32px" }}>
+                  Start free — see today&rsquo;s top picks <ArrowRight className="h-4 w-4" />
                 </button>
               </Link>
-              <Link href="/signup">
-                <button className="btn-secondary text-[14px]" style={{ padding: "14px 28px" }}>
-                  Enter Workspace
-                </button>
+              <Link
+                href="/pricing"
+                className="text-[13px] font-medium underline decoration-dotted underline-offset-4"
+                style={{ color: "var(--aurora-sub)" }}
+              >
+                Compare plans
               </Link>
             </div>
             <p className="mt-6 text-[11px]" style={{ color: "var(--aurora-sub)" }}>
-              Nothing executes automatically. You stay in control of wallet approval and final submission.
+              Non-custodial. No seed phrase storage. Nothing executes without your signature.
             </p>
           </FadeIn>
         </div>
