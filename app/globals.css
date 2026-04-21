@@ -435,6 +435,21 @@
   background: linear-gradient(135deg, #C9B8FF 0%, #FFD7BA 50%, #A7F0D2 100%);
 }
 
+/* Dark mode — dim the pastel wash and swap cream canvas to dark */
+.dark .aurora-bg {
+  background:
+    radial-gradient(ellipse 60% 80% at 15% 20%, rgba(255, 215, 186, 0.18) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 60% at 85% 25%, rgba(201, 184, 255, 0.22) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 70% at 50% 95%, rgba(167, 240, 210, 0.14) 0%, transparent 55%),
+    #12101A;
+}
+.dark .aurora-soft {
+  background:
+    radial-gradient(ellipse 50% 60% at 100% 0%, rgba(255, 229, 208, 0.12) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 60% at 0% 100%, rgba(228, 219, 255, 0.16) 0%, transparent 55%),
+    #1E1B27;
+}
+
 /* ─────────── NOISE OVERLAY (lighter for cream) ─────────── */
 .noise::after {
   content: "";
