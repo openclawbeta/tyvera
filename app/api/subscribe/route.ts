@@ -85,7 +85,14 @@ export async function POST(request: NextRequest) {
 
     const taoPrices = await getTaoPrices();
     const priceEntry = taoPrices[plan as keyof typeof taoPrices];
-    const amountTao = billing === "annual" ? priceEntry.annual : priceEntry.monthly;
+    const baseAmount = billing === "annual" ? priceEntry.annual : priceEntry.monthly;
+
+    // Add a small random fractional offset (0.001–0.009 TAO) to make the
+    // amount unique per intent. This prevents same-plan collisions where
+    // two users subscribing simultaneously produce identical amounts.
+    // The 1% tolerance in the verifier easily absorbs this offset.
+    const offset = +(Math.floor(Math.random() * 9 + 1) / 1000).toFixed(3);
+    const amountTao = +(baseAmount + offset).toFixed(4);
     const durationDays = billing === "annual" ? ANNUAL_DURATION_DAYS : MONTHLY_DURATION_DAYS;
     const memo = `TYV-${randomUUID().slice(0, 8).toUpperCase()}`;
     const intentId = randomUUID();

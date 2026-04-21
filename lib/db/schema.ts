@@ -129,6 +129,7 @@ export const SCHEMA_SQL = `
     amount_tao      REAL    NOT NULL DEFAULT 0,
     fee             REAL    NOT NULL DEFAULT 0,
     subnet          TEXT,
+    memo            TEXT,
     tx_hash         TEXT    NOT NULL,
     status          TEXT    NOT NULL DEFAULT 'CONFIRMED',
     created_at      TEXT    NOT NULL DEFAULT (datetime('now'))

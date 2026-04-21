@@ -12,9 +12,9 @@
 /* Start it from the /api/verify-payments cron endpoint or on boot.    */
 /* ─────────────────────────────────────────────────────────────────── */
 
-import { confirmPaymentIntent, findPaymentIntentByMemo, findPaymentIntentByAmount, expireSubscriptions } from "./subscriptions";
-import { getTransfersToAddress, scanRecentTransfers } from "@/lib/chain/transfer-scanner";
-import { PAYMENT_VERIFY_INTERVAL_MS } from "@/lib/config";
+import { confirmPaymentIntent, findPaymentIntentByMemo, findPaymentIntentByAmount, findAllPaymentIntentsByAmount, expireSubscriptions } from "./subscriptions";
+import { getTransfersToAddress, getLastScannedBlock, scanRecentTransfers } from "@/lib/chain/transfer-scanner";
+import { PAYMENT_VERIFY_INTERVAL_MS, PAYMENT_MIN_CONFIRMATIONS } from "@/lib/config";
 import { requireEnv } from "@/lib/env";
 
 // Tyvera deposit address — set via DEPOSIT_ADDRESS env var (lazy to avoid build-time crash)
@@ -55,7 +55,7 @@ async function fetchRecentTransfers(): Promise<Transfer[]> {
     to: e.toAddress,
     amount: e.amountTao,
     txHash: e.txHash,
-    memo: null, // Memos extracted separately — see note below
+    memo: e.memo ?? null, // Populated when system.remark paired in same block
     blockNumber: e.blockNumber,
   }));
 }
@@ -68,14 +68,11 @@ const processedTxHashes = new Set<string>();
 /**
  * Run one verification cycle:
  * 1. Fetch recent transfers to deposit address from chain events
- * 2. Match against pending payment intents by memo
- * 3. Confirm matches and activate subscriptions
- * 4. Expire stale subscriptions
- *
- * Note: Substrate balances.Transfer events don't natively carry memos.
- * Payment verification currently matches by amount + timing.
- * For memo-based matching, the payer includes a system.remark in the
- * same block — this would require checking for paired remark extrinsics.
+ * 2. Check confirmation depth (block maturity)
+ * 3. Match against pending payment intents by memo or amount
+ * 4. Collision guard: reject ambiguous amount matches
+ * 5. Confirm matches and activate subscriptions
+ * 6. Expire stale subscriptions
  *
  * Returns the number of newly confirmed payments.
  */
@@ -83,9 +80,14 @@ export async function runVerificationCycle(): Promise<{
   checked: number;
   confirmed: number;
   expired: number;
+  skippedDepth: number;
+  skippedCollision: number;
 }> {
   const transfers = await fetchRecentTransfers();
+  const chainHead = getLastScannedBlock();
   let confirmed = 0;
+  let skippedDepth = 0;
+  let skippedCollision = 0;
 
   for (const tx of transfers) {
     // Skip already processed
@@ -94,19 +96,45 @@ export async function runVerificationCycle(): Promise<{
     // Must be sent TO our deposit address
     if (tx.to !== getDepositAddress()) continue;
 
+    // ── Confirmation depth gate ──────────────────────────────────
+    // Wait until the transfer's block is at least N blocks behind
+    // chain head before confirming. Prevents matching on forks.
+    if (chainHead > 0 && tx.blockNumber > 0) {
+      const depth = chainHead - tx.blockNumber;
+      if (depth < PAYMENT_MIN_CONFIRMATIONS) {
+        skippedDepth++;
+        continue; // Don't mark as processed — retry next cycle
+      }
+    }
+
     let intent: Awaited<ReturnType<typeof findPaymentIntentByMemo>> = null;
 
     // Strategy 1: Match by memo if available (system.remark pairing)
+    // This is the most reliable path — no ambiguity possible.
     if (tx.memo && tx.memo.startsWith("TYV-")) {
       intent = await findPaymentIntentByMemo(tx.memo);
     }
 
     // Strategy 2: Match by amount + sender + timing window
-    // Substrate transfers don't natively carry memos, so this is the
-    // primary matching path. Uses exact amount matching (TAO amounts are
-    // unique per intent due to fractional precision) within a time window.
+    // The fractional offset on amounts makes collisions rare, but
+    // we still guard against it.
     if (!intent) {
-      intent = await findPaymentIntentByAmount(tx.from, tx.amount);
+      // ── Collision guard ────────────────────────────────────────
+      // If multiple pending intents match this amount + sender,
+      // reject the match entirely — manual resolution is safer.
+      const matches = await findAllPaymentIntentsByAmount(tx.from, tx.amount);
+      if (matches.length > 1) {
+        console.warn(
+          `[PaymentVerifier] Collision: ${matches.length} intents match ` +
+          `amount=${tx.amount} from=${tx.from.slice(0, 12)}… — skipping for manual resolution`,
+        );
+        processedTxHashes.add(tx.txHash);
+        skippedCollision++;
+        continue;
+      }
+      if (matches.length === 1) {
+        intent = matches[0];
+      }
     }
 
     if (!intent) {
@@ -135,6 +163,8 @@ export async function runVerificationCycle(): Promise<{
     checked: transfers.length,
     confirmed,
     expired,
+    skippedDepth,
+    skippedCollision,
   };
 }
 

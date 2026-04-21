@@ -99,3 +99,10 @@ export const PAYMENT_INTENT_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
 /** Grace period after subscription expires before full downgrade — 7 days */
 export const GRACE_PERIOD_DAYS = 7;
+
+/**
+ * Minimum confirmation depth (in blocks) before a transfer is considered
+ * final for payment verification. Prevents confirming on orphaned forks.
+ * Bittensor block time is ~12s, so 3 blocks ≈ 36 seconds.
+ */
+export const PAYMENT_MIN_CONFIRMATIONS = 3;

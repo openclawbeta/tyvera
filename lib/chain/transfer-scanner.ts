@@ -64,6 +64,7 @@ export interface ChainEvent {
   amountTao: number;
   fee: number;
   subnet?: string;
+  memo?: string;
   txHash: string;
   status: ActivityStatus;
 }
@@ -107,11 +108,15 @@ export function getEventsWithMemo(
   toAddress: string,
   memoPrefix: string,
 ): ChainEvent[] {
-  // Note: Substrate transfers don't natively carry memos.
-  // Payment verification uses system.remark extrinsics paired with transfers.
-  // For now, filter by toAddress — memo matching is done at the caller level.
+  // Filter transfers to the given address. If a system.remark was paired
+  // in the same block from the same signer, the memo field is populated.
   return eventBuffer
-    .filter((e) => e.toAddress === toAddress && e.type === "TRANSFER")
+    .filter(
+      (e) =>
+        e.toAddress === toAddress &&
+        e.type === "TRANSFER" &&
+        (!memoPrefix || (e.memo && e.memo.startsWith(memoPrefix))),
+    )
     .sort((a, b) => b.blockNumber - a.blockNumber);
 }
 
@@ -240,6 +245,42 @@ export async function scanRecentTransfers(): Promise<TransferScanResult | null> 
           };
         }>;
 
+        // Collect system.remark extrinsics keyed by signer for memo pairing.
+        // A payer can include a system.remark("TYV-XXXXXXXX") in the same
+        // block as their balances.Transfer to enable memo-based matching.
+        const remarksBySigner = new Map<string, string>();
+        for (let extIdx = 0; extIdx < extrinsics.length; extIdx++) {
+          const ext = extrinsics[extIdx];
+          const extSection = String(ext?.method?.section ?? "").toLowerCase();
+          const extMethod = String(ext?.method?.method ?? "").toLowerCase();
+          if (extSection === "system" && (extMethod === "remark" || extMethod === "remark_with_event" || extMethod === "remarkwithevent")) {
+            try {
+              const signer = ext?.signer?.toString() ?? "";
+              const args = (ext?.method?.args ?? []) as unknown[];
+              const raw = args[0];
+              // Remark data may be hex-encoded bytes or a string
+              let text = "";
+              if (typeof raw === "string") {
+                text = raw;
+              } else if (raw && typeof (raw as any).toUtf8 === "function") {
+                text = (raw as any).toUtf8();
+              } else if (raw && typeof (raw as any).toString === "function") {
+                const hex = (raw as any).toString();
+                if (hex.startsWith("0x")) {
+                  try {
+                    text = Buffer.from(hex.slice(2), "hex").toString("utf8");
+                  } catch { text = hex; }
+                } else {
+                  text = hex;
+                }
+              }
+              if (signer && text.startsWith("TYV-")) {
+                remarksBySigner.set(signer, text.trim());
+              }
+            } catch { /* skip malformed remark */ }
+          }
+        }
+
         for (const record of eventArray) {
           const { event, phase } = record;
 
@@ -255,15 +296,20 @@ export async function scanRecentTransfers(): Promise<TransferScanResult | null> 
             let amountTao = toNumber(amount);
             if (amountTao > 1e6) amountTao /= RAO_PER_TAO;
 
+            const fromStr = String(from);
+            // Pair with system.remark from same signer in this block
+            const memo = remarksBySigner.get(fromStr);
+
             newEvents.push({
               id: `${blockNum}-${phase.asApplyExtrinsic.toNumber()}`,
               blockNumber: blockNum,
               timestamp: blockTimestamp,
               type: "TRANSFER",
-              fromAddress: String(from),
+              fromAddress: fromStr,
               toAddress: String(to),
               amountTao: +amountTao.toFixed(4),
               fee: 0,
+              memo,
               txHash: `0x${blockHash.toHex().slice(2)}`,
               status: "CONFIRMED",
             });

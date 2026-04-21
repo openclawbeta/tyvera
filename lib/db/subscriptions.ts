@@ -321,6 +321,55 @@ export async function findPaymentIntentByAmount(
 }
 
 /**
+ * Find ALL pending payment intents matching sender address + amount.
+ * Used by the collision guard — if this returns more than one match,
+ * the verifier rejects the match to avoid false-positive confirmations.
+ */
+export async function findAllPaymentIntentsByAmount(
+  senderAddress: string,
+  amountTao: number,
+): Promise<Array<{
+  id: string;
+  wallet_address: string;
+  plan_id: string;
+  amount_tao: number;
+  memo: string;
+  status: string;
+  billing_cycle: string;
+  duration_days: number;
+}>> {
+  const db = await getDb();
+  const tolerance = amountTao * 0.01;
+  const minAmount = amountTao - tolerance;
+  const maxAmount = amountTao + tolerance;
+
+  const rows = await db.query(
+    `SELECT * FROM payment_intents
+     WHERE wallet_address = ?
+       AND status = 'awaiting_payment'
+       AND amount_tao BETWEEN ? AND ?
+       AND expires_at > datetime('now')
+     ORDER BY created_at DESC`,
+    [senderAddress, minAmount, maxAmount],
+  );
+
+  if (rows.length === 0 || rows[0].rows.length === 0) return [];
+
+  return rows[0].rows.map((row: any[]) =>
+    rowToObject(rows[0].columns, row) as unknown as {
+      id: string;
+      wallet_address: string;
+      plan_id: string;
+      amount_tao: number;
+      memo: string;
+      status: string;
+      billing_cycle: string;
+      duration_days: number;
+    },
+  );
+}
+
+/**
  * Mark a payment intent as confirmed and activate the subscription.
  */
 export async function confirmPaymentIntent(memo: string, txHash: string): Promise<boolean> {

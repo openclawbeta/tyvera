@@ -25,8 +25,8 @@ export async function persistChainEvents(events: ChainEvent[]): Promise<number> 
     try {
       await db.execute(
         `INSERT OR IGNORE INTO chain_events
-         (id, block_number, timestamp, type, from_address, to_address, amount_tao, fee, subnet, tx_hash, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, block_number, timestamp, type, from_address, to_address, amount_tao, fee, subnet, memo, tx_hash, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           e.id,
           e.blockNumber,
@@ -37,6 +37,7 @@ export async function persistChainEvents(events: ChainEvent[]): Promise<number> 
           e.amountTao,
           e.fee,
           e.subnet ?? null,
+          e.memo ?? null,
           e.txHash,
           e.status,
         ],
@@ -81,7 +82,7 @@ export async function queryChainEvents(
   // Fetch page
   const rows = await db.query(
     `SELECT id, block_number, timestamp, type, from_address, to_address,
-            amount_tao, fee, subnet, tx_hash, status
+            amount_tao, fee, subnet, memo, tx_hash, status
      FROM chain_events
      WHERE from_address = ? OR to_address = ?
      ORDER BY block_number DESC
@@ -99,8 +100,9 @@ export async function queryChainEvents(
     amountTao: Number(row[6]),
     fee: Number(row[7]),
     subnet: row[8] ? String(row[8]) : undefined,
-    txHash: String(row[9]),
-    status: String(row[10]) as ChainEvent["status"],
+    memo: row[9] ? String(row[9]) : undefined,
+    txHash: String(row[10]),
+    status: String(row[11]) as ChainEvent["status"],
   }));
 
   return { events, total };
