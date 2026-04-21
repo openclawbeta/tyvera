@@ -11,6 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { runVerificationCycle } from "@/lib/db/payment-verifier";
+import { logCronRun } from "@/lib/db/cron-log";
 import { timingSafeEqual } from "crypto";
 
 export const maxDuration = 30;
@@ -37,8 +38,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const cronStart = Date.now();
+  const startedAt = new Date().toISOString();
+
   try {
     const result = await runVerificationCycle();
+
+    await logCronRun({
+      jobName: "verify-payments",
+      startedAt,
+      durationMs: Date.now() - cronStart,
+      status: "ok",
+      result: result as unknown as Record<string, unknown>,
+    }).catch(() => {});
 
     return NextResponse.json({
       ok: true,
@@ -47,6 +59,15 @@ export async function GET(request: NextRequest) {
     });
   } catch (err) {
     console.error("[cron/verify-payments] Error:", err);
+
+    await logCronRun({
+      jobName: "verify-payments",
+      startedAt,
+      durationMs: Date.now() - cronStart,
+      status: "error",
+      errorMessage: String(err),
+    }).catch(() => {});
+
     return NextResponse.json(
       { ok: false, error: String(err) },
       { status: 500 },

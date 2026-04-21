@@ -12,6 +12,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { resetDailyCounters } from "@/lib/db/api-keys";
+import { logCronRun } from "@/lib/db/cron-log";
 import { timingSafeEqual } from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -37,8 +38,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const cronStart = Date.now();
+  const startedAt = new Date().toISOString();
+
   try {
     await resetDailyCounters();
+
+    await logCronRun({
+      jobName: "reset-counters",
+      startedAt,
+      durationMs: Date.now() - cronStart,
+      status: "ok",
+      result: { message: "Daily API key counters reset" },
+    }).catch(() => {});
 
     return NextResponse.json({
       ok: true,
@@ -47,6 +59,15 @@ export async function GET(request: NextRequest) {
     });
   } catch (err) {
     console.error("[cron/reset-counters] Error:", err);
+
+    await logCronRun({
+      jobName: "reset-counters",
+      startedAt,
+      durationMs: Date.now() - cronStart,
+      status: "error",
+      errorMessage: String(err),
+    }).catch(() => {});
+
     return NextResponse.json(
       { ok: false, error: String(err) },
       { status: 500 },

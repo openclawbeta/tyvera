@@ -138,4 +138,18 @@ export const SCHEMA_SQL = `
   CREATE INDEX IF NOT EXISTS idx_ce_from ON chain_events(from_address, block_number DESC);
   CREATE INDEX IF NOT EXISTS idx_ce_to ON chain_events(to_address, block_number DESC);
   CREATE INDEX IF NOT EXISTS idx_ce_block ON chain_events(block_number DESC);
+
+  -- Cron run log: records each cron job execution for observability.
+  -- Used by /api/health to detect stale or failing cron jobs.
+  CREATE TABLE IF NOT EXISTS cron_runs (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_name        TEXT    NOT NULL,
+    started_at      TEXT    NOT NULL,
+    duration_ms     INTEGER,
+    status          TEXT    NOT NULL,
+    result_json     TEXT,
+    error_message   TEXT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_cron_runs_job ON cron_runs(job_name, started_at DESC);
 `;

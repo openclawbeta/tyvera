@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { GlobalTicker } from "@/components/layout/global-ticker";
+import { DataFreshnessIndicator } from "@/components/layout/data-freshness";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
@@ -21,6 +22,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </div>
 
               <div className="hidden items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500 md:flex">
+                <DataFreshnessIndicator />
                 <span className="rounded-full border border-white/8 bg-white/[0.03] px-3 py-1.5">Live routes</span>
                 <span className="rounded-full border border-cyan-400/12 bg-cyan-400/[0.05] px-3 py-1.5 text-cyan-300">Source aware</span>
                 <span className="rounded-full border border-white/8 bg-white/[0.03] px-3 py-1.5">Beta</span>

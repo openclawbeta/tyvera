@@ -24,6 +24,7 @@ import { fetchSubnetsFromChain, setSubnetCache } from "@/lib/chain";
 import { refreshMarketCache } from "@/lib/chain/market-cache";
 import { syncPricesFromChain } from "@/lib/chain/price-engine";
 import { scanRecentTransfers } from "@/lib/chain/transfer-scanner";
+import { logCronRun, pruneCronRuns } from "@/lib/db/cron-log";
 import { timingSafeEqual } from "crypto";
 
 export const maxDuration = 60; // Vercel Pro allows up to 60s
@@ -52,9 +53,11 @@ export async function GET(request: NextRequest) {
   }
 
   // ── Comprehensive chain sync ───────────────────────────────────
+  const cronStart = Date.now();
+  const startedAt = new Date().toISOString();
   const results: Record<string, unknown> = {
     ok: true,
-    timestamp: new Date().toISOString(),
+    timestamp: startedAt,
   };
 
   try {
@@ -121,9 +124,28 @@ export async function GET(request: NextRequest) {
       results.transferScan = false;
     }
 
+    // Log success + periodic prune
+    await logCronRun({
+      jobName: "sync-chain",
+      startedAt,
+      durationMs: Date.now() - cronStart,
+      status: "ok",
+      result: results as Record<string, unknown>,
+    });
+    pruneCronRuns().catch(() => {}); // best-effort cleanup
+
     return NextResponse.json(results);
   } catch (err) {
     console.error("[cron/sync-chain] Fatal error:", err);
+
+    await logCronRun({
+      jobName: "sync-chain",
+      startedAt,
+      durationMs: Date.now() - cronStart,
+      status: "error",
+      errorMessage: String(err),
+    }).catch(() => {});
+
     return NextResponse.json(
       {
         ok: false,
