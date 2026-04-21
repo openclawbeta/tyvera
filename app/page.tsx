@@ -148,6 +148,12 @@ export default function HomePage() {
             <Link href="/metrics" className="rounded-xl px-4 py-2 text-[13px] font-medium text-slate-500 transition-all hover:bg-white/[0.05] hover:text-slate-200">
               Metrics
             </Link>
+            <Link href="/pricing" className="rounded-xl px-4 py-2 text-[13px] font-medium text-slate-500 transition-all hover:bg-white/[0.05] hover:text-slate-200">
+              Pricing
+            </Link>
+            <Link href="/developers" className="rounded-xl px-4 py-2 text-[13px] font-medium text-slate-500 transition-all hover:bg-white/[0.05] hover:text-slate-200">
+              Developers
+            </Link>
             <Link href="/signup">
               <button
                 className="flex items-center gap-2 rounded-xl px-5 py-2 text-[13px] font-semibold transition-all duration-200"
@@ -620,6 +626,8 @@ export default function HomePage() {
           <div className="flex flex-wrap gap-5">
             {[
               { label: "Subnets", href: "/subnets" },
+              { label: "Pricing", href: "/pricing" },
+              { label: "Developers", href: "/developers" },
               { label: "Privacy", href: "/privacy" },
               { label: "Terms", href: "/terms" },
               { label: "Risk Disclosure", href: "/risk-disclosure" },

@@ -3,6 +3,7 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { GlobalTicker } from "@/components/layout/global-ticker";
 import { DataFreshnessIndicator } from "@/components/layout/data-freshness";
 import { MobileNavToggle } from "@/components/layout/mobile-nav";
+import { RateLimitBanner } from "@/components/ui-custom/rate-limit-banner";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
@@ -33,6 +34,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </div>
             </div>
           </div>
+
+          <RateLimitBanner />
 
           <div className="mx-auto w-full max-w-[1600px] px-3 py-6 sm:px-5 lg:px-6 lg:py-8 xl:px-8">
             <div className="min-h-[calc(100vh-9rem)] overflow-x-hidden rounded-[30px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.034),rgba(255,255,255,0.013))] shadow-[0_30px_100px_rgba(0,0,0,0.42),0_0_0_1px_rgba(255,255,255,0.025)_inset,0_0_34px_rgba(79,124,255,0.04)]">
