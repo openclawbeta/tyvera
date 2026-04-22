@@ -542,12 +542,10 @@ export function WalletConnectModal() {
             className="fixed z-50 inset-0 flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className="relative rounded-2xl overflow-hidden pointer-events-auto max-h-[90vh] flex flex-col"
+              className="wallet-panel relative rounded-2xl overflow-hidden pointer-events-auto max-h-[90vh] flex flex-col"
               style={{
                 width: "min(400px, 100%)",
-                background: "linear-gradient(145deg, rgba(10,14,26,0.98) 0%, rgba(7,10,18,1) 100%)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                boxShadow: "0 0 0 1px rgba(255,255,255,0.04), 0 24px 80px rgba(0,0,0,0.7), 0 0 60px rgba(34,211,238,0.05)",
+                boxShadow: "0 0 0 1px rgba(255,255,255,0.04), 0 24px 80px rgba(0,0,0,0.35), 0 0 60px rgba(34,211,238,0.05)",
               }}
             >
               {/* Top glow accent */}

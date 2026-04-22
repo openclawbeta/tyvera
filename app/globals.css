@@ -792,6 +792,55 @@
   background: linear-gradient(180deg, rgba(18,16,26,0.92), rgba(18,16,26,0.76));
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Light-mode overrides for saturated dark Tailwind backgrounds.
+
+   Many components hardcode Tailwind classes like `bg-slate-900/60`
+   or `bg-[#0a0c14]` that were designed for dark mode. Inside the
+   aurora-shell those backgrounds stay dark in light mode while the
+   text classes on them (text-white, text-slate-*) are remapped to
+   dark ink — giving dark-on-dark. Scope these overrides to light
+   mode only so dark mode keeps the intended saturated surface.
+   ═══════════════════════════════════════════════════════════════ */
+html:not(.dark) .aurora-shell .bg-slate-900\/95,
+html:not(.dark) .aurora-shell .bg-slate-900\/80,
+html:not(.dark) .aurora-shell .bg-slate-900\/60,
+html:not(.dark) .aurora-shell .bg-slate-900\/50,
+html:not(.dark) .aurora-shell .bg-slate-900\/40,
+html:not(.dark) .aurora-shell .bg-slate-950\/95,
+html:not(.dark) .aurora-shell .bg-slate-950\/80,
+html:not(.dark) .aurora-shell .bg-slate-950\/50,
+html:not(.dark) .aurora-shell .bg-black\/60,
+html:not(.dark) .aurora-shell .bg-black\/50,
+html:not(.dark) .aurora-shell .bg-black\/40,
+html:not(.dark) .aurora-shell .bg-black\/30 {
+  background-color: var(--surface-2) !important;
+}
+html:not(.dark) .aurora-shell .bg-slate-900\/20,
+html:not(.dark) .aurora-shell .bg-black\/20,
+html:not(.dark) .aurora-shell .bg-black\/10,
+html:not(.dark) .aurora-shell .bg-black\/5 {
+  background-color: rgba(107,104,96,0.06) !important;
+}
+html:not(.dark) .aurora-shell .bg-\[\#0a0c14\],
+html:not(.dark) .aurora-shell .bg-\[\#0f1118\],
+html:not(.dark) .aurora-shell .bg-\[\#0a0f18\] {
+  background-color: var(--surface-1) !important;
+}
+
+/* Wallet panels (modals + status-chip dropdown) — mode-aware surface.
+   Replaces the hardcoded dark linear-gradient inline style so the
+   connect/approval dialogs and the wallet dropdown aren't unreadable
+   dark-on-dark in light mode. */
+.wallet-panel {
+  background: var(--surface-1);
+  border: 1px solid var(--aurora-hair);
+}
+.dark .wallet-panel {
+  background: linear-gradient(145deg, rgba(10,14,26,0.99) 0%, rgba(7,10,18,1) 100%);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
 /* Global ticker strip (top-0) — mode-aware. Without these overrides the
    ticker's hardcoded dark gradient paints under text that aurora-shell
    has re-coloured to dark ink in light mode, producing dark-on-dark. */

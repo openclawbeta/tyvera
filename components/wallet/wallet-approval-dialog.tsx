@@ -112,12 +112,10 @@ export function WalletApprovalDialog() {
             style={{ bottom: "32px", right: "16px", width: "min(360px, calc(100vw - 32px))" }}
           >
             <div
-              className="rounded-2xl overflow-hidden"
+              className="wallet-panel rounded-2xl overflow-hidden"
               style={{
-                background: "linear-gradient(145deg, rgba(10,14,26,0.99) 0%, rgba(7,10,18,1) 100%)",
-                border: "1px solid rgba(255,255,255,0.1)",
                 boxShadow:
-                  "0 0 0 1px rgba(255,255,255,0.04), 0 24px 64px rgba(0,0,0,0.7), 0 0 40px rgba(34,211,238,0.06)",
+                  "0 0 0 1px rgba(255,255,255,0.04), 0 24px 64px rgba(0,0,0,0.35), 0 0 40px rgba(34,211,238,0.06)",
               }}
             >
               {/* Header glow line */}

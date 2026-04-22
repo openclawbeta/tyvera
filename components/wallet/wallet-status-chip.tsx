@@ -41,11 +41,9 @@ function WalletDropdown({
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97, y: -4 }}
       transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-      className="absolute right-0 top-[calc(100%+8px)] w-72 z-50 rounded-2xl overflow-hidden"
+      className="wallet-panel absolute right-0 top-[calc(100%+8px)] w-72 z-50 rounded-2xl overflow-hidden"
       style={{
-        background: "linear-gradient(145deg, rgba(10,14,26,0.99) 0%, rgba(7,10,18,1) 100%)",
-        border: "1px solid rgba(255,255,255,0.1)",
-        boxShadow: "0 0 0 1px rgba(255,255,255,0.04), 0 16px 48px rgba(0,0,0,0.7), 0 0 32px rgba(34,211,238,0.04)",
+        boxShadow: "0 0 0 1px rgba(255,255,255,0.04), 0 16px 48px rgba(0,0,0,0.35), 0 0 32px rgba(34,211,238,0.04)",
       }}
     >
       {/* Header */}
