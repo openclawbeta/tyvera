@@ -41,36 +41,48 @@ interface PortfolioData {
 /* ─────────────────────────────────────────────────────────────────── */
 
 export default function PortfolioPage() {
-  const { address, openModal } = useWallet();
+  const { address, walletState, getAuthHeaders, openModal } = useWallet();
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch real portfolio data from API when address changes
+  // Fetch real portfolio data from API when address changes. Portfolio
+  // data is now wallet-auth gated — we need a signed request.
   useEffect(() => {
     if (!address) {
       setPortfolio(null);
       return;
     }
+    if (walletState !== "verified") {
+      setPortfolio(null);
+      return;
+    }
 
+    let cancelled = false;
     setLoading(true);
     setError(null);
 
-    fetch(`/api/portfolio?address=${encodeURIComponent(address)}`)
-      .then(async (res) => {
+    (async () => {
+      try {
+        const authHeaders = await getAuthHeaders({
+          method: "GET",
+          pathname: "/api/portfolio",
+        });
+        const res = await fetch(
+          `/api/portfolio?address=${encodeURIComponent(address)}`,
+          { headers: authHeaders },
+        );
         if (!res.ok) throw new Error("Failed to fetch portfolio");
-        return res.json();
-      })
-      .then((data: PortfolioData) => {
-        // Compute allocation percentages
+        const data: PortfolioData = await res.json();
+        if (cancelled) return;
         const total = data.stats.totalStakedTao || 1;
         data.positions = data.positions.map((p) => ({
           ...p,
           percentOfPortfolio: (p.stakedTao / total) * 100,
         }));
         setPortfolio(data);
-      })
-      .catch((err) => {
+      } catch (err) {
+        if (cancelled) return;
         console.error("[portfolio] Fetch error:", err);
         setError("Unable to load portfolio data. Please try again.");
         setPortfolio({
@@ -78,9 +90,15 @@ export default function PortfolioPage() {
           stats: { totalStakedTao: 0, totalValueUsd: 0, positionCount: 0, weightedYield: 0 },
           source: "error",
         });
-      })
-      .finally(() => setLoading(false));
-  }, [address]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [address, walletState, getAuthHeaders]);
 
   if (!address) {
     return (

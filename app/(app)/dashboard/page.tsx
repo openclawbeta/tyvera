@@ -17,7 +17,7 @@ import { useWallet } from "@/lib/wallet-context";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { walletState, address, openModal } = useWallet();
+  const { walletState, address, openModal, getAuthHeaders } = useWallet();
   const [refreshing, setRefreshing] = useState(false);
   const [dashPeriod, setDashPeriod] = useState<"7d" | "14d" | "30d" | "90d">("14d");
 
@@ -40,15 +40,25 @@ export default function DashboardPage() {
       setHistory(null);
       return;
     }
+    if (walletState !== "verified") return;
     let cancelled = false;
-    fetchPortfolioHistory(address, dashPeriod).then((real) => {
-      if (cancelled) return;
-      if (real && real.value.length > 0) setHistory(real);
-    });
+    (async () => {
+      try {
+        const authHeaders = await getAuthHeaders({
+          method: "GET",
+          pathname: "/api/portfolio/history",
+        });
+        const real = await fetchPortfolioHistory(address, dashPeriod, authHeaders);
+        if (cancelled) return;
+        if (real && real.value.length > 0) setHistory(real);
+      } catch {
+        // Best-effort — keep the placeholder series.
+      }
+    })();
     return () => {
       cancelled = true;
     };
-  }, [address, dashPeriod]);
+  }, [address, dashPeriod, walletState, getAuthHeaders]);
   const recentChanges = isConnected ? getPortfolioActivity() : [];
   const recommendations = isConnected ? getRecommendations() : [];
 

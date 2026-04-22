@@ -14,6 +14,18 @@ import { verifyWalletAuth } from "@/lib/api/wallet-auth";
 import { resolveWalletTier, getChatQueryLimit } from "@/lib/api/require-entitlement";
 import { incrementDailyUsage, getDailyUsage } from "@/lib/db/daily-usage";
 
+// Hard per-IP cap on free-tier chat usage. Prevents someone from
+// churning unlimited SS58 addresses (wallet generation is free) to
+// multiply the Explorer quota. Paid tiers bypass this check because
+// their quota is meaningful per-wallet.
+const EXPLORER_DAILY_IP_CAP = 5;
+
+function getClientIp(request: NextRequest): string | null {
+  const fwd = request.headers.get("x-forwarded-for");
+  if (fwd) return fwd.split(",")[0]?.trim() || null;
+  return request.headers.get("x-real-ip") ?? null;
+}
+
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_MODEL = "gpt-4o-mini";
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
@@ -105,6 +117,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Anti-abuse: free-tier users cannot churn new wallet addresses to
+    // multiply the Explorer quota. Enforce a hard per-IP daily cap on
+    // Explorer-tier chat. Paid tiers are exempt — their quota is tied
+    // to a paid subscription that can't be cheaply recreated.
+    const clientIp = getClientIp(request);
+    if (tier === "explorer" && clientIp) {
+      const ipKey = `ip:${clientIp}`;
+      const ipUsed = await getDailyUsage(ipKey, "chat_query_ip").catch(() => 0);
+      if (ipUsed >= EXPLORER_DAILY_IP_CAP) {
+        return NextResponse.json(
+          {
+            error: `Daily free-tier chat limit reached for this network (${EXPLORER_DAILY_IP_CAP}/day). Upgrade for higher limits.`,
+            currentTier: tier,
+            limit: EXPLORER_DAILY_IP_CAP,
+            resetsAt: "midnight UTC",
+          },
+          { status: 429 },
+        );
+      }
+    }
+
     const body: ChatRequestBody = await request.json();
     const { message, subnets = [], history = [] } = body;
 
@@ -123,6 +156,9 @@ export async function POST(request: NextRequest) {
       // Count toward daily limit
       if (chatLimit > 0) {
         await incrementDailyUsage(walletAddress, "chat_query").catch(() => {});
+      }
+      if (tier === "explorer" && clientIp) {
+        await incrementDailyUsage(`ip:${clientIp}`, "chat_query_ip").catch(() => {});
       }
       return NextResponse.json({
         content: response.summary,
@@ -177,6 +213,9 @@ export async function POST(request: NextRequest) {
     // Count toward daily limit
     if (chatLimit > 0) {
       await incrementDailyUsage(walletAddress, "chat_query").catch(() => {});
+    }
+    if (tier === "explorer" && clientIp) {
+      await incrementDailyUsage(`ip:${clientIp}`, "chat_query_ip").catch(() => {});
     }
 
     return NextResponse.json({

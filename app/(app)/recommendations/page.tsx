@@ -174,7 +174,7 @@ function UpgradeGate() {
 }
 
 export default function RecommendationsPage() {
-  const { address, walletState } = useWallet();
+  const { address, walletState, getAuthHeaders } = useWallet();
   const entitlement = useEntitlement(address);
   const [holdings, setHoldings] = useState<WalletHoldingsMap | null>(null);
   const [filterBand, setFilterBand] = useState<string>("all");
@@ -199,11 +199,15 @@ export default function RecommendationsPage() {
     };
   }, []);
 
-  // Fetch wallet holdings when an address is available. We don't require
-  // verification — a connected wallet is enough to personalize suggestions
-  // since nothing executes until the user signs.
+  // Fetch wallet holdings when a verified wallet is available. Portfolio
+  // is now wallet-auth gated; without a verified session we silently fall
+  // back to anonymous recommendations.
   useEffect(() => {
     if (!address) {
+      setHoldings(null);
+      return;
+    }
+    if (walletState !== "verified") {
       setHoldings(null);
       return;
     }
@@ -211,7 +215,14 @@ export default function RecommendationsPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/portfolio?address=${encodeURIComponent(address)}`);
+        const authHeaders = await getAuthHeaders({
+          method: "GET",
+          pathname: "/api/portfolio",
+        });
+        const res = await fetch(
+          `/api/portfolio?address=${encodeURIComponent(address)}`,
+          { headers: authHeaders },
+        );
         if (!res.ok) return;
         const data = await res.json();
         const positions: Array<{ netuid: number; stakedTao: number }> =
@@ -233,7 +244,7 @@ export default function RecommendationsPage() {
     return () => {
       cancelled = true;
     };
-  }, [address, walletState]);
+  }, [address, walletState, getAuthHeaders]);
 
   const recommendations = useMemo(
     () => getRecommendations({ address, holdings, subnets: liveSubnets }),

@@ -9,13 +9,14 @@
  * GET ?address=5...&range=7d|14d|30d|90d
  */
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import {
   DATA_SOURCES,
   apiResponse,
   apiErrorResponse,
 } from "@/lib/data-source-policy";
 import { getPortfolioSnapshots } from "@/lib/db/portfolio-snapshots";
+import { requireWalletAuth } from "@/lib/api/wallet-auth";
 
 const RANGES: Record<string, number> = {
   "7d": 7,
@@ -25,20 +26,28 @@ const RANGES: Record<string, number> = {
 };
 
 export async function GET(request: NextRequest) {
-  const address = request.nextUrl.searchParams.get("address");
+  // Wallet-auth required: history reveals per-day portfolio value for
+  // the address. Only the wallet owner may read their own history.
+  const auth = await requireWalletAuth(request);
+  if (!auth.verified || !auth.address) {
+    return auth.errorResponse ?? NextResponse.json(
+      { error: "Wallet authentication required" },
+      { status: 401 },
+    );
+  }
+
+  const queried = request.nextUrl.searchParams.get("address");
+  if (queried && queried !== auth.address) {
+    return NextResponse.json(
+      { error: "address must match authenticated wallet" },
+      { status: 403 },
+    );
+  }
+  const address = auth.address;
+
   const rangeParam = request.nextUrl.searchParams.get("range") ?? "30d";
   const days = RANGES[rangeParam] ?? 30;
 
-  if (!address) {
-    return apiResponse(
-      { series: { value: [], earnings: [], yield: [] } },
-      {
-        source: DATA_SOURCES.CHAIN_LIVE,
-        fetchedAt: new Date().toISOString(),
-        note: "No wallet address provided — empty history",
-      },
-    );
-  }
   if (!address.startsWith("5") || address.length < 46) {
     return apiErrorResponse("Invalid SS58 address", 400);
   }

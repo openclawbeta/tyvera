@@ -7,7 +7,7 @@
  * Falls back to empty portfolio on error (no synthetic fill).
  */
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { fetchWalletStakes } from "@/lib/chain/wallet-stakes";
 import {
   DATA_SOURCES,
@@ -16,23 +16,30 @@ import {
 } from "@/lib/data-source-policy";
 import { recordPortfolioSnapshot } from "@/lib/db/portfolio-snapshots";
 import { getLatestTaoPrice } from "@/lib/chain/price-engine";
+import { requireWalletAuth } from "@/lib/api/wallet-auth";
 
 export async function GET(request: NextRequest) {
-  const address = request.nextUrl.searchParams.get("address");
-
-  if (!address) {
-    return apiResponse(
-      {
-        positions: [],
-        stats: { totalStakedTao: 0, totalValueUsd: 0, positionCount: 0 },
-      },
-      {
-        source: DATA_SOURCES.CHAIN_LIVE,
-        fetchedAt: new Date().toISOString(),
-        note: "No wallet address provided — showing empty portfolio",
-      },
+  // Wallet-auth required: portfolio data is sensitive (reveals a wallet's
+  // staked positions). Callers may only read their OWN portfolio.
+  const auth = await requireWalletAuth(request);
+  if (!auth.verified || !auth.address) {
+    return auth.errorResponse ?? NextResponse.json(
+      { error: "Wallet authentication required" },
+      { status: 401 },
     );
   }
+
+  // Canonical source of truth is the authenticated address. We still
+  // accept ?address= for API ergonomics, but it MUST match the signed
+  // wallet — otherwise this would be an IDOR.
+  const queried = request.nextUrl.searchParams.get("address");
+  if (queried && queried !== auth.address) {
+    return NextResponse.json(
+      { error: "address must match authenticated wallet" },
+      { status: 403 },
+    );
+  }
+  const address = auth.address;
 
   if (!address.startsWith("5") || address.length < 46) {
     return apiErrorResponse("Invalid SS58 address", 400);

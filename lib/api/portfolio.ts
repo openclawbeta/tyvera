@@ -79,12 +79,17 @@ export function getPortfolioHistory(_address?: string, _range = "30d") {
 export async function fetchPortfolioHistory(
   address?: string | null,
   range: "7d" | "14d" | "30d" | "90d" = "30d",
+  authHeaders?: Record<string, string>,
 ) {
   if (!address) return null;
+  // History is now wallet-auth-gated (per-wallet private data).
+  // Caller MUST provide signed headers from getAuthHeaders(); otherwise
+  // skip the fetch rather than 401 in the console.
+  if (!authHeaders || Object.keys(authHeaders).length === 0) return null;
   try {
     const resp = await fetchWithTimeout(
       `/api/portfolio/history?address=${encodeURIComponent(address)}&range=${range}`,
-      { cache: "no-store", timeoutMs: 8_000 },
+      { cache: "no-store", timeoutMs: 8_000, headers: authHeaders },
     );
     if (!resp.ok) return null;
     const body = await resp.json();
