@@ -23,13 +23,10 @@ interface SubnetData {
   symbol: string;
 }
 
-const tickerChrome = {
-  background: "linear-gradient(180deg, rgba(8,10,16,0.94), rgba(7,9,14,0.86))",
-  borderBottom: "1px solid rgba(255,255,255,0.08)",
-  boxShadow: "0 10px 28px rgba(0,0,0,0.24)",
-  backdropFilter: "blur(16px)",
-  WebkitBackdropFilter: "blur(16px)",
-} as const;
+// Chrome is driven by the `.global-ticker` CSS class (see globals.css) which
+// carries the mode-aware background + border + shadow. That avoids the old
+// bug where a hardcoded dark gradient collided with aurora-shell's
+// dark-ink text overrides in light mode, producing dark-on-dark.
 
 function MetricPill({
   icon,
@@ -43,7 +40,7 @@ function MetricPill({
   tone?: string;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.03] px-3 py-1.5 whitespace-nowrap">
+    <div className="flex items-center gap-2 rounded-full border border-black/10 bg-black/[0.03] dark:border-white/8 dark:bg-white/[0.03] px-3 py-1.5 whitespace-nowrap">
       <span className="text-slate-500">{icon}</span>
       <span className="text-[10px] uppercase tracking-[0.14em] text-slate-500">{label}</span>
       <span className={`text-[11px] font-semibold ${tone}`}>{value}</span>
@@ -119,7 +116,7 @@ export function GlobalTicker() {
   // actually returns no usable data. Identical shell, no copy swap on hydrate.
   if (isLoading || !ticker || ticker.awaiting || typeof ticker.taoUsd !== "number" || ticker.taoUsd <= 0) {
     return (
-      <div className="fixed left-0 right-0 top-0 z-30 h-8 px-3 lg:left-[248px] xl:left-[276px]" style={tickerChrome}>
+      <div className="global-ticker fixed left-0 right-0 top-0 z-30 h-8 px-3 lg:left-[248px] xl:left-[276px]">
         <div className="flex h-full items-center justify-between text-[11px] text-slate-300">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-white">τ</span>
@@ -141,7 +138,7 @@ export function GlobalTicker() {
 
   if (isMobile) {
     return (
-      <div className="fixed left-0 right-0 top-0 z-30 h-8 px-3 lg:left-[248px] xl:left-[276px]" style={tickerChrome}>
+      <div className="global-ticker fixed left-0 right-0 top-0 z-30 h-8 px-3 lg:left-[248px] xl:left-[276px]">
         <div className="flex h-full items-center justify-between gap-3 overflow-hidden text-[11px]">
           <div className="flex items-center gap-2 whitespace-nowrap">
             <span className="font-semibold text-white">τ ${ticker.taoUsd.toFixed(2)}</span>
@@ -160,7 +157,7 @@ export function GlobalTicker() {
   }
 
   return (
-    <div className="fixed left-0 right-0 top-0 z-30 h-8 px-3 lg:left-[248px] xl:left-[276px]" style={tickerChrome}>
+    <div className="global-ticker fixed left-0 right-0 top-0 z-30 h-8 px-3 lg:left-[248px] xl:left-[276px]">
       <div className="flex h-full items-center gap-2 overflow-hidden text-[11px] text-slate-300">
         <div className="flex items-center gap-2 whitespace-nowrap pl-1 pr-2">
           <span className="font-semibold text-white">τ ${ticker.taoUsd.toFixed(2)}</span>
@@ -170,7 +167,7 @@ export function GlobalTicker() {
           </span>
         </div>
 
-        <div className="h-4 w-px bg-white/8" />
+        <div className="h-4 w-px bg-black/10 dark:bg-white/10" />
 
         <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
           <MetricPill icon={<Database className="h-3.5 w-3.5" />} label="Source" value={sourceLabel} tone={ticker.fallback ? "text-amber-300" : "text-emerald-300"} />

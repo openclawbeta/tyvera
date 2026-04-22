@@ -792,6 +792,45 @@
   background: linear-gradient(180deg, rgba(18,16,26,0.92), rgba(18,16,26,0.76));
 }
 
+/* Global ticker strip (top-0) — mode-aware. Without these overrides the
+   ticker's hardcoded dark gradient paints under text that aurora-shell
+   has re-coloured to dark ink in light mode, producing dark-on-dark. */
+.global-ticker {
+  background: linear-gradient(180deg, rgba(250,249,247,0.96), rgba(247,245,241,0.90));
+  border-bottom: 1px solid var(--aurora-hair);
+  box-shadow: 0 6px 18px rgba(15,15,18,0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.dark .global-ticker {
+  background: linear-gradient(180deg, rgba(8,10,16,0.94), rgba(7,9,14,0.86));
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.24);
+}
+
+/* Keep the ticker's own slate/white text palette intact — it lives INSIDE
+   .aurora-shell which would otherwise repaint text-white → dark ink and
+   collide with the dark dark-mode background above. Scope the override so
+   only the ticker strip is exempted. */
+.aurora-shell .global-ticker .text-white,
+.aurora-shell .global-ticker .text-slate-50,
+.aurora-shell .global-ticker .text-slate-100,
+.aurora-shell .global-ticker .text-slate-200,
+.aurora-shell .global-ticker .text-slate-300 { color: var(--aurora-ink) !important; }
+.aurora-shell .global-ticker .text-slate-400,
+.aurora-shell .global-ticker .text-slate-500,
+.aurora-shell .global-ticker .text-slate-600,
+.aurora-shell .global-ticker .text-slate-700 { color: var(--aurora-sub) !important; }
+.dark .aurora-shell .global-ticker .text-white,
+.dark .aurora-shell .global-ticker .text-slate-50,
+.dark .aurora-shell .global-ticker .text-slate-100,
+.dark .aurora-shell .global-ticker .text-slate-200,
+.dark .aurora-shell .global-ticker .text-slate-300 { color: #fff !important; }
+.dark .aurora-shell .global-ticker .text-slate-400,
+.dark .aurora-shell .global-ticker .text-slate-500 { color: #94a3b8 !important; }
+.dark .aurora-shell .global-ticker .text-slate-600,
+.dark .aurora-shell .global-ticker .text-slate-700 { color: #64748b !important; }
+
 .tyvera-content-card {
   box-shadow: 0 1px 2px rgba(15,15,18,0.04), 0 12px 40px rgba(15,15,18,0.05);
 }
