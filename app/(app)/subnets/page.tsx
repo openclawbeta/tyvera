@@ -120,9 +120,6 @@ export default function SubnetsPage() {
     <div className="mx-auto max-w-full space-y-6 overflow-x-hidden">
       <PageHeader title="Subnet Explorer" subtitle={`${totalSubnets} subnets · scored, ranked, and filtered`}>
         <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-          <div className="inline-flex items-center rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-slate-400">
-            Network discovery surface
-          </div>
           <DataSourceBadge source={dataSource} ageSec={snapshotAge} />
           <div className="text-xs text-slate-500">
             Showing <span className="font-semibold text-white">{filtered.length}</span> of {totalSubnets}
@@ -146,25 +143,25 @@ export default function SubnetsPage() {
           <div className="relative">
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300">
               <Radar className="h-3 w-3" />
-              subnet discovery engine
+              Every subnet, one place
             </div>
 
             <h2 className="mt-5 text-3xl font-black tracking-[-0.04em] text-white md:text-[40px]">
-              Screen the network
+              Find subnets worth
               <span className="block bg-[linear-gradient(135deg,#67e8f9_0%,#4f7cff_55%,#8b5cf6_100%)] bg-clip-text text-transparent">
-                before you shortlist conviction.
+                a closer look.
               </span>
             </h2>
 
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-400 md:text-[15px]">
-              Subnet Explorer is the network decision surface: score, yield, liquidity, category, and risk arranged to help you move from broad scan to actionable shortlist.
+              Score, yield, liquidity, and risk for every subnet on Bittensor — filter and sort to narrow {totalSubnets.toLocaleString()} candidates down to a shortlist in seconds, then open any row for the full breakdown.
             </p>
 
             <div className="mt-6 grid gap-3 md:grid-cols-3">
               {[
-                { label: "Discovery mode", value: "Ranking-first", note: "Sort and filter before deep-reading", tone: "text-cyan-300" },
-                { label: "Source posture", value: liveLoaded ? "Live-aware" : "Booting", note: liveLoaded ? "Snapshot age stays visible" : "Loading network state", tone: liveLoaded ? "text-white" : "text-amber-300" },
-                { label: "Trust model", value: "Source-aware", note: "Freshness and fallback state remain visible", tone: "text-emerald-300" },
+                { label: "Start with", value: "Sort + filter", note: "Narrow by category, risk band, or minimum score", tone: "text-cyan-300" },
+                { label: "Data state", value: liveLoaded ? (dataSource === "static-snapshot" ? "Cached" : "Live") : "Loading", note: liveLoaded ? (dataSource === "static-snapshot" ? "Showing latest snapshot — age visible on badge" : "Fresh from chain") : "Fetching current network state", tone: liveLoaded ? (dataSource === "static-snapshot" ? "text-amber-300" : "text-emerald-300") : "text-amber-300" },
+                { label: "Then", value: "Compare 2 at a time", note: "Click the compare toggle on any two rows", tone: "text-white" },
               ].map((card) => (
                 <div key={card.label} className="rounded-2xl border border-white/8 bg-black/20 px-4 py-4">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">{card.label}</div>
@@ -179,19 +176,19 @@ export default function SubnetsPage() {
         <div className="grid gap-4">
           {[
             {
-              label: "Discovery engine",
-              title: "Screen the network by score, yield, liquidity, and risk.",
-              detail: "Filters and ranking are the core product here, not just page furniture. The page should help narrow the field quickly.",
+              label: "Score",
+              title: "One number that rolls up yield, liquidity, and risk.",
+              detail: "Tyvera's subnet score weighs yield vs. the root baseline, pool depth, and recent volatility so you can rank the network at a glance rather than juggling five columns.",
             },
             {
-              label: "Comparison workflow",
-              title: "Move from scan to compare without losing context.",
-              detail: "Table, cards, heatmap, and compare states should all support shortlist creation and faster subnet selection.",
+              label: "Compare",
+              title: "Put two subnets side by side before committing capital.",
+              detail: "Click the compare toggle on any two rows — Tyvera lines up their yields, flows, and risk bands so you can see which one your thesis actually prefers.",
             },
             {
-              label: "Live posture",
-              title: "Source age and alert context stay visible.",
-              detail: "Snapshot age, source badge, and network alerts help users judge freshness before acting on subnet data.",
+              label: "Freshness",
+              title: "The source badge tells you how old the data is.",
+              detail: "Green means live from the Bittensor chain. Amber means a recent snapshot. You'll always see which one you're looking at before making a call.",
             },
           ].map((item) => (
             <div key={item.label} className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 shadow-[0_14px_50px_rgba(0,0,0,0.24)]">
@@ -224,19 +221,7 @@ export default function SubnetsPage() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-        Subnet discovery workflow
-      </div>
-
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-        Subnet market overview
-      </div>
-
       {viewMode === "table" && <SubnetSummaryCards subnets={filtered} currency={currency} taoUsdRate={taoUsdRate} />}
-
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-        Ranking and filter controls
-      </div>
 
       <div className="flex flex-wrap items-center gap-2">
         {["All", "Language", "Multi-Modal", "Finance", "Data", "Developer Tools", "Creative", "Infrastructure", "Science"].map((cat) => (
@@ -379,16 +364,16 @@ export default function SubnetsPage() {
       <div className="grid gap-4 md:grid-cols-3">
         {[
           {
-            title: "What this page should do",
-            detail: "Help users move from raw network breadth to a credible subnet shortlist without losing source and risk context.",
+            title: "Reading the table",
+            detail: "Each row is one subnet. The score column is Tyvera's rollup; yield is annualized APR; liquidity is pool depth in TAO. The risk band colors tell you how volatile the subnet has been over the last 14 days.",
           },
           {
-            title: "Why the controls matter",
-            detail: "Sorting, filtering, compare mode, and alerts should feel like one discovery workflow rather than disconnected widgets.",
+            title: "Narrowing the field",
+            detail: "Category buttons above the table filter by use case. The filter panel on the Cards view adds risk, minimum score, and full-text search so you can screen 128+ candidates down to a shortlist fast.",
           },
           {
-            title: "Best follow-on action",
-            detail: "Use compare mode or open the detailed preview once a small group of subnets stands out on score, yield, and liquidity.",
+            title: "Before you allocate",
+            detail: "Click a row to open the detail preview — emissions curve, 14-day yield history, top validators. Compare two candidates side by side before deciding which one earns real TAO.",
           },
         ].map((card) => (
           <div key={card.title} className="rounded-2xl border border-white/8 bg-white/[0.022] p-5">

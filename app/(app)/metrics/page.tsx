@@ -140,7 +140,7 @@ export default function MetricsPage() {
       <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
         <PageHeader
           title="Metrics"
-          subtitle="Live subnet intelligence across yield, liquidity, emissions, confidence, risk, and traction. Built as a subnet allocation decision surface."
+          subtitle="Every subnet, ranked on yield, liquidity, emissions, confidence, risk, and traction — everything you need to decide where to allocate TAO next."
           className="items-start"
         >
           <div className="flex items-center gap-2">
@@ -350,11 +350,11 @@ export default function MetricsPage() {
                   <div className="mt-3 inline-flex items-center gap-2 px-2.5 py-1.5 rounded-full text-[11px] font-semibold bg-emerald-400/10 text-emerald-300 border border-emerald-400/20">
                     <ShieldCheck className="w-3.5 h-3.5" /> {selected.score >= 85 ? "ACCUMULATE" : selected.score >= 75 ? "HOLD / WATCH" : "WATCH CAREFULLY"}
                   </div>
-                  <div className="mt-4 text-[12px] text-slate-400 leading-relaxed">Tyvera currently likes this subnet because it combines better-than-average structural score with allocator-quality signals around liquidity, participation, risk posture, and visible traction.</div>
+                  <div className="mt-4 text-[12px] text-slate-400 leading-relaxed">This subnet scores well because it combines a strong structural rating with healthy liquidity, steady participation, moderate risk, and visible traction across validators and holders.</div>
                 </div>
                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-                  <div className="text-[14px] font-semibold text-white flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-400" /> Click-through</div>
-                  <div className="mt-3 text-[12px] text-slate-400 leading-relaxed">Click any row to open the full subnet detail page. Metrics should help users rank and scan, while `/subnets/[netuid]` should carry the deeper analysis.</div>
+                  <div className="text-[14px] font-semibold text-white flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-400" /> Want more?</div>
+                  <div className="mt-3 text-[12px] text-slate-400 leading-relaxed">Click any row to open the full subnet page — emissions curves, 14-day yield history, top validators, and the raw chain data Tyvera uses to score it.</div>
                 </div>
               </div>
             </GlassCard>

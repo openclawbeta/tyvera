@@ -104,30 +104,30 @@ export default function HoldersPage() {
           <div className="relative">
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300">
               <Radar className="h-3 w-3" />
-              holder cohort engine
+              Who owns TAO
             </div>
 
             <h2 className="mt-5 text-3xl font-black tracking-[-0.04em] text-white md:text-[40px]">
-              Track who holds size
+              Watch the big wallets
               <span className="block bg-[linear-gradient(135deg,#67e8f9_0%,#4f7cff_55%,#8b5cf6_100%)] bg-clip-text text-transparent">
-                before their flows reshape the field.
+                before their moves hit the tape.
               </span>
             </h2>
 
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-400 md:text-[15px]">
-              Holder Intelligence is the cohort-monitoring surface: wallet concentration, root-vs-subnet posture, and directional flow organized to reveal where dominant capital is positioned and rotating.
+              The largest validators, exchanges, and anonymous wallets holding TAO — how much each one controls, which subnets they&apos;re stacking into, and where capital is quietly rotating before the market notices.
             </p>
 
             <div className="mt-6 grid gap-3 md:grid-cols-3">
               {[
-                { label: "Monitoring mode", value: "Cohort-first", note: "Focus on concentration and rotation", tone: "text-cyan-300" },
+                { label: "You\u2019ll see", value: "Top holders + flows", note: "Concentration by wallet, rotation by subnet", tone: "text-cyan-300" },
                 {
-                  label: "Attribution posture",
-                  value: holderMeta?.source === "tao-app" ? "Provider-backed" : data?.source === "chain-partial" ? "Chain-partial" : "Modeled",
-                  note: holderMeta?.source === "tao-app" ? "External holder attribution is active" : data?.source === "chain-partial" ? "Real chain coverage is partial" : "Structured product-development intelligence",
+                  label: "Data source",
+                  value: holderMeta?.source === "tao-app" ? "TAO.app live" : data?.source === "chain-partial" ? "Chain (partial)" : "Modeled",
+                  note: holderMeta?.source === "tao-app" ? "Backed by external provider" : data?.source === "chain-partial" ? "Partial on-chain coverage" : "Structured approximation — live attribution coming soon",
                   tone: holderMeta?.source === "tao-app" ? "text-emerald-300" : data?.source === "chain-partial" ? "text-cyan-300" : "text-amber-300",
                 },
-                { label: "Trust model", value: "Truthful state", note: "Provider quality stays explicit throughout", tone: "text-white" },
+                { label: "Why it matters", value: "Whales lead", note: "Large-wallet flows often precede market moves", tone: "text-white" },
               ].map((card) => (
                 <div key={card.label} className="rounded-2xl border border-white/8 bg-black/20 px-4 py-4">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">{card.label}</div>
@@ -142,19 +142,19 @@ export default function HoldersPage() {
         <div className="grid gap-4">
           {[
             {
-              label: "Cohort monitor",
-              title: "Track concentration across the top wallet layer.",
-              detail: "This page is for understanding who controls size, where stake is concentrated, and how the dominant cohort is positioned.",
+              label: "Concentration",
+              title: "See how tightly TAO is held.",
+              detail: "When a handful of wallets control most of the supply, price can swing hard on a single exit. The top-cohort view tells you whether today\u2019s network is broadly or narrowly owned.",
             },
             {
-              label: "Flow intelligence",
-              title: "Map wallet rotation into subnet-level movement.",
-              detail: "The valuable output here is not raw wallet lists — it is directional flow, posture shifts, and exposure changes across subnets.",
+              label: "Flow",
+              title: "Follow where the biggest capital is rotating.",
+              detail: "Whale accumulation and distribution across subnets often leads the broader market — if several top wallets start stacking into one subnet, that\u2019s signal.",
             },
             {
-              label: "Truthfulness first",
-              title: "Provider quality must remain explicit.",
-              detail: "Modeled, chain-partial, and TAO.app-backed states stay visible so users know whether this is real attribution or staged intelligence.",
+              label: "Sourcing",
+              title: "You\u2019ll always know where the data came from.",
+              detail: "The source badge shows whether this view is backed by TAO.app attribution, partial chain data, or a modeled approximation — so you can weigh any move accordingly.",
             },
           ].map((item) => (
             <div key={item.label} className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 shadow-[0_14px_50px_rgba(0,0,0,0.24)]">
@@ -164,10 +164,6 @@ export default function HoldersPage() {
             </div>
           ))}
         </div>
-      </div>
-
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-        Holder intelligence workflow
       </div>
 
       <FadeIn>
@@ -182,12 +178,12 @@ export default function HoldersPage() {
           <div className="text-[12px] text-slate-300">
             {holderMeta?.source === "tao-app" ? (
               <>
-                <span className="font-semibold text-emerald-300">TAO.app-backed holder intelligence.</span> This view is using external holder concentration and flow analytics as a live provider fallback.
+                <span className="font-semibold text-emerald-300">Live holder data from TAO.app.</span> Wallet concentration and flow figures below are backed by TAO.app&rsquo;s attribution layer.
                 <div className="mt-2 text-[11px] text-slate-400">Powered by TAO.app API</div>
               </>
             ) : (
               <>
-                <span className="font-semibold text-amber-300">Modeled intelligence layer.</span> This current view is a structured cohort approximation for product development: it distinguishes root-vs-subnet posture, dominant allocations, and rotation patterns, but it is not yet sourced from live wallet-level chain attribution.
+                <span className="font-semibold text-amber-300">Modeled view — not yet live-attributed.</span> This page uses a structured approximation of wallet concentration, stake split, and flow patterns. Live wallet-level attribution from chain data is on the roadmap — values are directionally useful, but don&rsquo;t trade off any single wallet line.
               </>
             )}
           </div>
@@ -226,10 +222,6 @@ export default function HoldersPage() {
         </GlassCard>
       ) : (
         <>
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Holder cohort overview
-          </div>
-
           <FadeIn delay={0.05}>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
               {[
@@ -253,10 +245,6 @@ export default function HoldersPage() {
               ))}
             </div>
           </FadeIn>
-
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Wallet ranking, flow, and coverage
-          </div>
 
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
             <FadeIn delay={0.08}>
@@ -371,18 +359,18 @@ export default function HoldersPage() {
             <FadeIn delay={0.12}>
               <GlassCard padding="lg">
                 <div className="mb-4">
-                  <h3 className="text-sm font-semibold text-white">What this page now covers</h3>
-                  <p className="mt-1 text-[11px] text-slate-600">First usable version of the holder-intel surface</p>
+                  <h3 className="text-sm font-semibold text-white">What&rsquo;s on this page</h3>
+                  <p className="mt-1 text-[11px] text-slate-600">First release of holder intelligence</p>
                 </div>
                 <div className="space-y-3 text-sm leading-relaxed text-slate-300">
                   <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-                    <div className="mb-1 font-semibold text-white">Included now</div>
+                    <div className="mb-1 font-semibold text-white">Available today</div>
                     <ul className="space-y-1 text-[12px] text-slate-400">
-                      <li>• Tracked wallet cohort (up to 100)</li>
-                      <li>• Root staking vs subnet staking posture</li>
-                      <li>• Dominant subnet allocations per wallet</li>
-                      <li>• Cohort inflow / outflow by subnet</li>
-                      <li>• Rotation summaries for product intelligence</li>
+                      <li>• Top wallet holders, up to 100 tracked</li>
+                      <li>• Root staking vs. subnet staking breakdown per wallet</li>
+                      <li>• Largest subnet allocations each wallet is holding</li>
+                      <li>• Net inflow and outflow into each subnet, cohort-level</li>
+                      <li>• Capital rotation summaries across the top holders</li>
                     </ul>
                   </div>
                   <div className="rounded-xl border border-amber-400/15 bg-amber-400/[0.03] p-3">
@@ -405,16 +393,16 @@ export default function HoldersPage() {
         <div className="grid gap-4 md:grid-cols-3">
           {[
             {
-              title: "What this page should do",
-              detail: "Show who controls size, how concentrated the cohort is, and where dominant wallets are rotating across the network.",
+              title: "Who holds TAO",
+              detail: "See the largest validators, exchanges, and anonymous wallets — how much each controls, and whether the network is tightly or broadly held today.",
             },
             {
-              title: "Why truthfulness matters",
-              detail: "Holder intelligence is only useful if modeled, chain-partial, and provider-backed states remain explicit to the user.",
+              title: "What they're doing",
+              detail: "Track net flows in and out of the top cohorts. Whale accumulation or distribution often leads the rest of the market by a week or two.",
             },
             {
-              title: "Best follow-on action",
-              detail: "Use subnet flow and cohort posture to investigate which networks are accumulating attention before checking Subnets or Recommendations.",
+              title: "Spotting capital rotation",
+              detail: "When a few wallets start moving stake into a specific subnet, it's worth checking Subnets or Recommendations to see if the opportunity holds up at your size.",
             },
           ].map((card) => (
             <div key={card.title} className="rounded-2xl border border-white/8 bg-white/[0.022] p-5">

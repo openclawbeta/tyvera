@@ -63,9 +63,6 @@ export default function DashboardPage() {
     <div className="mx-auto max-w-[1440px] space-y-8">
       <PageHeader title="Dashboard" subtitle="Your Bittensor portfolio at a glance">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex items-center rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-slate-400">
-            Personal command surface
-          </div>
           <button onClick={handleRefresh} className="btn-ghost gap-1.5">
             <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
             Refresh
@@ -89,25 +86,25 @@ export default function DashboardPage() {
             <div className="relative">
               <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300">
                 <TrendingUp className="h-3 w-3" />
-                portfolio command layer
+                Your TAO, at a glance
               </div>
 
               <h2 className="mt-5 text-3xl font-black tracking-[-0.04em] text-white md:text-[40px]">
-                Read your TAO posture
+                Check in before you
                 <span className="block bg-[linear-gradient(135deg,#67e8f9_0%,#4f7cff_55%,#8b5cf6_100%)] bg-clip-text text-transparent">
-                  before you move capital.
+                  move capital.
                 </span>
               </h2>
 
               <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-400 md:text-[15px]">
-                Dashboard is the portfolio command surface: current value, weighted yield, recent activity, and recommendation context arranged to support faster allocation decisions.
+                Current value, weighted yield, and recent stake activity — the headline numbers you want to see first each morning before deciding whether to rebalance.
               </p>
 
               <div className="mt-6 grid gap-3 md:grid-cols-3">
                 {[
-                  { label: "Portfolio state", value: isConnected && portfolioStats ? "Connected" : "Awaiting wallet", note: isConnected ? "Personal metrics unlocked" : "Connect to reveal your book", tone: isConnected ? "text-cyan-300" : "text-amber-300" },
-                  { label: "Decision mode", value: "Allocation-first", note: "Built around position quality and edge", tone: "text-white" },
-                  { label: "Trust model", value: "User-approved", note: "Recommendations inform — you still approve", tone: "text-emerald-300" },
+                  { label: "Wallet", value: isConnected && portfolioStats ? "Connected" : "Not connected", note: isConnected ? "Your holdings are loaded below" : "Connect read-only to see your own book", tone: isConnected ? "text-cyan-300" : "text-amber-300" },
+                  { label: "What you'll see", value: "Value + yield + flows", note: "Trend, staked total, and recent changes", tone: "text-white" },
+                  { label: "Who decides", value: "You do", note: "Tyvera never signs a transaction for you", tone: "text-emerald-300" },
                 ].map((card) => (
                   <div key={card.label} className="rounded-2xl border border-white/8 bg-black/20 px-4 py-4">
                     <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">{card.label}</div>
@@ -122,19 +119,19 @@ export default function DashboardPage() {
           <div className="grid gap-4">
             {[
               {
-                label: "Portfolio command",
-                title: "Track value, stake posture, and realized yield.",
-                detail: "This surface is for allocation monitoring — the main chart should answer what your TAO exposure is doing now.",
+                label: "Portfolio",
+                title: "Value, staked total, and realized yield.",
+                detail: "The chart answers the one question you care about first: what is your TAO exposure doing over the last week, two weeks, or month?",
               },
               {
-                label: "Network readthrough",
-                title: "Use subnet momentum to contextualize portfolio moves.",
-                detail: "Yield and trend modules work as market context around your positions, not as isolated decoration.",
+                label: "Context",
+                title: "Subnet momentum alongside your positions.",
+                detail: "Network-wide yield and flow trends sit next to your holdings so you can tell when an opportunity is broad-based vs. concentrated.",
               },
               {
-                label: "Decision layer",
-                title: "Recommendations should map to action, not filler.",
-                detail: "Allocation, recent activity, and recommendation modules should help you decide what deserves attention next.",
+                label: "Suggested moves",
+                title: "Recommendations tied to your actual book.",
+                detail: "When a subnet in your portfolio drifts or a better one appears, the dashboard surfaces a concrete suggestion — not generic market commentary.",
               },
             ].map((item) => (
               <div key={item.label} className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 shadow-[0_14px_50px_rgba(0,0,0,0.24)]">
@@ -147,10 +144,6 @@ export default function DashboardPage() {
         </div>
       </FadeIn>
 
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-        Portfolio context and decision framing
-      </div>
-
       <FadeIn delay={0.05}>
         {isConnected && portfolioStats ? (
           <div className="grid grid-cols-12 gap-5">
@@ -158,8 +151,8 @@ export default function DashboardPage() {
               <div className="rounded-[28px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.034),rgba(255,255,255,0.013))] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.34)]">
                 <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] pb-4">
                   <div>
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Core portfolio signal</div>
-                    <div className="mt-1 text-sm tracking-tight text-slate-300">Value trend across the selected horizon</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Portfolio value</div>
+                    <div className="mt-1 text-sm tracking-tight text-slate-300">How your holdings have trended over the selected window</div>
                   </div>
                   <div className="flex items-center gap-0.5 rounded-xl border border-white/8 bg-white/[0.03] p-1">
                     {(["7d", "14d", "30d"] as const).map((p) => (
@@ -180,11 +173,11 @@ export default function DashboardPage() {
 
                 <div className="mb-6 grid gap-3 md:grid-cols-[1.05fr_0.95fr]">
                   <div>
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Portfolio value</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">Current value</div>
                     <div className="mt-2 text-[34px] font-bold leading-none tracking-[-0.03em] text-white tabular-nums">
                       ${portfolioStats.totalValueUsd.toLocaleString()}
                     </div>
-                    <div className="mt-2 text-sm text-slate-500">This is the primary read on what your current book is worth.</div>
+                    <div className="mt-2 text-sm text-slate-500">Your total TAO and subnet stake, valued at today&rsquo;s price.</div>
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-1 xl:grid-cols-3">
@@ -206,24 +199,18 @@ export default function DashboardPage() {
             </div>
 
             <div className="col-span-12 lg:col-span-4 xl:col-span-3 space-y-4">
-              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Supporting portfolio stats
-              </div>
-
               <div className="rounded-[24px] border border-white/8 bg-white/[0.022] p-5 shadow-[0_16px_56px_rgba(0,0,0,0.26)]">
                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
                   <Activity className="h-3.5 w-3.5" />
-                  Position posture
+                  How to read this
                 </div>
                 <div className="mt-4 space-y-3">
                   {[
-                    "Use total value as the top-line read before interpreting yield shifts.",
-                    "Weighted yield is a support metric, not the whole portfolio story.",
-                    "Recent earnings matter most when compared against allocation concentration.",
+                    "Total value is the headline number — watch it day over day.",
+                    "Weighted yield shows your blended APR across every subnet you\u2019re staked into.",
+                    "Recent earnings tell you what the book has actually paid in TAO this week.",
                   ].map((line) => (
-                    <div key={line} className="rounded-xl border border-white/6 bg-black/20 px-4 py-3 text-sm leading-relaxed text-slate-400">
-                      {line}
-                    </div>
+                    <div key={line} className="rounded-xl border border-white/6 bg-black/20 px-4 py-3 text-sm leading-relaxed text-slate-400">{line}</div>
                   ))}
                 </div>
               </div>
@@ -391,16 +378,16 @@ export default function DashboardPage() {
         <div className="grid gap-4 md:grid-cols-3">
           {[
             {
-              title: "What this page should do",
-              detail: "Give a fast, trustworthy read on portfolio condition before you dive into subnets or recommendations.",
+              title: "Check your portfolio",
+              detail: "See your current TAO and subnet stake value, recent performance, and a simple read on whether your holdings are trending up or down.",
             },
             {
-              title: "Why hierarchy matters",
-              detail: "Portfolio value and recommendation quality should dominate; support metrics should stay secondary.",
+              title: "Spot what changed",
+              detail: "Recent stake changes, subnet moves, and flagged activity surface here first so nothing slips past you between logins.",
             },
             {
-              title: "Best follow-on action",
-              detail: isConnected ? "Use Recommendations or Subnets when the dashboard suggests a real allocation question." : "Connect a wallet to unlock portfolio-specific reads and activity context.",
+              title: isConnected ? "Next step" : "Connect to personalize",
+              detail: isConnected ? "Head to Recommendations or Subnets when you want to move capital — the dashboard flags when there's something worth reviewing." : "Connect a Polkadot.js, Talisman, or SubWallet account to see your own holdings. Read-only — Tyvera never requests signing permissions.",
             },
           ].map((card) => (
             <div key={card.title} className="rounded-2xl border border-white/8 bg-white/[0.022] p-5">

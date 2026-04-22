@@ -304,25 +304,25 @@ export default function RecommendationsPage() {
           <div className="relative">
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300">
               <Radar className="h-3 w-3" />
-              reallocation engine
+              Where to move your TAO next
             </div>
 
             <h2 className="mt-5 text-3xl font-black tracking-[-0.04em] text-white md:text-[40px]">
-              Review the highest-edge moves
+              The best available moves,
               <span className="block bg-[linear-gradient(135deg,#67e8f9_0%,#4f7cff_55%,#8b5cf6_100%)] bg-clip-text text-transparent">
-                before you approve capital rotation.
+                ranked by expected edge.
               </span>
             </h2>
 
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-400 md:text-[15px]">
-              Recommendations is the decision layer: scored reallocations, wallet-aware execution readiness, and review-first action flow designed to help users distinguish real edge from noise.
+              Tyvera scans all 128+ subnets each hour and ranks reallocations by expected yield gain, risk, and liquidity. Review each candidate, then sign the transaction from your own wallet — Tyvera never moves capital for you.
             </p>
 
             <div className="mt-6 grid gap-3 md:grid-cols-3">
               {[
-                { label: "Decision mode", value: "Edge-first", note: "Recommendations are ranked by quality, not novelty", tone: "text-cyan-300" },
-                { label: "Execution posture", value: "Review-based", note: "Nothing executes until the user approves it", tone: "text-white" },
-                { label: "Trust model", value: "Wallet-aware", note: "Connection and verification state stay visible", tone: "text-emerald-300" },
+                { label: "Ranked by", value: "Expected edge", note: "Yield gain net of risk and liquidity cost", tone: "text-cyan-300" },
+                { label: "Execution", value: "You approve", note: "Tyvera never signs a transaction on your behalf", tone: "text-white" },
+                { label: "Wallet role", value: "Read-only first", note: "Connect to see personalized moves for your book", tone: "text-emerald-300" },
               ].map((card) => (
                 <div key={card.label} className="rounded-2xl border border-white/8 bg-black/20 px-4 py-4">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">{card.label}</div>
@@ -337,19 +337,19 @@ export default function RecommendationsPage() {
         <div className="grid gap-4">
           {[
             {
-              label: "Scoring layer",
-              title: "Surface reallocations when the projected edge is materially useful.",
-              detail: "This page should help users focus on the highest-quality opportunity set rather than scrolling a generic list of suggestions.",
+              label: "Ranking",
+              title: "Only moves with material edge show up.",
+              detail: "Tyvera filters out marginal switches so you're looking at reallocations with real projected yield gain — not a feed of noise.",
             },
             {
-              label: "Execution workflow",
-              title: "Move from review to approval without trust ambiguity.",
-              detail: "Wallet state, verification state, and execution boundaries should remain obvious while reviewing each recommendation.",
+              label: "Review",
+              title: "See the reasoning before you act.",
+              detail: "Each recommendation opens a detail panel with the source yield, destination yield, risk band, and a one-line summary of why Tyvera thinks the swap is worth it.",
             },
             {
-              label: "Signal clarity",
-              title: "Strong, moderate, and mild bands should feel operationally distinct.",
-              detail: "The page should make it easy to scan confidence levels before diving into the detailed review panel.",
+              label: "Confidence",
+              title: "Strong, moderate, or mild — you choose.",
+              detail: "Bands make it easy to stay inside your own risk tolerance. Filter to only the strong band and you'll see Tyvera's most defensible calls.",
             },
           ].map((item) => (
             <div key={item.label} className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 shadow-[0_14px_50px_rgba(0,0,0,0.24)]">
@@ -362,10 +362,6 @@ export default function RecommendationsPage() {
       </div>
 
       <WalletBanner />
-
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-        Recommendation workflow
-      </div>
 
       <div className="flex flex-col gap-5 lg:flex-row">
         <div className="min-w-0 flex-1 space-y-4">
@@ -409,16 +405,16 @@ export default function RecommendationsPage() {
         <div className="grid gap-4 md:grid-cols-3">
           {[
             {
-              title: "What this page should do",
-              detail: "Help users distinguish the best available reallocations quickly, then review one candidate deeply before taking action.",
+              title: "How recommendations work",
+              detail: "Tyvera scans every subnet each hour and ranks reallocations by expected yield gain, risk, and liquidity — so you don't have to screen 128+ pools manually.",
             },
             {
-              title: "Why wallet state matters",
-              detail: "Execution trust depends on keeping wallet connection, verification, and approval boundaries obvious during the review flow.",
+              title: "Your wallet stays in control",
+              detail: "Tyvera only reads balances. Every move is a suggestion — you still sign the transaction yourself from your own wallet whenever you decide to act.",
             },
             {
-              title: "Best follow-on action",
-              detail: "Use the review panel to inspect the selected move, then connect or verify the wallet only when you are ready to approve it.",
+              title: "Before you execute",
+              detail: "Open the review panel on any candidate to see the reasoning, risk band, and alternative moves. Approve only after it matches your own thesis.",
             },
           ].map((card) => (
             <div key={card.title} className="rounded-2xl border border-white/8 bg-white/[0.022] p-5">

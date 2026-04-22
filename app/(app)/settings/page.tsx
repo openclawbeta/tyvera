@@ -347,16 +347,16 @@ function AccountSection() {
         <div className="pointer-events-none absolute" />
         <PanelHeader
           eyebrow="Account overview"
-          title="Your operator profile"
-          subtitle="This is where plan state, wallet identity, and account-level preferences start to come together."
+          title="Your account"
+          subtitle="Plan, wallet, and personal preferences — all in one place."
         />
 
         <div className="grid gap-3 md:grid-cols-4">
           {[
             { label: "Plan", value: displayTier, note: expiryNote, tone: style.color },
-            { label: "Wallet", value: address ? "Connected" : "Not connected", note: "Execution identity", tone: address ? "#5B4BC9" : "var(--aurora-warn)" },
-            { label: "Mode", value: "Source-aware", note: "Trust-first product state", tone: "var(--aurora-up)" },
-            { label: "Profile", value: "Operator", note: "Individual workflow", tone: "#5B4BC9" },
+            { label: "Wallet", value: address ? "Connected" : "Not connected", note: address ? "Read-only, signing stays with you" : "Connect to personalize the app", tone: address ? "#5B4BC9" : "var(--aurora-warn)" },
+            { label: "Data sources", value: "Live + snapshot", note: "Freshness visible on every view", tone: "var(--aurora-up)" },
+            { label: "Account type", value: "Individual", note: "Team seats available on Institutional", tone: "#5B4BC9" },
           ].map((card) => (
             <div key={card.label} className="rounded-2xl border border-white/8 bg-black/20 px-4 py-4">
               <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">{card.label}</div>
@@ -425,7 +425,7 @@ function NotificationsSection() {
     { key: "yieldAlerts", label: "Yield change alerts", desc: "Alert when a subnet's estimated APR changes by more than 5%." },
     { key: "txConfirmed", label: "Transaction confirmed", desc: "Notify when an on-chain action reaches finality." },
     { key: "premiumExpiry", label: "Premium expiring soon", desc: "Warn ahead of plan expiry when paid access is active." },
-    { key: "weeklyDigest", label: "Weekly digest", desc: "Receive a weekly summary of your portfolio and market posture." },
+    { key: "weeklyDigest", label: "Weekly digest", desc: "A weekly summary of your portfolio performance and notable market moves." },
     { key: "systemUpdates", label: "System updates", desc: "Important platform changes, maintenance windows, and trust notices." },
   ] as const;
 
@@ -606,9 +606,9 @@ function SecuritySection() {
   return (
     <Panel>
       <PanelHeader
-        eyebrow="Security posture"
+        eyebrow="Account security"
         title="Privacy and session controls"
-        subtitle="A compact view of the security defaults that shape the product experience."
+        subtitle="How Tyvera protects your account and what you can adjust."
       />
 
       <div className="mb-5 grid gap-3 md:grid-cols-3">

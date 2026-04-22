@@ -326,13 +326,13 @@ export default function HomeClient({ initial }: HomeClientProps) {
                 <div className="mb-5 flex items-start justify-between border-b pb-5" style={{ borderColor: "var(--aurora-hair)" }}>
                   <div>
                     <div className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--aurora-sub)", fontFamily: "'JetBrains Mono', monospace" }}>
-                      Top picks right now
+                      Highest yields right now
                     </div>
                     <h2 className="mt-2 text-[22px] font-semibold tracking-[-0.03em]" style={{ color: "var(--aurora-ink)" }}>
                       Where TAO is earning the most today
                     </h2>
                     <p className="mt-2 max-w-sm text-[13px] leading-relaxed" style={{ color: "var(--aurora-sub)" }}>
-                      Ranked by realized daily yield, with the delta over root staking shown in pp.
+                      Ranked by today&rsquo;s raw yield. Higher numbers vs. root usually mean higher risk — check the band.
                     </p>
                   </div>
                   <div className="tag-violet shrink-0">Live</div>
@@ -419,9 +419,10 @@ export default function HomeClient({ initial }: HomeClientProps) {
                                   color: s.vsRootPp >= 0 ? "#0B8F5A" : "#C0392B",
                                   fontFamily: "'JetBrains Mono', monospace",
                                 }}
+                                title={`This subnet's annual yield runs ${Math.abs(s.vsRootPp).toFixed(1)} percentage points ${s.vsRootPp >= 0 ? "above" : "below"} the zero-risk root staking baseline. Higher gaps typically reflect earlier-stage subnets with thinner liquidity and more volatile emissions.`}
                               >
                                 {s.vsRootPp >= 0 ? "+" : ""}
-                                {s.vsRootPp.toFixed(1)}pp vs root
+                                {s.vsRootPp.toFixed(1)} pts over root
                               </div>
                             )}
                           </div>
@@ -471,6 +472,75 @@ export default function HomeClient({ initial }: HomeClientProps) {
           ))}
         </div>
       </div>
+
+      {/* ── NEWCOMER PRIMER ── */}
+      <section className="border-t px-6 py-14 md:px-8" style={{ borderColor: "var(--aurora-hair)" }}>
+        <div className="mx-auto max-w-6xl">
+          <FadeIn>
+            <div className="mb-8 text-center">
+              <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: "var(--aurora-sub)", fontFamily: "'JetBrains Mono', monospace" }}>
+                New to Bittensor?
+              </div>
+              <h2 className="text-[32px] font-semibold" style={{ letterSpacing: "-0.03em", color: "var(--aurora-ink)" }}>
+                Start here. <span className="serif" style={{ color: "var(--aurora-sub)" }}>30-second tour.</span>
+              </h2>
+            </div>
+          </FadeIn>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <FadeIn>
+              <div className="glass h-full p-6">
+                <div
+                  className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl"
+                  style={{ background: "#E4DBFF", border: "1px solid #C9B8FF" }}
+                >
+                  <Network className="h-5 w-5" style={{ color: "#5B3FBF" }} />
+                </div>
+                <h3 className="mb-2 text-[15px] font-semibold" style={{ letterSpacing: "-0.01em", color: "var(--aurora-ink)" }}>
+                  What is Bittensor?
+                </h3>
+                <p className="text-[13px] leading-relaxed" style={{ color: "var(--aurora-sub)" }}>
+                  A decentralized network where specialized AI &ldquo;subnets&rdquo; compete to produce useful work. Its native token is <span className="font-semibold" style={{ color: "var(--aurora-ink)" }}>TAO (τ)</span> — you earn it by staking into subnets that ship good output.
+                </p>
+              </div>
+            </FadeIn>
+
+            <FadeIn delay={0.08}>
+              <div className="glass h-full p-6">
+                <div
+                  className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl"
+                  style={{ background: "#FFE5D0", border: "1px solid #FFD7BA" }}
+                >
+                  <BarChart2 className="h-5 w-5" style={{ color: "#B65A17" }} />
+                </div>
+                <h3 className="mb-2 text-[15px] font-semibold" style={{ letterSpacing: "-0.01em", color: "var(--aurora-ink)" }}>
+                  What is a subnet?
+                </h3>
+                <p className="text-[13px] leading-relaxed" style={{ color: "var(--aurora-sub)" }}>
+                  One &ldquo;market&rdquo; on Bittensor (e.g. text generation, image, data indexing). Each has a pool of staked τ, an emission rate, and a yield that reflects how much reward the network is paying its stakers right now.
+                </p>
+              </div>
+            </FadeIn>
+
+            <FadeIn delay={0.16}>
+              <div className="glass h-full p-6">
+                <div
+                  className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl"
+                  style={{ background: "#E5F7EE", border: "1px solid #A7F0D2" }}
+                >
+                  <Shield className="h-5 w-5" style={{ color: "#0B8F5A" }} />
+                </div>
+                <h3 className="mb-2 text-[15px] font-semibold" style={{ letterSpacing: "-0.01em", color: "var(--aurora-ink)" }}>
+                  What is root staking?
+                </h3>
+                <p className="text-[13px] leading-relaxed" style={{ color: "var(--aurora-sub)" }}>
+                  Staking directly to the Bittensor root (netuid 0) — the zero-risk, pure-TAO baseline. Every subnet on Tyvera is measured against this yield, so you can see exactly what extra return you&rsquo;re getting (and what extra risk you&rsquo;re taking).
+                </p>
+              </div>
+            </FadeIn>
+          </div>
+        </div>
+      </section>
 
       {/* ── STATS STRIP ── */}
       <section className="px-8 py-16">
@@ -568,8 +638,9 @@ export default function HomeClient({ initial }: HomeClientProps) {
                           border: `1px solid ${s.vsRootPp >= 0 ? "#A7F0D2" : "#F5B7B1"}`,
                           fontFamily: "'JetBrains Mono', monospace",
                         }}
+                        title={`Annual yield runs ${Math.abs(s.vsRootPp).toFixed(1)} percentage points ${s.vsRootPp >= 0 ? "above" : "below"} the zero-risk root staking baseline. A wider gap usually reflects earlier-stage subnets with thinner liquidity and more volatile emissions.`}
                       >
-                        {s.vsRootPp >= 0 ? "▲" : "▼"} {s.vsRootPp >= 0 ? "+" : ""}{s.vsRootPp.toFixed(1)}pp vs root
+                        {s.vsRootPp >= 0 ? "▲" : "▼"} {s.vsRootPp >= 0 ? "+" : ""}{s.vsRootPp.toFixed(1)} pts over root
                       </div>
                     )}
 
@@ -780,7 +851,7 @@ export default function HomeClient({ initial }: HomeClientProps) {
                     Benchmarked against root staking
                   </div>
                   <p className="mt-1 text-[12px] leading-relaxed" style={{ color: "var(--aurora-sub)" }}>
-                    Every subnet yield shows a <span className="font-semibold" style={{ color: "var(--aurora-ink)" }}>±pp vs root</span> delta — the pure-TAO staking yield on netuid 0 is the zero-risk baseline you&rsquo;re giving up to take alpha exposure.
+                    Every subnet yield shows a <span className="font-semibold" style={{ color: "var(--aurora-ink)" }}>± pts over root</span> delta — the pure-TAO staking yield on netuid 0 is the zero-risk baseline you&rsquo;re giving up to take alpha exposure.
                   </p>
                 </div>
               </div>

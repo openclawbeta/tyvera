@@ -205,25 +205,25 @@ export default function ValidatorsPage() {
           <div className="relative">
             <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-300">
               <Radar className="h-3 w-3" />
-              validator shortlist engine
+              Validators, compared
             </div>
 
             <h2 className="mt-5 text-3xl font-black tracking-[-0.04em] text-white md:text-[40px]">
-              Rank the operators
+              Pick a validator
               <span className="block bg-[linear-gradient(135deg,#67e8f9_0%,#4f7cff_55%,#8b5cf6_100%)] bg-clip-text text-transparent">
-                that deserve attention.
+                that actually keeps your yield.
               </span>
             </h2>
 
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-400 md:text-[15px]">
-              Validator Sets is a shortlist and comparison surface: search, rank, favorite, and switch views to identify which validator-oriented sets matter operationally.
+              Your stake is only as good as the validator running it. Sort by uptime, take rate, or total stake, add a few to favorites, and flip between views to see who really delivers day after day.
             </p>
 
             <div className="mt-6 grid gap-3 md:grid-cols-3">
               {[
-                { label: "Selection mode", value: "Shortlist-first", note: "Search, rank, and favorite quickly", tone: "text-cyan-300" },
-                { label: "Source posture", value: sourceMeta?.fallbackUsed ? "Fallback-aware" : "Primary-aware", note: sourceMeta?.source ?? "Validator feed status", tone: sourceMeta?.fallbackUsed ? "text-amber-300" : "text-white" },
-                { label: "Trust model", value: "Source-aware", note: "Provider state remains visible while browsing", tone: "text-emerald-300" },
+                { label: "Sort by", value: "Stake, uptime, take", note: "Or use search + favorites to build a shortlist", tone: "text-cyan-300" },
+                { label: "Data source", value: sourceMeta?.fallbackUsed ? "Cached" : "Live", note: sourceMeta?.fallbackUsed ? "Showing latest snapshot" : (sourceMeta?.source ?? "Fresh from chain"), tone: sourceMeta?.fallbackUsed ? "text-amber-300" : "text-white" },
+                { label: "Why it matters", value: "Take rate eats yield", note: "A 20% take means you only keep 80% of the APR", tone: "text-emerald-300" },
               ].map((card) => (
                 <div key={card.label} className="rounded-2xl border border-white/8 bg-black/20 px-4 py-4">
                   <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">{card.label}</div>
@@ -238,19 +238,19 @@ export default function ValidatorsPage() {
         <div className="grid gap-4">
           {[
             {
-              label: "Coverage surface",
-              title: "Compare validator-oriented sets across the network.",
-              detail: "This page is for finding who matters, who dominates, and which validator sets deserve operational attention.",
+              label: "Who to pick",
+              title: "Long uptime + modest take rate wins over time.",
+              detail: "Flashy new validators come and go. What you want for long-term staking is consistency — months of near-100% uptime and a take rate that doesn't erode most of your APR.",
             },
             {
-              label: "Source discipline",
-              title: "Fallback state is visible by design.",
-              detail: "Primary vs fallback provider state stays surfaced so the table remains useful without pretending certainty.",
+              label: "Freshness",
+              title: "Validator data changes daily.",
+              detail: "The source badge tells you if you're seeing live chain data or a recent snapshot. Either way, re-check before moving any meaningful stake.",
             },
             {
-              label: "Operator workflow",
-              title: "Search, rank, and shortlist quickly.",
-              detail: "Favorites, search, sort, and grid/list mode should support shortlisting validators, not just browsing them.",
+              label: "Workflow",
+              title: "Search, favorite, compare.",
+              detail: "Use favorites to build a shortlist of operators you're evaluating, then flip between grid and list views to see how they stack up on different metrics.",
             },
           ].map((item) => (
             <div key={item.label} className="rounded-2xl border border-white/8 bg-white/[0.025] p-5 shadow-[0_14px_50px_rgba(0,0,0,0.24)]">
@@ -262,10 +262,6 @@ export default function ValidatorsPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-        Validator selection workflow
-      </div>
-
       {sourceMeta?.note && (
         <div className="rounded-xl border border-amber-400/15 bg-amber-400/[0.03] px-4 py-3 text-[12px] text-slate-300">
           <span className="font-semibold text-amber-300">Source note:</span> {sourceMeta.note}
@@ -273,9 +269,6 @@ export default function ValidatorsPage() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-        Validator market overview
-      </div>
 
       {summary && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -411,16 +404,16 @@ export default function ValidatorsPage() {
       <div className="grid gap-4 md:grid-cols-3">
         {[
           {
-            title: "What this page should do",
-            detail: "Help users determine which validator-oriented sets deserve attention, follow-up, or operational monitoring.",
+            title: "Choosing a validator",
+            detail: "Your stake is only as good as the validator running it. Look for long uptime, steady APY, and a take rate that doesn't eat most of your yield.",
           },
           {
-            title: "Why the source state matters",
-            detail: "Validator rankings are only trustworthy when the page keeps provider and fallback posture visible while you browse.",
+            title: "What to compare",
+            detail: "Sort by stake size, uptime, take rate, or subnet focus. Add a few to favorites and flip between views to see how they rank on different axes.",
           },
           {
-            title: "Best follow-on action",
-            detail: "Use search, sort, and favorites to build a shortlist, then switch views to compare operators from different angles.",
+            title: "Freshness matters",
+            detail: "Validator metrics change daily. The source badge shows whether you're looking at live chain data or a cached snapshot — plan accordingly before delegating.",
           },
         ].map((card) => (
           <div key={card.title} className="rounded-2xl border border-white/8 bg-white/[0.022] p-5">

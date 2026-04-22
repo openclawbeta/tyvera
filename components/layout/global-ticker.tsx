@@ -54,7 +54,11 @@ function MetricPill({
 export function GlobalTicker() {
   const [ticker, setTicker] = useState<TickerData | null>(null);
   const [subnetCount, setSubnetCount] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState(true);
+  // `isLoading` only flips true *after* mount so SSR renders a deterministic
+  // neutral chrome instead of a "Loading market layer…" flash that briefly
+  // appears on every navigation (flagged in customer POV review). The
+  // awaiting-pricing-source state below serves as the graceful pre-data UI.
+  const [isLoading, setIsLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -110,20 +114,10 @@ export function GlobalTicker() {
     return "—";
   };
 
-  if (isLoading && !ticker) {
-    return (
-      <div className="fixed left-0 right-0 top-0 z-30 h-8 px-3 lg:left-[248px] xl:left-[276px]" style={tickerChrome}>
-        <div className="flex h-full items-center justify-between text-[11px] text-slate-500">
-          <div className="flex items-center gap-2">
-            <CircleDot className="h-3.5 w-3.5" />
-            Loading market layer…
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!ticker || ticker.awaiting || typeof ticker.taoUsd !== "number" || ticker.taoUsd <= 0) {
+  // Initial SSR + pre-data state → skip the "Loading…" flash and render the
+  // same neutral "awaiting pricing source" chrome we'll use if the fetch
+  // actually returns no usable data. Identical shell, no copy swap on hydrate.
+  if (isLoading || !ticker || ticker.awaiting || typeof ticker.taoUsd !== "number" || ticker.taoUsd <= 0) {
     return (
       <div className="fixed left-0 right-0 top-0 z-30 h-8 px-3 lg:left-[248px] xl:left-[276px]" style={tickerChrome}>
         <div className="flex h-full items-center justify-between text-[11px] text-slate-300">

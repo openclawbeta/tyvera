@@ -234,18 +234,18 @@ const COMPARISON_FEATURES = [
 const TOP_NOTES = [
   {
     label: "Explorer",
-    title: "Use Tyvera free while validating fit.",
-    detail: "Explore the network, sample the intelligence layer, and understand the product before moving into paid workflows.",
+    title: "Start free — no card, no wallet.",
+    detail: "Browse the top 20 subnets, try out AI queries, and see whether Tyvera fits your workflow before committing to a plan.",
   },
   {
     label: "Analyst / Strategist",
-    title: "Unlock deeper decision tooling when the edge matters.",
-    detail: "Paid plans are positioned around serious subnet research, alerts, recommendations, and portfolio command surfaces.",
+    title: "Upgrade when you\u2019re actually moving TAO.",
+    detail: "Paid plans unlock the full 128+ subnet universe, smart alerts, portfolio tracking, and the recommendations engine that pays for itself once you\u2019re rebalancing often.",
   },
   {
     label: "Institutional",
-    title: "Support desks, funds, and subnet operators with heavier needs.",
-    detail: "The upper tier is for teams that need operational support, custom analytics, and more structured access patterns.",
+    title: "For desks, funds, and subnet operators.",
+    detail: "Team seats, webhook alerts, priority support, and higher API limits. Talk to us if you need SLAs or custom analytics.",
   },
 ];
 
@@ -409,22 +409,22 @@ export default function PricingPage() {
               </div>
 
               <h2 className="mt-5 text-3xl font-black tracking-[-0.04em] text-white md:text-[40px]">
-                Pricing is being shaped around
+                Pay in TAO or USD —
                 <span className="block bg-[linear-gradient(135deg,#67e8f9_0%,#4f7cff_55%,#8b5cf6_100%)] bg-clip-text text-transparent">
-                  real capability, not fake tiering.
+                  pricing that scales with you.
                 </span>
               </h2>
 
               <p className="mt-4 max-w-2xl text-sm leading-relaxed text-slate-400 md:text-[15px]">
-                Explorer is for evaluation. Analyst and Strategist are for actual subnet research, monitoring, and decision workflows.
-                Institutional is for teams that need support, broader controls, and desk-level access patterns.
+                Explorer is free forever. Analyst and Strategist unlock the full subnet universe and decision tooling.
+                Institutional adds team seats, webhook alerts, and priority support.
               </p>
 
               <div className="mt-6 grid gap-3 md:grid-cols-3">
                 {[
-                  { label: "Settlement rail", value: "TAO-native", note: taoUsd ? `1 τ = $${taoUsd.toFixed(2)}` : "Live rate when available", tone: "text-cyan-300", icon: Wallet },
-                  { label: "Pricing anchor", value: "USD-led", note: "TAO equivalent updates dynamically", tone: "text-white", icon: BadgeDollarSign },
-                  { label: "Trust posture", value: "Source-aware", note: "Plans should reflect real product depth", tone: "text-emerald-300", icon: Shield },
+                  { label: "Pay with", value: "TAO or USD", note: taoUsd ? `1 τ = $${taoUsd.toFixed(2)} right now` : "Live TAO rate when available", tone: "text-cyan-300", icon: Wallet },
+                  { label: "Price shown", value: "USD anchor", note: "TAO equivalent updates with live rate", tone: "text-white", icon: BadgeDollarSign },
+                  { label: "Cancel anytime", value: "Monthly or yearly", note: "No lock-in — downgrade or cancel in one click", tone: "text-emerald-300", icon: Shield },
                 ].map(({ label, value, note, tone, icon: Icon }) => (
                   <div key={label} className="rounded-2xl border border-white/8 bg-black/20 px-4 py-4">
                     <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
@@ -478,6 +478,47 @@ export default function PricingPage() {
               </span>
             </button>
           </div>
+        </div>
+      </FadeIn>
+
+      <FadeIn>
+        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-5">
+          <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+            At a glance
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            {[
+              {
+                title: "Free (Explorer)",
+                body: "Browse the top 20 subnets, run 5 AI queries a day, see today's leaderboard. No wallet required.",
+                tone: "text-slate-200",
+                border: "border-white/10",
+                bg: "bg-white/[0.02]",
+              },
+              {
+                title: "Paid ($19.99+/mo)",
+                body: "All 128+ subnets, every view mode, smart alerts, full yield calculator, 25+ AI queries/day, 30-day+ history.",
+                tone: "text-cyan-200",
+                border: "border-cyan-400/25",
+                bg: "bg-cyan-400/[0.05]",
+              },
+              {
+                title: "Strategist ($49.99/mo)",
+                body: "Adds recommendations engine, unlimited alerts, portfolio tracking, and unlimited AI Intel / tax CSV exports.",
+                tone: "text-emerald-200",
+                border: "border-emerald-400/25",
+                bg: "bg-emerald-400/[0.05]",
+              },
+            ].map(({ title, body, tone, border, bg }) => (
+              <div key={title} className={cn("rounded-2xl border p-4", border, bg)}>
+                <div className={cn("text-sm font-semibold tracking-tight", tone)}>{title}</div>
+                <p className="mt-2 text-xs leading-relaxed text-slate-400">{body}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-[11px] text-slate-500">
+            All plans include internal Tyvera APIs. Institutional adds team access, webhooks, and priority support — see the full table below.
+          </p>
         </div>
       </FadeIn>
 
