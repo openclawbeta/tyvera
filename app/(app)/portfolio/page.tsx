@@ -8,6 +8,7 @@ import { GlassCard } from "@/components/ui-custom/glass-card";
 import { StatCard } from "@/components/ui-custom/stat-card";
 import { FadeIn } from "@/components/ui-custom/fade-in";
 import { DataSourceBadge } from "@/components/ui-custom/data-source-badge";
+import { VerifyWalletBanner } from "@/components/ui-custom/verify-wallet-banner";
 import { useWallet } from "@/lib/wallet-context";
 
 /* ─────────────────────────────────────────────────────────────────── */
@@ -176,6 +177,19 @@ export default function PortfolioPage() {
             </p>
           </div>
         </FadeIn>
+      </div>
+    );
+  }
+
+  // Connected but not verified — portfolio requires a signed message.
+  if (walletState !== "verified" && !portfolio) {
+    return (
+      <div className="max-w-[1400px] mx-auto space-y-7">
+        <PageHeader
+          title="Portfolio"
+          subtitle="Your staked TAO positions and performance"
+        />
+        <VerifyWalletBanner message="Your positions are readable only with a signed wallet message so no one else can query them." />
       </div>
     );
   }

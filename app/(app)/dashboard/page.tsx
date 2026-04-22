@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { GlassCard } from "@/components/ui-custom/glass-card";
 import { SectionTitle } from "@/components/ui-custom/section-title";
 import { FadeIn } from "@/components/ui-custom/fade-in";
+import { VerifyWalletBanner } from "@/components/ui-custom/verify-wallet-banner";
 import { MomentumBarChart } from "@/components/charts/momentum-bar-chart";
 import { SimpleLineChart } from "@/components/charts/simple-line-chart";
 import { AllocationBarList } from "@/components/charts/allocation-bar-list";
@@ -79,6 +80,8 @@ export default function DashboardPage() {
           </button>
         </div>
       </PageHeader>
+
+      <VerifyWalletBanner message="Your portfolio data requires a signed wallet message so only you can read it." />
 
       <FadeIn delay={0.03}>
         <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
