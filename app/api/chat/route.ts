@@ -14,11 +14,13 @@ import { verifyWalletAuth } from "@/lib/api/wallet-auth";
 import { resolveWalletTier, getChatQueryLimit } from "@/lib/api/require-entitlement";
 import { incrementDailyUsage, getDailyUsage } from "@/lib/db/daily-usage";
 
-// Hard per-IP cap on free-tier chat usage. Prevents someone from
-// churning unlimited SS58 addresses (wallet generation is free) to
-// multiply the Explorer quota. Paid tiers bypass this check because
-// their quota is meaningful per-wallet.
-const EXPLORER_DAILY_IP_CAP = 5;
+// Per-IP cap on free-tier chat usage. Prevents someone from churning
+// unlimited SS58 addresses (wallet generation is free) to multiply the
+// Explorer quota. Paid tiers bypass this check because their quota is
+// meaningful per-wallet. The cap is generous enough to accommodate
+// shared networks (offices, campuses, cafés) where multiple legitimate
+// Explorer users sit behind a single egress IP.
+const EXPLORER_DAILY_IP_CAP = 20;
 
 function getClientIp(request: NextRequest): string | null {
   const fwd = request.headers.get("x-forwarded-for");
@@ -128,10 +130,12 @@ export async function POST(request: NextRequest) {
       if (ipUsed >= EXPLORER_DAILY_IP_CAP) {
         return NextResponse.json(
           {
-            error: `Daily free-tier chat limit reached for this network (${EXPLORER_DAILY_IP_CAP}/day). Upgrade for higher limits.`,
+            error: `Free-tier chat is rate-limited by network (${EXPLORER_DAILY_IP_CAP} queries/day shared across everyone on your internet connection). Upgrade to Analyst or higher to lift this cap.`,
             currentTier: tier,
             limit: EXPLORER_DAILY_IP_CAP,
+            limitScope: "per-network",
             resetsAt: "midnight UTC",
+            upgrade: "Analyst tier bypasses the per-network cap.",
           },
           { status: 429 },
         );

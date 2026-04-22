@@ -105,6 +105,54 @@ export async function getPortfolioSnapshots(
 }
 
 /**
+ * List distinct wallet addresses that have recorded at least one
+ * snapshot in the last `lookbackDays` days. Used by the daily backfill
+ * cron to continue the series even when the user doesn't visit.
+ */
+export async function getActiveSnapshotWallets(
+  lookbackDays = 30,
+): Promise<string[]> {
+  const db = await getDb();
+  const cutoff = utcDayKey(new Date(Date.now() - lookbackDays * 86_400_000));
+  try {
+    const rows = await db.query(
+      `SELECT DISTINCT wallet_address
+       FROM portfolio_snapshots
+       WHERE snapshot_date >= ?`,
+      [cutoff],
+    );
+    if (!rows.length || !rows[0].rows.length) return [];
+    return rows[0].rows
+      .map((row) => String(row[0] ?? ""))
+      .filter((addr) => addr.length > 0);
+  } catch (err) {
+    console.warn("[portfolio-snapshots] getActiveSnapshotWallets failed:", err);
+    return [];
+  }
+}
+
+/**
+ * True when a same-UTC-day snapshot already exists for the wallet.
+ * Used by the backfill cron to avoid duplicate chain RPC work.
+ */
+export async function hasSnapshotForToday(
+  walletAddress: string,
+): Promise<boolean> {
+  if (!walletAddress) return false;
+  const db = await getDb();
+  try {
+    const rows = await db.query(
+      `SELECT 1 FROM portfolio_snapshots
+       WHERE wallet_address = ? AND snapshot_date = ? LIMIT 1`,
+      [walletAddress, utcDayKey()],
+    );
+    return !!rows[0]?.rows?.length;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Prune snapshot rows older than `retentionDays` for a given wallet.
  * Caller should run this opportunistically to bound table growth.
  */

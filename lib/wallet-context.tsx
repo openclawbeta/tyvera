@@ -1,7 +1,20 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useRef } from "react";
-import { createWalletAuthHeaders } from "@/lib/wallet-auth-client";
+import {
+  createWalletAuthHeaders,
+  clearWalletAuthCache,
+} from "@/lib/wallet-auth-client";
+
+/**
+ * Persisted connection keys. We store the last connected wallet so a page
+ * refresh doesn't kick the user back to "disconnected". We deliberately
+ * do NOT persist the "verified" state — callers must re-sign on reload to
+ * prove ownership. Hydrating in "connected" state means the Verify banner
+ * shows immediately and a single click gets the user going again.
+ */
+const STORAGE_KEY_ADDRESS = "tyvera.wallet.address";
+const STORAGE_KEY_EXTENSION = "tyvera.wallet.extension";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Types                                                                 */
@@ -105,6 +118,27 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timer);
   }, []);
 
+  // Hydrate the last connected wallet from localStorage. We land in the
+  // "connected" state (NOT "verified") so the user must re-sign a fresh
+  // proof-of-ownership message. This preserves security while avoiding
+  // the full reconnect flow on every page reload.
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const savedAddress = window.localStorage.getItem(STORAGE_KEY_ADDRESS);
+      const savedExt = window.localStorage.getItem(
+        STORAGE_KEY_EXTENSION,
+      ) as WalletExtension | null;
+      if (savedAddress && savedExt) {
+        setAddress(savedAddress);
+        setExtension(savedExt);
+        setWalletState("connected");
+      }
+    } catch {
+      // localStorage can throw in private/incognito modes — ignore.
+    }
+  }, []);
+
   const openModal  = useCallback(() => setIsModalOpen(true), []);
   const closeModal = useCallback(() => setIsModalOpen(false), []);
 
@@ -146,6 +180,14 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       setAddress(walletAddress);
       setWalletState("connected");
       setIsModalOpen(false);
+
+      // Persist for page-refresh survival.
+      try {
+        window.localStorage.setItem(STORAGE_KEY_ADDRESS, walletAddress);
+        window.localStorage.setItem(STORAGE_KEY_EXTENSION, ext);
+      } catch {
+        // Non-fatal — localStorage may be unavailable (incognito, etc.)
+      }
     } catch (err: any) {
       console.error("[wallet] Connection failed:", err);
       const message =
@@ -163,6 +205,16 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     setApprovalRequest(null);
     setIsModalOpen(false);
     setConnectionError(null);
+    // Drop any cached signatures for the now-disconnected wallet.
+    clearWalletAuthCache();
+    try {
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(STORAGE_KEY_ADDRESS);
+        window.localStorage.removeItem(STORAGE_KEY_EXTENSION);
+      }
+    } catch {
+      // Ignore storage errors.
+    }
   }, []);
 
   const verify = useCallback(async () => {
@@ -182,9 +234,15 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const signer = enabledExtension.signer;
 
       if (!signer?.signRaw) {
-        // Extension doesn't support signRaw — accept connection as-is
-        console.warn("[wallet] signRaw not supported, skipping verification");
-        setWalletState("verified");
+        // The wallet doesn't expose signRaw (e.g. some mobile SubWallet
+        // / WalletConnect flows). We can NOT mark the session verified
+        // because downstream API calls require a signed message. Stay
+        // connected and surface a clear error so the user understands
+        // why portfolio/chat won't load.
+        setWalletState("connected");
+        setConnectionError(
+          "This wallet doesn't support message signing. Try a desktop extension (Polkadot.js, Talisman, or SubWallet) to access your portfolio.",
+        );
         return;
       }
 
