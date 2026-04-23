@@ -12,19 +12,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runVerificationCycle } from "@/lib/db/payment-verifier";
 import { logCronRun } from "@/lib/db/cron-log";
-import { timingSafeEqual } from "crypto";
+import { safeSecretEqual } from "@/lib/api/secret-compare";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
 
 function verifyCronAuth(authHeader: string | null, secret: string): boolean {
-  const expected = "Bearer " + secret;
-  if (!authHeader || authHeader.length !== expected.length) return false;
-  try {
-    return timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected));
-  } catch {
-    return false;
-  }
+  return safeSecretEqual(authHeader, "Bearer " + secret);
 }
 
 export async function GET(request: NextRequest) {

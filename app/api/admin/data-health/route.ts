@@ -1,20 +1,21 @@
 import { NextResponse } from "next/server";
-import { timingSafeEqual } from "node:crypto";
 import { getDataHealthSummary } from "@/lib/data-health";
 import { logAdminAction } from "@/lib/db/admin-audit";
-
-function safeEqual(a: string, b: string): boolean {
-  const aBuf = Buffer.from(a);
-  const bBuf = Buffer.from(b);
-  if (aBuf.length !== bBuf.length) return false;
-  return timingSafeEqual(aBuf, bBuf);
-}
+import { safeSecretEqual } from "@/lib/api/secret-compare";
 
 export async function GET(request: Request) {
-  const secret = process.env.ADMIN_SECRET ?? "";
-  const provided = request.headers.get("x-admin-secret") ?? "";
+  const secret = process.env.ADMIN_SECRET;
+  if (!secret) {
+    // Fail-closed on misconfig; surfaces as 503 so ops can distinguish
+    // "secret not set" from a legitimate auth rejection (401).
+    return NextResponse.json(
+      { error: "ADMIN_SECRET not configured" },
+      { status: 503 },
+    );
+  }
 
-  if (!secret || !provided || !safeEqual(secret, provided)) {
+  const provided = request.headers.get("x-admin-secret");
+  if (!safeSecretEqual(provided, secret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

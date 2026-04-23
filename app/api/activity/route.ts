@@ -27,7 +27,7 @@ import {
   type ChainEvent,
 } from "@/lib/chain/transfer-scanner";
 import { queryChainEvents } from "@/lib/db/chain-events";
-import { verifyWalletAuth } from "@/lib/api/wallet-auth";
+import { requireWalletAuth } from "@/lib/api/wallet-auth";
 import { resolveWalletTier, getHistoryCutoffDays } from "@/lib/api/require-entitlement";
 
 function mapChainEvent(e: ChainEvent): ActivityEvent {
@@ -56,10 +56,20 @@ export async function GET(request: NextRequest) {
     return apiErrorResponse("Valid SS58 address required", 400);
   }
 
+  // ── Require wallet auth AND ownership match ─────────────────────
+  // Activity is private on-chain tx history. Without this check a
+  // caller could read any wallet's activity by passing `?address=`.
+  const auth = await requireWalletAuth(request);
+  if (!auth.verified || !auth.address) {
+    return auth.errorResponse ?? apiErrorResponse("Authentication required", 401);
+  }
+  if (auth.address !== address) {
+    return apiErrorResponse("Address does not match authenticated wallet", 403);
+  }
+
   // ── Entitlement: enforce history cutoff by tier ─────────────────
-  const auth = await verifyWalletAuth(request);
-  const walletAddress = auth.verified ? auth.address! : null;
-  const tier = walletAddress ? await resolveWalletTier(walletAddress) : "explorer";
+  const walletAddress = auth.address;
+  const tier = await resolveWalletTier(walletAddress);
   const cutoffDays = getHistoryCutoffDays(tier);
 
   if (cutoffDays === 0) {

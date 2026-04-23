@@ -12,9 +12,9 @@
 /* Start it from the /api/verify-payments cron endpoint or on boot.    */
 /* ─────────────────────────────────────────────────────────────────── */
 
-import { confirmPaymentIntent, findPaymentIntentByMemo, findPaymentIntentByAmount, findAllPaymentIntentsByAmount, expireSubscriptions } from "./subscriptions";
+import { confirmPaymentIntent, findPaymentIntentByMemo, findPaymentIntentByAmount, findAllPaymentIntentsByAmount, expireSubscriptions, isTxHashAlreadyProcessed } from "./subscriptions";
 import { getTransfersToAddress, getLastScannedBlock, scanRecentTransfers } from "@/lib/chain/transfer-scanner";
-import { PAYMENT_VERIFY_INTERVAL_MS, PAYMENT_MIN_CONFIRMATIONS } from "@/lib/config";
+import { PAYMENT_VERIFY_INTERVAL_MS, PAYMENT_MIN_CONFIRMATIONS, PAYMENT_AMOUNT_TOLERANCE_TAO } from "@/lib/config";
 import { requireEnv } from "@/lib/env";
 
 // Tyvera deposit address — set via DEPOSIT_ADDRESS env var (lazy to avoid build-time crash)
@@ -90,8 +90,17 @@ export async function runVerificationCycle(): Promise<{
   let skippedCollision = 0;
 
   for (const tx of transfers) {
-    // Skip already processed
+    // Skip already processed in-memory (current process lifetime)
     if (processedTxHashes.has(tx.txHash)) continue;
+
+    // ── Durable double-claim guard ───────────────────────────────
+    // processedTxHashes is wiped on cold starts — fall back to a
+    // DB check against subscriptions.tx_hash so the same on-chain
+    // transfer cannot credit a second intent after a restart.
+    if (await isTxHashAlreadyProcessed(tx.txHash)) {
+      processedTxHashes.add(tx.txHash);
+      continue;
+    }
 
     // Must be sent TO our deposit address
     if (tx.to !== getDepositAddress()) continue;
@@ -110,9 +119,18 @@ export async function runVerificationCycle(): Promise<{
     let intent: Awaited<ReturnType<typeof findPaymentIntentByMemo>> = null;
 
     // Strategy 1: Match by memo if available (system.remark pairing)
-    // This is the most reliable path — no ambiguity possible.
+    // Memo alone is NOT sufficient — an attacker could craft a tx
+    // with a known victim memo and credit someone else. Require the
+    // on-chain sender to match the intent's registered wallet.
     if (tx.memo && tx.memo.startsWith("TYV-")) {
-      intent = await findPaymentIntentByMemo(tx.memo);
+      const memoIntent = await findPaymentIntentByMemo(tx.memo);
+      if (memoIntent && memoIntent.wallet_address === tx.from) {
+        intent = memoIntent;
+      } else if (memoIntent) {
+        console.warn(
+          `[PaymentVerifier] Memo match rejected: intent wallet ${memoIntent.wallet_address.slice(0, 12)}… ≠ tx sender ${tx.from.slice(0, 12)}…`,
+        );
+      }
     }
 
     // Strategy 2: Match by amount + sender + timing window
@@ -142,9 +160,13 @@ export async function runVerificationCycle(): Promise<{
       continue;
     }
 
-    // Verify amount (allow 1% tolerance for network fees)
-    const tolerance = intent.amount_tao * 0.01;
-    if (tx.amount < intent.amount_tao - tolerance) {
+    // ── Amount check ─────────────────────────────────────────────
+    // Near-exact: only allow a tiny flat rounding tolerance. The
+    // previous 1% window let attackers systematically underpay by
+    // up to 0.09 TAO per subscription. Network fees are paid by
+    // the sender and do not reduce the credited amount, so we do
+    // not need a fee-scaled tolerance.
+    if (tx.amount < intent.amount_tao - PAYMENT_AMOUNT_TOLERANCE_TAO) {
       processedTxHashes.add(tx.txHash);
       continue;
     }

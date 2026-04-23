@@ -6,6 +6,7 @@ import type { Tier } from "@/lib/types/tiers";
 import { MONTHLY_DURATION_DAYS, ANNUAL_DURATION_DAYS, PAYMENT_INTENT_EXPIRY_MS } from "@/lib/config";
 import { requireEnv } from "@/lib/env";
 import { parseSubscribeBody } from "@/lib/api/validation";
+import { requireWalletAuth } from "@/lib/api/wallet-auth";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Subscribe endpoint — creates a payment intent                       */
@@ -121,12 +122,32 @@ const VALID_PLANS = ["ANALYST", "STRATEGIST", "INSTITUTIONAL"];
 
 export async function POST(request: NextRequest) {
   try {
+    // ── Authenticate the caller ──────────────────────────────────
+    // Intents may only be created by the wallet they are bound to.
+    // Without this check an attacker could pre-register an intent
+    // for any address and hijack the legitimate payment flow.
+    const auth = await requireWalletAuth(request);
+    if (!auth.verified || !auth.address) {
+      return auth.errorResponse ?? NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 },
+      );
+    }
+
     const raw = await request.json().catch(() => null);
     const parsed = parseSubscribeBody(raw, VALID_PLANS);
     if (!parsed.ok) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
     const { address, plan, billing } = parsed.value;
+
+    // Body-supplied address must match the authenticated wallet.
+    if (address !== auth.address) {
+      return NextResponse.json(
+        { error: "Address in body does not match authenticated wallet" },
+        { status: 403 },
+      );
+    }
 
     let taoPrices: Record<string, { monthly: number; annual: number }>;
     try {

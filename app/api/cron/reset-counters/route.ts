@@ -22,7 +22,7 @@ import {
 } from "@/lib/db/portfolio-snapshots";
 import { fetchWalletStakes } from "@/lib/chain/wallet-stakes";
 import { getLatestTaoPrice } from "@/lib/chain/price-engine";
-import { timingSafeEqual } from "crypto";
+import { safeSecretEqual } from "@/lib/api/secret-compare";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // chain RPC per wallet can take a moment
@@ -34,13 +34,7 @@ export const maxDuration = 60; // chain RPC per wallet can take a moment
 const MAX_BACKFILL_WALLETS = 100;
 
 function verifyCronAuth(authHeader: string | null, secret: string): boolean {
-  const expected = "Bearer " + secret;
-  if (!authHeader || authHeader.length !== expected.length) return false;
-  try {
-    return timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected));
-  } catch {
-    return false;
-  }
+  return safeSecretEqual(authHeader, "Bearer " + secret);
 }
 
 export async function GET(request: NextRequest) {

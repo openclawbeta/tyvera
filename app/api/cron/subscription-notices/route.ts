@@ -15,7 +15,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { timingSafeEqual } from "crypto";
+import { safeSecretEqual } from "@/lib/api/secret-compare";
 import { expireSubscriptions } from "@/lib/db/subscriptions";
 import { sendSubscriptionNotices } from "@/lib/alerts/subscription-notices";
 import { logCronRun } from "@/lib/db/cron-log";
@@ -24,13 +24,7 @@ export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 function verifyCronAuth(authHeader: string | null, secret: string): boolean {
-  const expected = "Bearer " + secret;
-  if (!authHeader || authHeader.length !== expected.length) return false;
-  try {
-    return timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected));
-  } catch {
-    return false;
-  }
+  return safeSecretEqual(authHeader, "Bearer " + secret);
 }
 
 export async function GET(request: NextRequest) {

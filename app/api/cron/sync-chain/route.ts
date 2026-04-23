@@ -33,19 +33,13 @@ import { logCronRun, pruneCronRuns } from "@/lib/db/cron-log";
 import { recordSubnetHistoryBatch } from "@/lib/db/subnet-history";
 import { setChainKv } from "@/lib/db/chain-kv";
 import { runCronHealthCheck } from "@/lib/cron/health-check";
-import { timingSafeEqual } from "crypto";
+import { safeSecretEqual } from "@/lib/api/secret-compare";
 
 export const maxDuration = 60; // Vercel Pro allows up to 60s
 export const dynamic = "force-dynamic";
 
 function verifyCronAuth(authHeader: string | null, secret: string): boolean {
-  const expected = "Bearer " + secret;
-  if (!authHeader || authHeader.length !== expected.length) return false;
-  try {
-    return timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected));
-  } catch {
-    return false;
-  }
+  return safeSecretEqual(authHeader, "Bearer " + secret);
 }
 
 export async function GET(request: NextRequest) {

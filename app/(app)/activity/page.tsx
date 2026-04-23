@@ -100,7 +100,7 @@ interface ExpandedRow {
 }
 
 export default function ActivityPage() {
-  const { walletState, address, openModal } = useWallet();
+  const { walletState, address, openModal, getAuthHeaders } = useWallet();
   const [filterType, setFilterType] = useState<FilterType>("ALL");
   const [dateRange, setDateRange] = useState<DateRange>("90d");
   const [currentPage, setCurrentPage] = useState(1);
@@ -118,21 +118,28 @@ export default function ActivityPage() {
     }
     let cancelled = false;
     setLoading(true);
-    fetch(`/api/activity?address=${encodeURIComponent(address)}&limit=100`)
-      .then((r) => r.json())
-      .then((data) => {
+    (async () => {
+      try {
+        const authHeaders = await getAuthHeaders({
+          method: "GET",
+          pathname: "/api/activity",
+        });
+        const r = await fetch(
+          `/api/activity?address=${encodeURIComponent(address)}&limit=100`,
+          { headers: authHeaders },
+        );
+        const data = await r.json();
         if (!cancelled && Array.isArray(data?.events)) {
           setAllEvents(data.events);
         }
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled) setAllEvents([]);
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false);
-      });
+      }
+    })();
     return () => { cancelled = true; };
-  }, [address]);
+  }, [address, getAuthHeaders]);
 
   // Filter by type
   const typeFiltered = useMemo(() => {

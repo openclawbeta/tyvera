@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { timingSafeEqual } from "crypto";
 import { adminGrantSubscription, getEntitlement } from "@/lib/db/subscriptions";
 import { logAdminActionFromRequest } from "@/lib/db/admin-audit";
 import { parseAdminGrantBody } from "@/lib/api/validation";
+import { safeSecretEqual } from "@/lib/api/secret-compare";
 
 /* ─────────────────────────────────────────────────────────────────── */
 /* Admin subscription management                                       */
@@ -20,25 +20,11 @@ if (!ADMIN_SECRET) {
   );
 }
 
-/**
- * Constant-time auth check to prevent timing attacks.
- */
+/** Length-safe, constant-time admin auth. See lib/api/secret-compare.ts. */
 function checkAuth(request: NextRequest): boolean {
   if (!ADMIN_SECRET) return false;
   const authHeader = request.headers.get("Authorization");
-  if (!authHeader) return false;
-
-  const expected = `Bearer ${ADMIN_SECRET}`;
-  if (authHeader.length !== expected.length) return false;
-
-  try {
-    return timingSafeEqual(
-      Buffer.from(authHeader, "utf-8"),
-      Buffer.from(expected, "utf-8"),
-    );
-  } catch {
-    return false;
-  }
+  return safeSecretEqual(authHeader, `Bearer ${ADMIN_SECRET}`);
 }
 
 /**

@@ -6,6 +6,7 @@ import { MobileNavToggle } from "@/components/layout/mobile-nav";
 import { RateLimitBanner } from "@/components/ui-custom/rate-limit-banner";
 import { PageTracker } from "@/components/layout/page-tracker";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { WalletConnectModal } from "@/components/wallet/wallet-connect-modal";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   return (
@@ -112,6 +113,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
       </div>
+
+      {/* Global wallet connect modal — any (app) page can call openModal() */}
+      <WalletConnectModal />
     </div>
   );
 }

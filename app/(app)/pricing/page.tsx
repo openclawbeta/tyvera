@@ -270,13 +270,17 @@ type PaymentStatus = "awaiting_payment" | "confirming" | "confirmed" | "expired"
 
 export default function PricingPage() {
   const router = useRouter();
-  const { address, walletState, openModal } = useWallet();
+  const { address, walletState, openModal, getAuthHeaders } = useWallet();
   const [billing, setBilling] = useState<BillingCycle>("monthly");
   const [subscribing, setSubscribing] = useState<string | null>(null);
   const [paymentInfo, setPaymentInfo] = useState<PaymentInstructions | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("awaiting_payment");
   const [taoUsd, setTaoUsd] = useState<number | null>(null);
   const [subscribeError, setSubscribeError] = useState<string | null>(null);
+  // When the user clicks a paid plan while disconnected we open the wallet
+  // modal and remember which plan was pending. Once the wallet connects
+  // we resume the subscribe flow automatically — no second click needed.
+  const [pendingPlan, setPendingPlan] = useState<string | null>(null);
 
   // Poll payment status when payment info is shown
   useEffect(() => {
@@ -318,6 +322,19 @@ export default function PricingPage() {
     };
   }, [paymentInfo?.memo, paymentInfo?.expires_at]);
 
+  // Auto-resume subscribe flow after the user connects their wallet. We
+  // fire once — then clear pendingPlan so back/forward nav doesn't retrigger.
+  useEffect(() => {
+    if (!pendingPlan) return;
+    if (!address || walletState === "disconnected") return;
+    const planToResume = pendingPlan;
+    setPendingPlan(null);
+    handleSubscribe(planToResume);
+    // handleSubscribe is stable enough for this effect — depending on it
+    // would cause a re-run loop since it's redefined each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [address, walletState, pendingPlan]);
+
   useEffect(() => {
     const fetchRate = async () => {
       try {
@@ -356,6 +373,7 @@ export default function PricingPage() {
     }
 
     if (!address || walletState === "disconnected") {
+      setPendingPlan(planId);
       openModal();
       return;
     }
@@ -363,9 +381,15 @@ export default function PricingPage() {
     setSubscribing(planId);
 
     try {
+      // Sign a wallet-auth header bound to POST /api/subscribe so the
+      // server can prove this intent was created by the wallet holder.
+      const authHeaders = await getAuthHeaders({
+        method: "POST",
+        pathname: "/api/subscribe",
+      });
       const res = await fetch("/api/subscribe", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ address, plan: planId, billing }),
       });
       const data = await res.json();
@@ -533,18 +557,13 @@ export default function PricingPage() {
 
           return (
             <FadeIn key={tier.name} delay={idx * 0.08}>
-              <div
-                className={cn("relative flex h-full flex-col overflow-hidden rounded-2xl", tier.popular && "ring-1")}
-                style={{
-                  background: `linear-gradient(170deg, ${tier.accentBg} 0%, rgba(255,255,255,0.012) 40%)`,
-                  border: `1px solid ${tier.accentBorder}`,
-                  boxShadow: tier.accentGlow ? `${tier.accentGlow}, 0 4px 24px rgba(0,0,0,0.3)` : "0 4px 24px rgba(0,0,0,0.3)",
-                  ...(tier.popular ? { ringColor: "rgba(52,211,153,0.3)" } : {}),
-                }}
-              >
+              {/* Outer wrapper: NOT overflow-hidden, so the "Most Popular"
+                  badge can sit above the card edge without being clipped.
+                  The inner card keeps overflow-hidden to clip its gradient. */}
+              <div className={cn("relative h-full", tier.popular && "pt-3")}>
                 {tier.popular && (
                   <div
-                    className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full px-4 py-1 text-[11px] font-bold"
+                    className="absolute left-1/2 top-0 z-10 -translate-x-1/2 rounded-full px-4 py-1 text-[11px] font-bold"
                     style={{
                       background: "rgba(52,211,153,0.15)",
                       border: "1px solid rgba(52,211,153,0.35)",
@@ -555,11 +574,20 @@ export default function PricingPage() {
                   </div>
                 )}
 
-                {tier.popular && (
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-20" style={{ background: "radial-gradient(ellipse at top, rgba(52,211,153,0.12), transparent 70%)" }} />
-                )}
+                <div
+                  className={cn("relative flex h-full flex-col overflow-hidden rounded-2xl", tier.popular && "ring-1")}
+                  style={{
+                    background: `linear-gradient(170deg, ${tier.accentBg} 0%, rgba(255,255,255,0.012) 40%)`,
+                    border: `1px solid ${tier.accentBorder}`,
+                    boxShadow: tier.accentGlow ? `${tier.accentGlow}, 0 4px 24px rgba(0,0,0,0.3)` : "0 4px 24px rgba(0,0,0,0.3)",
+                    ...(tier.popular ? { ringColor: "rgba(52,211,153,0.3)" } : {}),
+                  }}
+                >
+                  {tier.popular && (
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-20" style={{ background: "radial-gradient(ellipse at top, rgba(52,211,153,0.12), transparent 70%)" }} />
+                  )}
 
-                <div className="relative flex flex-1 flex-col p-6">
+                  <div className="relative flex flex-1 flex-col p-6">
                   <div className="mb-3 flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: tier.accentBg, border: `1px solid ${tier.accentBorder}` }}>
                       <span className={tier.accent}>{tier.icon}</span>
@@ -638,6 +666,7 @@ export default function PricingPage() {
                       </div>
                     ))}
                   </div>
+                </div>
                 </div>
               </div>
             </FadeIn>

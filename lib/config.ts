@@ -106,3 +106,12 @@ export const GRACE_PERIOD_DAYS = 7;
  * Bittensor block time is ~12s, so 3 blocks ≈ 36 seconds.
  */
 export const PAYMENT_MIN_CONFIRMATIONS = 3;
+
+/**
+ * Accepted shortfall on payment amount, in TAO. Covers floating-point
+ * rounding in the amount derivation pipeline only — NOT a fee discount
+ * or a systematic underpayment allowance. Bittensor transfer fees are
+ * paid by the sender and do not reduce the credited amount, so this
+ * stays at a tiny rounding-floor value.
+ */
+export const PAYMENT_AMOUNT_TOLERANCE_TAO = 0.001;

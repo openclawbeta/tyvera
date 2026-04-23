@@ -7,7 +7,7 @@
 import { getDb } from "./index";
 import { getTierForPlan, TIER_DEFINITIONS } from "@/lib/types/tiers";
 import type { Tier } from "@/lib/types/tiers";
-import { MONTHLY_DURATION_DAYS, GRACE_PERIOD_DAYS } from "@/lib/config";
+import { MONTHLY_DURATION_DAYS, GRACE_PERIOD_DAYS, PAYMENT_AMOUNT_TOLERANCE_TAO } from "@/lib/config";
 
 /* ── Types ────────────────────────────────────────────────────────── */
 
@@ -322,9 +322,8 @@ export async function findPaymentIntentByAmount(
   duration_days: number;
 } | null> {
   const db = await getDb();
-  const tolerance = amountTao * 0.01;
-  const minAmount = amountTao - tolerance;
-  const maxAmount = amountTao + tolerance;
+  const minAmount = amountTao - PAYMENT_AMOUNT_TOLERANCE_TAO;
+  const maxAmount = amountTao + PAYMENT_AMOUNT_TOLERANCE_TAO;
 
   const rows = await db.query(
     `SELECT * FROM payment_intents
@@ -369,9 +368,8 @@ export async function findAllPaymentIntentsByAmount(
   duration_days: number;
 }>> {
   const db = await getDb();
-  const tolerance = amountTao * 0.01;
-  const minAmount = amountTao - tolerance;
-  const maxAmount = amountTao + tolerance;
+  const minAmount = amountTao - PAYMENT_AMOUNT_TOLERANCE_TAO;
+  const maxAmount = amountTao + PAYMENT_AMOUNT_TOLERANCE_TAO;
 
   const rows = await db.query(
     `SELECT * FROM payment_intents
@@ -397,6 +395,25 @@ export async function findAllPaymentIntentsByAmount(
       duration_days: number;
     },
   );
+}
+
+/**
+ * Has this on-chain tx hash already been credited to a subscription?
+ *
+ * Durable double-claim guard — complements the in-memory
+ * `processedTxHashes` set in payment-verifier.ts, which is wiped on
+ * serverless cold starts. A tx that has already activated a
+ * subscription must never activate a second one, even if the process
+ * restarts and re-encounters the same chain event.
+ */
+export async function isTxHashAlreadyProcessed(txHash: string): Promise<boolean> {
+  if (!txHash) return false;
+  const db = await getDb();
+  const rows = await db.query(
+    `SELECT 1 FROM subscriptions WHERE tx_hash = ? LIMIT 1`,
+    [txHash],
+  );
+  return rows.length > 0 && rows[0].rows.length > 0;
 }
 
 /**
